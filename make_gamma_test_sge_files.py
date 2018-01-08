@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+c#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 30 11:36:41 2017
@@ -57,11 +57,11 @@ for gamma in [3000, 2000, 1000, 600, 400, 200, 100, 50, 0, 800, 150, 250, 300, 3
         #outfile.write("mv " + patient + "*raw* "+ patient + "_failed_arrays.txt " + patient + "_fcn_*txt" + " unconstrained;\n")
         outfile.write("R CMD BATCH '--no-save --no-restore --args " + patient + " 2' ascat_on_segments.R Rout/" + patient + "_dip_out.txt;\n")
         outfile.write("mv " + patient + "*raw* "+ patient + "_failed_arrays.txt " + patient + "_fcn_*" + " diploid;\n")
-        outfile.write("rm diploid/*" + patient + "*.RData\n")
+        outfile.write("rm diploid/*" + patient + "_*.RData\n")
         outfile.write("R CMD BATCH '--no-save --no-restore --args " + patient + " 4' ascat_on_segments.R Rout/" + patient + "_tet_out.txt;\n")
         outfile.write("mv " + patient + "*raw* "+ patient + "_failed_arrays.txt " + patient + "_fcn_*" + " tetraploid;\n")
-        outfile.write("rm tetraploid/*" + patient + "*.RData\n")
-        outfile.write("rm *" + patient + "*.RData\n")
+        outfile.write("rm tetraploid/*" + patient + "_*.RData\n")
+        outfile.write("rm *" + patient + "_*.RData\n")
         outfile.close()
         allfile.write("qsub -l mfree=6G pASCAT_input_g" + str(gamma) + "/run_" + patient + "_g" + str(gamma) + ".sge\n")
 

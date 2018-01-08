@@ -12,6 +12,7 @@ from __future__ import division
 from os import walk
 from os import path
 from os import mkdir
+from os.path import isfile
 
 import numpy
 
@@ -19,10 +20,10 @@ import lucianSNPLibrary as lsl
 
 #Use this value to set up whether to use the 'rejoined' segments or not
 
-tag = "_25M_v2_joined_best/"
+tag = "_g1000_unconstrained/"
 
 CN_input = "CN_joint_log2rs" + tag
-BAF_input = "BAF_filtered_data_25M_15/"
+BAF_input = ["BAF_filtered_data_25M_only_15/", "BAF_filtered_data_1M_only_15/"]
 validation_output = "segmentation_validation" + tag
 
 if not(path.isdir(validation_output + "/")):
@@ -33,7 +34,9 @@ for (_, _, f) in walk(CN_input):
     CNlist += f
 
 BAFlist = []
-for (_, _, f) in walk(BAF_input):
+for (_, _, f) in walk(BAF_input[0]):
+    BAFlist += f
+for (_, _, f) in walk(BAF_input[1]):
     BAFlist += f
 
 #runall = open(expands_output + "runall.bat", "w")
@@ -92,7 +95,10 @@ for id in segments:
                     BAFs_by_sample[sample][segname] = {}
         BAFname = id + "_" + sample + "_BAF.txt"
         BAFname = BAFname.translate(None, 'b')
-        baffile = open(BAF_input + BAFname, "r")
+        baffilename = BAF_input[0] + BAFname
+        if not isfile(baffilename):
+            baffilename = BAF_input[1] + BAFname
+        baffile = open(baffilename, "r")
         for line in baffile:
             if (line.find("BAF") != -1):
                 continue
@@ -134,26 +140,25 @@ for id in segments:
                 BAF_averages[sample][segname] = 0.5 #All wt entries are skipped, like this should be.
     print "Processing patient", id
     lsl.validateSegments(BAFs_by_sample, BAF_averages, validation_output, id, failfile, summaryfile)
-        
-    
+
+
 failfile.close()
 testfile.close()
 summaryfile.close()
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

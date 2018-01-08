@@ -21,22 +21,23 @@ import lucianSNPLibrary as lsl
 #Use this value to set up whether to use the 'rejoined' segments or not
 
 BAF_dir = "gamma_template/"
-subdirs = ["unconstrained"]
-gamma_outdir = "partial_gamma_test_output/gamma_test/"
+subdirs = ["diploid", "tetraploid"]
+subdirdict = {}
+for subdir in subdirs:
+    subdirdict[subdir] = []
+gamma_outdir = "gamma_test_output/"
 #gamma_outdir = "gamma_test_output/"
-outdir = "partial_gamma_test_output/"
-outsumfile = "gamma_summary.txt"
+outdir = "gamma_test_output/summaries/"
 #gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600"]
+#gamma_list = ["0"]
 gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
 #gamma_list = ["800"]
 bafrawdata = {}
 patient_samples = {}
 
-onlyonepatient = False
+onlyonepatient = True
 onepatient = "521"
 
-summary_out = open(outdir + outsumfile, "w")
-summary_out.write("gamma\tpatient\tsample\tsubdir\tploidy\tpurity\tgood matches\tmismatches\talways-valid SCA\tmixed SCA\talways-mismatched SCA\tall unbalanced SCA\n")
 files = []
 for (__, __, f) in walk(BAF_dir):
     files += f
@@ -96,6 +97,24 @@ for f in files:
                 continue
     baffile.close()
 
+    summary_out = open(outdir + patient + "_gamma_summary.txt", "w")
+    summary_out.write("gamma\t")
+    summary_out.write("patient\t")
+    summary_out.write("sample\t")
+    summary_out.write("subdir\t")
+    summary_out.write("ploidy\t")
+    summary_out.write("purity\t")
+    summary_out.write("good matches\t")
+    summary_out.write("mismatches\t")
+    summary_out.write("all unbalanced SCA, diploid\t")
+    summary_out.write("all unbalanced SCA, tetraploid\t")
+    summary_out.write("always-valid SCA, diploid\t")
+    summary_out.write("always-valid SCA, tetraploid\t")
+    summary_out.write("mixed SCA, diploid\t")
+    summary_out.write("mixed SCA, tetraploid\t")
+    summary_out.write("always-mismatched SCA, diploid\t")
+    summary_out.write("always-mismatched SCA, tetraploid\t")
+    summary_out.write("\n")
 #    patient_file = open(outdir + "gamma_full_" + patient + ".txt", "w")
 #    patient_file.write("gamma\tsubdir\tchr\tstart\tend\tminNBafs\tavg\tstdev\tlist\n")
 
@@ -117,11 +136,12 @@ for f in files:
                 continue
             if chr not in isegs:
                 isegs[chr] = []
-            isegs[chr].append([int(start), int(end), []])
+            isegs[chr].append([int(start), int(end), {}, {}])
         for subdir in subdirs:
             totsca = {}
             totsca["overall"] = set()
             osegs = {}
+            balsegs = {}
             ploidies = {}
             ploidyfile = root_dir + subdir + "/" + patient + "_fcn_ascat_ploidy.txt"
             if not(isfile(ploidyfile)):
@@ -160,42 +180,85 @@ for f in files:
                 if sample not in osegs:
                     osegs[sample] = {}
                     totsca[sample] = set()
-                if (nA == nB):
-                    continue
                 start = int(start)
                 end = int(end)
-                if chr not in osegs[sample]:
-                    osegs[sample][chr] = []
-                osegs[sample][chr].append((start, end))
-                totsca[sample].add((chr, start, end))
-                totsca["overall"].add((chr, start, end))
+                if (nA == nB):
+                    if chr not in balsegs[sample]:
+                        balsegs[sample][chr]= []
+                    balsegs[sample][chr].append((start, end))
+                else:
+                    if chr not in osegs[sample]:
+                        osegs[sample][chr] = []
+                    osegs[sample][chr].append((start, end))
+                    totsca[sample].add((chr, start, end))
+                    totsca["overall"].add((chr, start, end))
             for sample in osegs:
                 for chr in osegs[sample]:
                     for oseg in osegs[sample][chr]:
+#                        print oseg
                         for iseg in isegs[chr]:
                             if (iseg[0] >= oseg[0] and iseg[1] <= oseg[1]):
-                                iseg[2].append(sample)
+                                if subdir not in iseg[2]:
+                                    iseg[2][subdir] = []
+                                if sample not in iseg[2][subdir]:
+                                    iseg[2][subdir].append(sample)
+            for sample in balsegs:
+                for chr in balsegs[sample]:
+                    for balseg in balsegs[sample][chr]:
+#                        print balseg
+                        for iseg in isegs[chr]:
+                            if (iseg[0] >= balseg[0] and iseg[1] <= balseg[1]):
+                                if subdir not in iseg[3]:
+                                    iseg[3][subdir] = []
+                                if sample not in iseg[3][subdir]:
+                                    iseg[3][subdir].append(sample)
+#                                    print "Just added sample", sample, "to", iseg
+#                                    print "balseg is", balseg
             evidence = {}
             for chr in isegs:
                 evidence[chr] = {}
                 for iseg in isegs[chr]:
                     isegrange = (iseg[0], iseg[1])
-                    samples = iseg[2]
+                    if subdir not in iseg[2]:
+                        continue
+                    samples = iseg[2][subdir]
                     samples.sort()
                     evidence[chr][isegrange] = {}
                     for pos in bafrawdata[chr]:
                         if pos >= iseg[0] and pos <= iseg[1]:
                             for sample1 in range(0, len(samples)-1):
                                 for sample2 in range(sample1+1, len(samples)):
+                                    s1 = samples[sample1]
+                                    s2 = samples[sample2]
                                     try:
-                                        val1 = bafrawdata[chr][pos][samples[sample1]]
-                                        val2 = bafrawdata[chr][pos][samples[sample2]]
+                                        val1 = bafrawdata[chr][pos][s1]
+                                        val2 = bafrawdata[chr][pos][s2]
                                     except:
                                         continue
                                     if val1 > 0.48 and val1 < 0.52:
                                         continue
                                     if val2 > 0.48 and val2 < 0.52:
                                         continue
+                                    #This section is redundant with the above bit that appends the sample to iseg[2]:
+#                                    found = False
+#                                    if s1 not in osegs or s2 not in osegs:
+#                                        foo()
+#                                        continue
+#                                    if chr not in osegs[s1] or chr not in osegs[s2]:
+#                                       bar()
+#                                       continue
+#                                    for s1seg in osegs[s1][chr]:
+#                                        if pos >= s1seg[0] and pos <= s1seg[1]:
+#                                            found = True
+#                                    if found==False:
+#                                        foo()
+#                                        continue
+#                                    found = False
+#                                    for s2seg in osegs[s2][chr]:
+#                                        if pos >= s2seg[0] and pos <= s2seg[1]:
+#                                            found = True
+#                                    if found==False:
+#                                        continue
                                     segpair = (samples[sample1], samples[sample2])
                                     if segpair not in evidence[chr][isegrange]:
                                         evidence[chr][isegrange][segpair] = [0, 0]
@@ -302,10 +365,12 @@ for f in files:
                     summary_out.write("---\t")
                 summary_out.write(str(goodsamples[samp]) + "\t")
                 summary_out.write(str(badsamples[samp]) + "\t")
-                summary_out.write(str(validatedsca) + "\t")
-                summary_out.write(str(mixedsca) + "\t")
-                summary_out.write(str(invalidsca) + "\t")
-                summary_out.write(str(sumsca) + "\t")
+                if subdir == "tetraploid":
+                    summary_out.write("\t")
+                summary_out.write(str(sumsca) + "\t\t")
+                summary_out.write(str(validatedsca) + "\t\t")
+                summary_out.write(str(mixedsca) + "\t\t")
+                summary_out.write(str(invalidsca))
                 summary_out.write("\n")
             #lsl.createPrintAndSaveHistogram(allpercs, outdir + patient + "_" + str(gamma) + ".txt", .001, xdata="Percent match or anti-match")
 #            print "Bad samples:"

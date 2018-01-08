@@ -15,7 +15,7 @@ from os import mkdir
 
 import lucianSNPLibrary as lsl
 
-tag = "_25M_v2_joined_best/"
+tag = "_g1000_unconstrained/"
 
 CN_input = "CN_joint_log2rs" + tag
 BAF_input = "BAF_joint_vals" + tag
@@ -104,8 +104,8 @@ for c in CNlist:
             CN_segments[patient][sample][chr] = {}
         segpair = (start, end)
         CN_segments[patient][sample][chr][segpair] = (rawA, rawB, intA, intB, avgCN, nCN_SNPs)
-        
-        
+
+
 
 for patient in CN_segments:
 #    if patient != "862":
@@ -124,14 +124,14 @@ for patient in CN_segments:
                     (brawA, brawB, bintA, bintB, avgBAF, nBAF_SNPs) = BAF_segments[patient][sample][chr][segpair]
                 except:
                     (brawA, brawB, bintA, bintB, avgBAF, nBAF_SNPs) = (rawA, rawB, intA, intB, "NA", 0)
-                if rawA != brawA:
-                    print "CN/BAF difference in rawA", patient, sample, chr, segpair, rawA, brawA
-                if rawB != brawB:
-                    print "CN/BAF difference in rawB", patient, sample, chr, segpair, rawB, brawB
-                if intA != bintA:
-                    print "CN/BAF difference in intA", patient, sample, chr, segpair, intA, bintA
-                if intB != bintB:
-                    print "CN/BAF difference in intB", patient, sample, chr, segpair, intB, bintB
+#                if rawA != brawA:
+#                    print "CN/BAF difference in rawA", patient, sample, chr, segpair, rawA, brawA
+#                if rawB != brawB:
+#                    print "CN/BAF difference in rawB", patient, sample, chr, segpair, rawB, brawB
+#                if intA != bintA:
+#                    print "CN/BAF difference in intA", patient, sample, chr, segpair, intA, bintA
+#                if intB != bintB:
+#                    print "CN/BAF difference in intB", patient, sample, chr, segpair, intB, bintB
                 try:
                     (vnBAF_SNPs, matches, antimatches, fails, whichmatch) = validated_segments[patient][chr][segpair]
                 except:
@@ -149,8 +149,11 @@ for patient in CN_segments:
                     all_segments[intchr][intsegpair] = {}
                     seg_maxBAFs[intchr][intsegpair] = nBAF_SNPs
                     seg_nCNSNPs[intchr][intsegpair] = nCN_SNPs
-                all_segments[intchr][intsegpair][sample] = (int(intA), int(intB), float(avgCN), int(nCN_SNPs), avgBAF, int(nBAF_SNPs), int(matches), int(antimatches), int(fails), whichmatch)
-                
+                if (intA == "nan"):
+                    all_segments[intchr][intsegpair][sample] = (intA, intB, avgCN, int(nCN_SNPs), avgBAF, int(nBAF_SNPs), int(matches), int(antimatches), int(fails), whichmatch)
+                else:
+                    all_segments[intchr][intsegpair][sample] = (int(intA), int(intB), float(avgCN), int(nCN_SNPs), avgBAF, int(nBAF_SNPs), int(matches), int(antimatches), int(fails), whichmatch)
+
         ps_out.close()
     joint_out = open(tree_output + patient + "_characters.txt", "w")
     samples = CN_segments[patient].keys()

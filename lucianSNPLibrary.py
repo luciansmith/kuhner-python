@@ -1066,7 +1066,7 @@ def readblock(data, keywd):
 
   return collection
 
-def collatepASCATOutput(infilename,outfile,markerlocations):
+def collatepASCATOutput(infiledir, infilename, outfile,markerlocations):
 
   # we assume that "outfile" exists and is open for writing,
   # and that "markerlocations" has been created by a previous
@@ -1075,11 +1075,11 @@ def collatepASCATOutput(infilename,outfile,markerlocations):
   # read ASCAT segmentation data from dump of the ascat.output object
   # THIS FILE WON'T EXIST if P-ASCAT failed due to missing data, so we
   # return an error code to skip it
-  (pid, sid) = infilename.split("/")[2].split("_")[0:2]
+  (pid, sid) = infilename.split("_")[0:2]
   try:
-    segdata = open(infilename,"r").readlines()
+    segdata = open(infiledir + infilename,"r").readlines()
   except:
-    print "Unable to open file",infilename
+    print "Unable to open file",infiledir + infilename
     return False
 
   startsnps = readblock(segdata,"track_start")

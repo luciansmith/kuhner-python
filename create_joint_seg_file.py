@@ -12,29 +12,23 @@ from os import walk
 #from os import path
 #import string
 
-is1M = False
-isAveraged = True
-
-onepatientonly = False
-onepatient = "951"
-    
+onepatientonly = True
+onepatient = ["74", "422", "450", "512", "728", "995", "997"]
+gamma_dir = "partial_gamma_test_output/gamma_test/pASCAT_input_"
 
 # read the probeset file, which correlates name to position.
-if (isAveraged):
-    labels, rev_labels = lsl.getSNPLabelsAveraged(False)
-else:
-    labels, rev_labels = lsl.getSNPLabels(is1M, False)
+labels, rev_labels = lsl.getSNPLabelsAll(False)
 
 #for tag in ["_combined_avSNPs", "_combined_avSNPs_only25M", "_combined_avSNPs_only1M"]:
-for tag in ["_25M_v2"]:
+for tag in ["g1000"]:
 
-    pASCAT_output_dir = "pASCAT_output" + tag + "/"
-    joint_out_name = "joint_seg" + tag
-    
-    for constraint in ["diploid", "tetraploid", "unconstrained"]:
+    pASCAT_output_dir = gamma_dir + tag + "/"
+    joint_out_name = "joint_seg_" + tag
+
+    for constraint in ["unconstrained"]: #["diploid", "tetraploid", "unconstrained"]:
         directory = pASCAT_output_dir + constraint + "/"
         joint_name = joint_out_name + "_" + constraint + ".txt"
-    
+
         outfile = open(joint_name,"w")
         outfile.write("patient\tbiopsy\tchrom\tsegstart\tsegend\trawA\trawB\tintA\tintB\n")
         filenames = []
@@ -42,11 +36,17 @@ for tag in ["_25M_v2"]:
             filenames += f
             break
         for f in filenames:
-            if (onepatientonly and f.find(onepatient)==-1):
-                continue
+            if onepatientonly:
+                found = False
+                for patient in onepatient:
+                    if f.find(patient + "_")==0:
+                        found = True
+                        continue
+                if not found:
+                    continue
             if (f.find("raw_segments") == -1):
                 continue
-            
+
             print "Analyzing", f
-            lsl.collatepASCATOutput(directory + f, outfile, labels)
+            lsl.collatepASCATOutput(directory, f, outfile, labels)
         outfile.close()

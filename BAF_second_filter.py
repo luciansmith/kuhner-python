@@ -14,7 +14,10 @@ import string
 
 tolerance = 0.15
 
-tag = "_1M_averaged"
+onepatientonly = True
+onepatient = "997"
+
+tag = "_25M_only"
 BAF_input = "BAF_first_filtered_data" + tag + "/"
 BAF_output = "BAF_filtered_data" + tag + "_" + str(int(tolerance*100)) + "/"
 if not(path.isdir(BAF_output)):
@@ -58,6 +61,8 @@ wt_data = {}
 for file in wt_files:
     filebits = file.rstrip().split("_")
     patient = filebits[0]
+    if onepatientonly and patient != onepatient:
+        continue
     BAFfile = open(BAF_input + file,"r")
     wt_data[patient] = set()
     print "Checking WT BAFs for patient", patient
@@ -84,6 +89,8 @@ for file in filenames:
     if (len(filebits) != 3):
         continue
     patient = filebits[0]
+    if onepatientonly and patient != onepatient:
+        continue
     sample = filebits[1]
     if (patient not in wt_data):
         print "No WT data for patient", patient,": skipping."
@@ -98,4 +105,5 @@ for file in filenames:
         (id, chr, pos, baf) = line.rstrip().split("\t")
         if (id in wt_data[patient]):
             outfile.write(line)
-    
+    outfile.close()
+

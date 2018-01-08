@@ -11,7 +11,7 @@ from os import walk
 from os import path
 from os import mkdir
 
-tag = "_25M_v2_joined_best/"
+tag = "_g1000_unconstrained/"
 
 tree_input = "joint_processed_segmentation" + tag
 joint_output = "joint_segmentation_nodupes" + tag
@@ -48,5 +48,4 @@ for f in segment_files:
         joint_out.write("\t" + str(prev[n]))
     joint_out.write("\n")
     joint_out.close()
-    
-    
+

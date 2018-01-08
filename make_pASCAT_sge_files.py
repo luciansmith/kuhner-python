@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+d p#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 30 11:36:41 2017
@@ -15,29 +15,29 @@ for tag in ["combined_avSNPs", "combined_avSNPs_only1M", "combined_avSNPs_only25
 
     pASCAT_dir = "pASCAT_input_" + tag + "/"
     pASCAT_out = "pASCAT_input_" + tag + "/"
-    
+
     if not(path.isdir(pASCAT_out)):
         mkdir(pASCAT_out)
-    
+
     if not(path.isdir(pASCAT_out + "unconstrained/")):
         mkdir(pASCAT_out + "unconstrained/")
-    
+
     if not(path.isdir(pASCAT_out + "diploid/")):
         mkdir(pASCAT_out + "diploid/")
-    
+
     if not(path.isdir(pASCAT_out + "tetraploid/")):
         mkdir(pASCAT_out + "tetraploid/")
-    
+
     if not(path.isdir(pASCAT_out + "Rout/")):
         mkdir(pASCAT_out + "Rout/")
-    
-    
+
+
     filenames = []
     for (_, _, f) in walk(pASCAT_dir):
         filenames += f
         break
-    
-    
+
+
     allfile = open(pASCAT_out + "run_all.bat", "w")
     for f in filenames:
         if f.find("logR") == -1:
@@ -56,6 +56,6 @@ for tag in ["combined_avSNPs", "combined_avSNPs_only1M", "combined_avSNPs_only25
         outfile.write("mv " + patient + "*raw* "+ patient + "_failed_arrays.txt " + patient + "_fcn_*" + " tetraploid;\n")
         outfile.close()
         allfile.write("qsub -l mfree=6G run_" + patient + "_" + tag + ".sge\n")
-        
+
     allfile.close()
-        
+

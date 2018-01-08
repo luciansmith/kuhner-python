@@ -14,20 +14,20 @@ import os
 import numpy
 
 #for subset in ["", "_only25M"]: #, "_only1M"]
-for subset in ["25M_v2"]: #, "_only1M"]
-    for constraint in ["unconstrained", "diploid", "tetraploid"]:
-    
+for subset in ["g1000"]: #["25M_v2"]: #, "_only1M"]
+    for constraint in ["unconstrained"]: #, "diploid", "tetraploid"]:
+
         #tag = "_combined_avSNPs" + subset + "_" + constraint
         tag = "_" + subset + "_" + constraint
-        
+
         joint_file = "joint_seg" + tag + ".txt"
-        CN_25M_val_dir= "CN_filtered_data_25M/"
-        CN_1M_val_dir= "CN_filtered_data/"
+        CN_25M_val_dir= "CN_filtered_data_25M_only/"
+        CN_1M_val_dir= "CN_filtered_data_1M_only/"
         outdir = "CN_joint_log2rs" + tag + "/"
-        
+
         if not(path.isdir(outdir)):
             mkdir(outdir)
-        
+
         joint_data = {}
         jfile = open(joint_file, "r")
         for line in jfile:
@@ -39,9 +39,12 @@ for subset in ["25M_v2"]: #, "_only1M"]
                 joint_data[label] = {}
             if not(chr in joint_data[label]):
                 joint_data[label][chr] = []
-            joint_data[label][chr].append([int(start), int(end), float(rawA), float(rawB), int(intA), int(intB), 0, []])
-        
-        
+            if (rawA == "NA"):
+                joint_data[label][chr].append([int(start), int(end), "nan", "nan", "nan", "nan", 0, []])
+            else:
+                joint_data[label][chr].append([int(start), int(end), float(rawA), float(rawB), int(intA), int(intB), 0, []])
+
+
         for label in joint_data:
             (patient, sample) = label
         #    if label != ("521", "18824"):
@@ -68,7 +71,7 @@ for subset in ["25M_v2"]: #, "_only1M"]
                     log2r = float(log2r)
                 except:
                     continue
-                
+
                 found = False
                 for seg in joint_data[label][chr]:
                     if seg[0] <= pos and seg[1] >= pos:
@@ -99,4 +102,4 @@ for subset in ["25M_v2"]: #, "_only1M"]
                         outfile.write(str(seg[6]) + "\t")
                         outfile.write(str(len(seg[7])) + "\n")
                 outfile.close()
-                
+

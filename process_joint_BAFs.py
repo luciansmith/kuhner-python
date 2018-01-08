@@ -13,17 +13,17 @@ import numpy
 
 # read the processed data from the file Xiaohong sent me, which has segmentation and non-2N bafv values
 
-for subset in ["_25M_v2_"]: #, "_only1M"]
-    for ploidy in ["tetraploid", "diploid"]:
+for subset in ["_g1000_"]: #, "_only1M"]
+    for ploidy in ["unconstrained"]: #["tetraploid", "diploid"]:
         tag = subset + ploidy
-    
+
         joint_file = "joint_seg" + tag + ".txt"
-        baf_val_dir= "BAF_filtered_data_25M_15/"
+        baf_val_dir= "BAF_filtered_data_1M_only_15/"
         outdir = "BAF_joint_vals" + tag + "/"
-        
+
         if not(path.isdir(outdir)):
             mkdir(outdir)
-        
+
         joint_data = {}
         jfile = open(joint_file, "r")
         for line in jfile:
@@ -35,9 +35,9 @@ for subset in ["_25M_v2_"]: #, "_only1M"]
                 joint_data[label] = {}
             if not(chr in joint_data[label]):
                 joint_data[label][chr] = []
-            joint_data[label][chr].append([int(start), int(end), float(rawA), float(rawB), int(intA), int(intB), 0, []])
-        
-        
+            joint_data[label][chr].append([int(start), int(end), rawA, rawB, intA, intB, 0, []])
+
+
         for label in joint_data:
             (patient, sample) = label
         #    if label != ("862", "18992"):

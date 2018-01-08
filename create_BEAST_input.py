@@ -15,7 +15,7 @@ from os import mkdir
 
 import lucianSNPLibrary as lsl
 
-tag = "_25M_v2_joined_best/"
+tag = "_g1000_unconstrained/"
 
 tree_input = "joint_segmentation_nodupes" + tag
 beast_output = "BEAST" + tag
@@ -71,5 +71,4 @@ for f in segment_files:
         B_out.write("\n")
     A_out.close()
     B_out.close()
-    
-    
+
