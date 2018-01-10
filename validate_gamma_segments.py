@@ -29,14 +29,14 @@ gamma_outdir = "gamma_test_output/"
 #gamma_outdir = "gamma_test_output/"
 outdir = "gamma_test_output/summaries/"
 #gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600"]
-#gamma_list = ["0"]
-gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
+gamma_list = ["50"]
+#gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
 #gamma_list = ["800"]
 bafrawdata = {}
 patient_samples = {}
 
 onlyonepatient = True
-onepatient = "521"
+onepatient = "252"
 
 files = []
 for (__, __, f) in walk(BAF_dir):
@@ -48,6 +48,7 @@ for f in files:
     if (onlyonepatient and patient != onepatient):
         continue
     bafrawdata = {}
+    bafwt = {}
     bafnormal = readlink(BAF_dir + patient + "_Normal_BAF.txt")
     if not(isfile(bafnormal)):
         print "ERROR:  no Normal BAF file found for patient", patient
@@ -73,11 +74,15 @@ for f in files:
         pos = int(lvec[2])
         if chr not in bafrawdata:
             bafrawdata[chr] = {}
+        if chr not in bafwt:
+            bafwt[chr] = {}
         bafrawdata[chr][pos] = {}
+        bafwt[chr][pos] = value
     bafnormal.close()
 
     print "Reading BAF sample data for patient", patient
     baffile = open(baffile, "r")
+    allbafs = []
     for line in baffile:
         lvec = line.split()
         if line.find("Chr") != -1:
@@ -93,9 +98,11 @@ for f in files:
             sample = labels[p-1].split('"')[1].split('_')[1]
             try:
                 bafrawdata[chr][pos][sample] = float(lvec[p])
+                allbafs.append(float(lvec[p]))
             except:
                 continue
     baffile.close()
+    #lsl.createPrintAndSaveHistogram(allbafs, "", .01)
 
     summary_out = open(outdir + patient + "_gamma_summary.txt", "w")
     summary_out.write("gamma\t")
@@ -106,6 +113,7 @@ for f in files:
     summary_out.write("purity\t")
     summary_out.write("good matches\t")
     summary_out.write("mismatches\t")
+    summary_out.write("missed matches\t")
     summary_out.write("all unbalanced SCA, diploid\t")
     summary_out.write("all unbalanced SCA, tetraploid\t")
     summary_out.write("always-valid SCA, diploid\t")
@@ -114,6 +122,8 @@ for f in files:
     summary_out.write("mixed SCA, tetraploid\t")
     summary_out.write("always-mismatched SCA, diploid\t")
     summary_out.write("always-mismatched SCA, tetraploid\t")
+    summary_out.write("missed SCA, diploid\t")
+    summary_out.write("missed SCA, tetraploid\t")
     summary_out.write("\n")
 #    patient_file = open(outdir + "gamma_full_" + patient + ".txt", "w")
 #    patient_file.write("gamma\tsubdir\tchr\tstart\tend\tminNBafs\tavg\tstdev\tlist\n")
@@ -136,12 +146,11 @@ for f in files:
                 continue
             if chr not in isegs:
                 isegs[chr] = []
-            isegs[chr].append([int(start), int(end), {}, {}])
+            isegs[chr].append([int(start), int(end), {}])
         for subdir in subdirs:
             totsca = {}
             totsca["overall"] = set()
             osegs = {}
-            balsegs = {}
             ploidies = {}
             ploidyfile = root_dir + subdir + "/" + patient + "_fcn_ascat_ploidy.txt"
             if not(isfile(ploidyfile)):
@@ -177,21 +186,18 @@ for f in files:
                     continue
                 (__, sample, chr, start, end, nprobes, mbaf, logr, nA, nB) = line.split()
                 sample = sample.split('"')[1].split("_")[1]
-                if sample not in osegs:
-                    osegs[sample] = {}
-                    totsca[sample] = set()
                 start = int(start)
                 end = int(end)
                 if (nA == nB):
-                    if chr not in balsegs[sample]:
-                        balsegs[sample][chr]= []
-                    balsegs[sample][chr].append((start, end))
-                else:
-                    if chr not in osegs[sample]:
-                        osegs[sample][chr] = []
-                    osegs[sample][chr].append((start, end))
-                    totsca[sample].add((chr, start, end))
-                    totsca["overall"].add((chr, start, end))
+                    continue
+                if sample not in osegs:
+                    osegs[sample] = {}
+                    totsca[sample] = set()
+                if chr not in osegs[sample]:
+                    osegs[sample][chr] = []
+                osegs[sample][chr].append((start, end))
+                totsca[sample].add((chr, start, end))
+                totsca["overall"].add((chr, start, end))
             for sample in osegs:
                 for chr in osegs[sample]:
                     for oseg in osegs[sample][chr]:
@@ -199,91 +205,91 @@ for f in files:
                         for iseg in isegs[chr]:
                             if (iseg[0] >= oseg[0] and iseg[1] <= oseg[1]):
                                 if subdir not in iseg[2]:
-                                    iseg[2][subdir] = []
-                                if sample not in iseg[2][subdir]:
-                                    iseg[2][subdir].append(sample)
-            for sample in balsegs:
-                for chr in balsegs[sample]:
-                    for balseg in balsegs[sample][chr]:
-#                        print balseg
-                        for iseg in isegs[chr]:
-                            if (iseg[0] >= balseg[0] and iseg[1] <= balseg[1]):
-                                if subdir not in iseg[3]:
-                                    iseg[3][subdir] = []
-                                if sample not in iseg[3][subdir]:
-                                    iseg[3][subdir].append(sample)
-#                                    print "Just added sample", sample, "to", iseg
-#                                    print "balseg is", balseg
+                                    iseg[2][subdir] = set()
+                                iseg[2][subdir].add(sample)
             evidence = {}
+            balanced_evidence = {}
             for chr in isegs:
                 evidence[chr] = {}
+                balanced_evidence[chr] = {}
                 for iseg in isegs[chr]:
                     isegrange = (iseg[0], iseg[1])
-                    if subdir not in iseg[2]:
-                        continue
-                    samples = iseg[2][subdir]
+                    samples = []
+                    if subdir in iseg[2]:
+                        samples = list(iseg[2][subdir])
                     samples.sort()
                     evidence[chr][isegrange] = {}
+                    balanced_evidence[chr][isegrange] = {}
+                    wtmatch = 0
                     for pos in bafrawdata[chr]:
                         if pos >= iseg[0] and pos <= iseg[1]:
-                            for sample1 in range(0, len(samples)-1):
-                                for sample2 in range(sample1+1, len(samples)):
-                                    s1 = samples[sample1]
-                                    s2 = samples[sample2]
+                            rdsamples = bafrawdata[chr][pos].keys()
+                            wt = bafwt[chr][pos]
+                            if wt > 0.48 and wt < 0.55:
+                                wt = 0.5
+                            for sample1 in range(0, len(rdsamples)-1):
+                                for sample2 in range(sample1+1, len(rdsamples)):
+                                    s1 = rdsamples[sample1]
+                                    s2 = rdsamples[sample2]
                                     try:
                                         val1 = bafrawdata[chr][pos][s1]
                                         val2 = bafrawdata[chr][pos][s2]
                                     except:
                                         continue
-                                    if val1 > 0.48 and val1 < 0.52:
+                                    if val1 > 0.42 and val1 < 0.64:
                                         continue
-                                    if val2 > 0.48 and val2 < 0.52:
+                                    if val2 > 0.42 and val2 < 0.64:
                                         continue
-                                    #This section is redundant with the above bit that appends the sample to iseg[2]:
-#                                    found = False
-#                                    if s1 not in osegs or s2 not in osegs:
-#                                        foo()
-#                                        continue
-#                                    if chr not in osegs[s1] or chr not in osegs[s2]:
-#                                       bar()
-#                                       continue
-#                                    for s1seg in osegs[s1][chr]:
-#                                        if pos >= s1seg[0] and pos <= s1seg[1]:
-#                                            found = True
-#                                    if found==False:
-#                                        foo()
-#                                        continue
-#                                    found = False
-#                                    for s2seg in osegs[s2][chr]:
-#                                        if pos >= s2seg[0] and pos <= s2seg[1]:
-#                                            found = True
-#                                    if found==False:
-#                                        continue
-                                    segpair = (samples[sample1], samples[sample2])
-                                    if segpair not in evidence[chr][isegrange]:
-                                        evidence[chr][isegrange][segpair] = [0, 0]
-                                    if (val1 > 0.5 and val2 > 0.5) or (val1 < 0.5 and val2 < 0.5):
-                                        evidence[chr][isegrange][segpair][0] += 1
-                                        #print "match", val1, val2
+                                    segpair = (s1, s2)
+                                    if s1 in samples and s2 in samples:
+                                        #both are unbalanced!  Put this in 'evidence'
+                                        if segpair not in evidence[chr][isegrange]:
+                                            evidence[chr][isegrange][segpair] = [0, 0]
+                                        if (val1 > 0.5 and val2 > 0.5 and wt > 0.55) or (val1 < 0.5 and val2 < 0.5 and wt < 0.48):
+                                            #print "Everyone matched."
+                                            continue
+                                        elif (val1 > 0.5 and val2 > 0.5) or (val1 < 0.5 and val2 < 0.5):
+                                            evidence[chr][isegrange][segpair][0] += 1
+                                            #print "match", val1, val2
+                                        elif wt > 0.48 and wt < 0.55:
+                                            evidence[chr][isegrange][segpair][1] += 1
+                                            #print "antimatch", val1, val2
+                                        else:
+                                            #The wt matched both vals.
+                                            wtmatch += 1
                                     else:
-                                        evidence[chr][isegrange][segpair][1] += 1
-                                        #print "antimatch", val1, val2
+                                        # One or both are balanced.  Put in 'balanced_evidence'.
+                                        if segpair not in balanced_evidence[chr][isegrange]:
+                                            balanced_evidence[chr][isegrange][segpair] = [0, 0]
+                                        if (val1 > 0.5 and val2 > 0.5) or (val1 < 0.5 and val2 < 0.5):
+                                            balanced_evidence[chr][isegrange][segpair][0] += 1
+                                            #print "match", val1, val2
+                                        else:
+                                            balanced_evidence[chr][isegrange][segpair][1] += 1
+                                            #print "antimatch", val1, val2
             allpercs = []
+            allratios = []
             allpercsminus = {}
-            goodsamples = {}
-            badsamples = {}
-            goodsca = {}
-            badsca = {}
+            good_samples = {}
+            bad_samples = {}
+            balanced_samples = {}
+            good_sca = {}
+            bad_sca = {}
+            balanced_sca = {}
             for sample in osegs:
                 allpercsminus[sample] = []
-                goodsamples[sample] = 0
-                badsamples[sample] = 0
-                goodsca[sample] = set()
-                badsca[sample] = set()
-            goodsamples["overall"] = 0
-            badsamples["overall"] = 0
-            goodsca["overall"] = set()
-            badsca["overall"] = set()
+                good_samples[sample] = 0
+                bad_samples[sample] = 0
+                balanced_samples[sample] = 0
+                good_sca[sample] = set()
+                bad_sca[sample] = set()
+                balanced_sca[sample] = set()
+            good_samples["overall"] = 0
+            bad_samples["overall"] = 0
+            balanced_samples["overall"] = 0
+            good_sca["overall"] = set()
+            bad_sca["overall"] = set()
+            balanced_sca["overall"] = set()
             for chr in evidence:
                 for isegrange in evidence[chr]:
                     segpercs = []
@@ -304,55 +310,74 @@ for f in files:
                         perc = match/tot
                         if (antimatch>match):
                             perc = antimatch/tot
-                        allpercs.append(perc)
+                        #allpercs.append(perc)
+                        #allratios.append((match, antimatch))
                         segpercs.append(perc)
                         for sampIgnore in osegs:
                             if sampIgnore not in segpair:
                                 allpercsminus[sampIgnore].append(perc)
-                        if perc<0.8:
+                        if perc<0.95:
                             #print "bad:", chrsegrange
-                            badsamples[segpair[0]] += 1
-                            badsamples[segpair[1]] += 1
-                            badsamples["overall"] += 1
-                            badsca[segpair[0]].add(chrsegrange)
-                            badsca[segpair[1]].add(chrsegrange)
-                            badsca["overall"].add(chrsegrange)
+                            bad_samples[segpair[0]] += 1
+                            bad_samples[segpair[1]] += 1
+                            bad_samples["overall"] += 1
+                            bad_sca[segpair[0]].add(chrsegrange)
+                            bad_sca[segpair[1]].add(chrsegrange)
+                            bad_sca["overall"].add(chrsegrange)
                         else:
                             #print "good:", chrsegrange
-                            goodsamples[segpair[0]] += 1
-                            goodsamples[segpair[1]] += 1
-                            goodsamples["overall"] += 1
-                            goodsca[segpair[0]].add(chrsegrange)
-                            goodsca[segpair[1]].add(chrsegrange)
-                            goodsca["overall"].add(chrsegrange)
-#                    if len(segpercs) < 1:
-#                        patient_file.write("[None]\t[None]")
-#                    else:
-#                        patient_file.write(str(minnbaf) + "\t")
-#                        patient_file.write(str(numpy.average(segpercs)) + "\t")
-#                        patient_file.write(str(numpy.std(segpercs)))
-#                        for perc in segpercs:
-#                            patient_file.write("\t" + str(perc))
-#                    patient_file.write("\n")
-            for samp in goodsamples:
+                            good_samples[segpair[0]] += 1
+                            good_samples[segpair[1]] += 1
+                            good_samples["overall"] += 1
+                            good_sca[segpair[0]].add(chrsegrange)
+                            good_sca[segpair[1]].add(chrsegrange)
+                            good_sca["overall"].add(chrsegrange)
+                    for segpair in balanced_evidence[chr][isegrange]:
+                        [match, antimatch] = balanced_evidence[chr][isegrange][segpair]
+                        tot = match+antimatch
+                        if tot < 20:
+                            continue
+                        minnbaf = min(minnbaf, tot)
+                        perc = match/tot
+                        if (antimatch>match):
+                            perc = antimatch/tot
+                        #print match, antimatch, tot, perc
+                        allpercs.append(perc)
+                        if perc>=0.95:
+                            #print "balanced_:", chrsegrange
+                            balanced_samples[segpair[0]] += 1
+                            balanced_samples[segpair[1]] += 1
+                            balanced_samples["overall"] += 1
+                            balanced_sca[segpair[0]].add(chrsegrange)
+                            balanced_sca[segpair[1]].add(chrsegrange)
+                            balanced_sca["overall"].add(chrsegrange)
+            lsl.createPrintAndSaveHistogram(allpercs, "", .001)
+            balanced_lengths = {}
+            for samp in good_samples:
+                balanced_lengths[samp] = []
                 validatedsca = 0
                 mixedsca = 0
                 invalidsca = 0
+                balancedsca = 0
                 sumsca = 0
                 for chrsegpair in totsca[samp]:
                     length = chrsegpair[2] - chrsegpair[1]
                     #print length
                     sumsca += length
-                for chrsegpair in goodsca[samp]:
+                for chrsegpair in good_sca[samp]:
                     length = chrsegpair[2] - chrsegpair[1]
-                    if chrsegpair in badsca[samp]:
+                    if chrsegpair in bad_sca[samp]:
                         mixedsca += length
                     else:
                         validatedsca += length
-                for chrsegpair in badsca[samp]:
+                for chrsegpair in bad_sca[samp]:
                     length = chrsegpair[2] - chrsegpair[1]
-                    if chrsegpair not in goodsca[samp]:
+                    if chrsegpair not in good_sca[samp]:
                         invalidsca += length
+                for chrsegpair in balanced_sca[samp]:
+                    length = chrsegpair[2] - chrsegpair[1]
+                    balancedsca += length
+                    balanced_lengths[samp].append(length)
                 summary_out.write(gamma + "\t")
                 summary_out.write(patient + "\t")
                 summary_out.write(samp + "\t")
@@ -363,22 +388,24 @@ for f in files:
                 else:
                     summary_out.write("---\t")
                     summary_out.write("---\t")
-                summary_out.write(str(goodsamples[samp]) + "\t")
-                summary_out.write(str(badsamples[samp]) + "\t")
+                summary_out.write(str(good_samples[samp]) + "\t")
+                summary_out.write(str(bad_samples[samp]) + "\t")
+                summary_out.write(str(balanced_samples[samp]) + "\t")
                 if subdir == "tetraploid":
                     summary_out.write("\t")
                 summary_out.write(str(sumsca) + "\t\t")
                 summary_out.write(str(validatedsca) + "\t\t")
                 summary_out.write(str(mixedsca) + "\t\t")
-                summary_out.write(str(invalidsca))
+                summary_out.write(str(invalidsca) + "\t\t")
+                summary_out.write(str(balancedsca) + "\t\t")
                 summary_out.write("\n")
             #lsl.createPrintAndSaveHistogram(allpercs, outdir + patient + "_" + str(gamma) + ".txt", .001, xdata="Percent match or anti-match")
 #            print "Bad samples:"
-#            print badsamples
+#            print bad_samples
 #            print "Good samples:"
-#            print goodsamples
+#            print good_samples
 #                for sampIgnore in allpercsminus:
-#                    if badsamples[sampIgnore] < 10 or goodsamples[sampIgnore] / badsamples[sampIgnore] > 0.8:
+#                    if bad_samples[sampIgnore] < 10 or good_samples[sampIgnore] / bad_samples[sampIgnore] > 0.8:
 #                        continue
 #                    print "Histogram without any data from sample", sampIgnore, ", which had more bad samples than good:"
 #                    lsl.createPrintAndSaveHistogram(allpercsminus[sampIgnore], "", 0.001, xdata="Percent match or anti-match")
