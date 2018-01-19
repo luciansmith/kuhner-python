@@ -39,7 +39,7 @@ def getKernelWidth(data, binwidth):
     highquart, lowquart = numpy.percentile(data, [75, 25])
     minsig = min(numpy.std(data), (highquart-lowquart)/1.34)
     minsig = max(minsig, 20*binwidth)
-    return 1*minsig*pow(len(data), -0.2)
+    return 2*minsig*pow(len(data), -0.2)
 
 def combineHistograms(newhist, fullhist, num, weight=1):
     for val in newhist:

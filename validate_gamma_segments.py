@@ -23,8 +23,8 @@ import lucianSNPLibrary as lsl
 #Use this value to set up whether to use the 'rejoined' segments or not
 
 BAF_dir = "gamma_template/"
-#subdirs = ["diploid", "tetraploid"]
-subdirs = ["diploid"]
+subdirs = ["diploid", "tetraploid"]
+#subdirs = ["diploid"]
 subdirdict = {}
 for subdir in subdirs:
     subdirdict[subdir] = []
@@ -33,14 +33,16 @@ gamma_outdir = "gamma_test_output/"
 outdir = "gamma_test_output/summaries/"
 #gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600"]
 #gamma_list = ["50"]
-gamma_list = ["Test"]
-#gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
+#gamma_list = ["Test"]
+gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
 #gamma_list = ["800"]
 bafrawdata = {}
 patient_samples = {}
 
-onlyonepatient = False
-onepatient = "521"
+showgraphs = False
+onlyonepatient = True
+onepatient = "908"
+twopatientcompare = False
 twopatients = [("360", "672")]
 #twopatients = [("521", "252")]
 #samples from patient 360:
@@ -50,12 +52,17 @@ mirror_percentages = False
 
 #median for patient 521:  .5154885
 #Reasonable cutoffs for 521: 0.48 and 0.563 (about 750k left each)
-#Another reasoanble cutoff:  0.45 and 0.6  (about 215k left each)
+#A more agressive but balanced cutoff:  0.45 and 0.6  (about 215k left each)
+#The best cutoff is no cutoff at all:  0.5 and 0.5
 bafErrorBarLow = 0.5
 bafErrorBarHigh = 0.5
 
+print "Using BAF filtering for comparison from ", str(bafErrorBarLow), "to", str(bafErrorBarHigh)
+
 bafWtLow = 0.4
 bafWtHigh = 0.65
+
+#original cutoff: 0.35 to 0.65, or 0.15 out from 0.5.  The above values account for dye bias.
 
 def readBafNormal(patient):
     bafrawdata = {}
@@ -96,6 +103,7 @@ def readBafNormal(patient):
 
 def readBafSamples(baffile, bafrawdata):
     labels = []
+    allsamples = []
     baffile = readlink(BAF_dir + patient + "_BAF.txt")
     if not(isfile(baffile)):
         print "ERROR:  no BAF file found for patient", patient
@@ -110,6 +118,8 @@ def readBafSamples(baffile, bafrawdata):
         lvec = line.split()
         if line.find("Chr") != -1:
             labels = lvec
+            for l in range(2,len(labels)):
+                allsamples.append(labels[l].split('"')[1])
             continue
         chr = lvec[1].split('"')[1]
         pos = int(lvec[2])
@@ -129,11 +139,12 @@ def readBafSamples(baffile, bafrawdata):
             except:
                 continue
     baffile.close()
-    print "Sample CNVI bafs for normal CNVIs that were 0.5 in wt:"
-    lsl.createPrintAndSaveHistogram(allbafs["cnvi"], "", .01)
+    if showgraphs:
+        print "Sample CNVI bafs for normal CNVIs that were 0.5 in wt:"
+        lsl.createPrintAndSaveHistogram(allbafs["cnvi"], "", .01)
 #    print "all other bafs:"
 #    lsl.createPrintAndSaveHistogram(allbafs["normal"], "", .01)
-    return allbafs
+    return allbafs, allsamples
 
 def compareNormalBafs(bafwt, patient1, patient2):
     scatterx = []
@@ -371,10 +382,20 @@ def collectMatchInfo(isegs, bafrawdata, subdir):
     balanced_evidence = {}
     scatter_x = {}
     scatter_y = {}
-    keys = ("in-patient balanced-balanced", "in-patient balanced-unbalanced", "in-patient unbalanced-unbalanced", "cross-patient balanced-balanced", "cross-patient balanced-unbalanced", "cross-patient unbalanced-unbalanced")
-    for key in keys:
-        scatter_x[key] = []
-        scatter_y[key] = []
+    key1s = ["in-patient"]
+    if twopatientcompare:
+        key1s = ("in-patient", "cross-patient")
+    key2s = ("balanced-balanced", "balanced-unbalanced", "unbalanced-unbalanced")
+    key3s = ("no filter", "medium filter", "high filter")
+    for key1 in key1s:
+        scatter_x[key1] = {}
+        scatter_y[key1] = {}
+        for key2 in key2s:
+            scatter_x[key1][key2] = {}
+            scatter_y[key1][key2] = {}
+            for key3 in key3s:
+                scatter_x[key1][key2][key3] = []
+                scatter_y[key1][key2][key3] = []
     for chr in isegs:
         evidence[chr] = {}
         balanced_evidence[chr] = {}
@@ -385,10 +406,8 @@ def collectMatchInfo(isegs, bafrawdata, subdir):
                 unbal_samples = iseg[2][subdir]
             evidence[chr][isegrange] = {}
             balanced_evidence[chr][isegrange] = {}
-            wtmatch = 0
             for pos in bafrawdata[chr]:
                 if pos >= iseg[0] and pos <= iseg[1]:
-                    wt = bafwt[chr][pos]
                     rdsamples = bafrawdata[chr][pos].keys()
                     rdsamples.sort()
                     for sample1 in range(0, len(rdsamples)-1):
@@ -398,19 +417,25 @@ def collectMatchInfo(isegs, bafrawdata, subdir):
                             try:
                                 val1 = bafrawdata[chr][pos][s1]
                                 val2 = bafrawdata[chr][pos][s2]
-                                key = ""
+                                key1 = "cross-patient"
                                 if (s1 in onepatientsamples and s2 in onepatientsamples) or (s1 not in onepatientsamples and s2 not in onepatientsamples):
-                                    key = "in-patient "
-                                else:
-                                    key = "cross-patient "
+                                    key1 = "in-patient"
                                 if s1 not in unbal_samples and s2 not in unbal_samples:
-                                    key = key + "balanced-balanced"
+                                    key2 = "balanced-balanced"
                                 elif s1 in unbal_samples and s2 in unbal_samples:
-                                    key = key + "unbalanced-unbalanced"
+                                    key2 = "unbalanced-unbalanced"
                                 else:
-                                    key = key + "balanced-unbalanced"
-                                scatter_x[key].append(val2)
-                                scatter_y[key].append(val1)
+                                    key2 = "balanced-unbalanced"
+                                for key3 in key3s:
+                                    if key3 == "no filter":
+                                        scatter_x[key1][key2][key3].append(val2)
+                                        scatter_y[key1][key2][key3].append(val1)
+                                    if key3 == "medium filter" and (val1<0.48 or val1>0.563) and (val2<0.48 or val2>0.563):
+                                        scatter_x[key1][key2][key3].append(val2)
+                                        scatter_y[key1][key2][key3].append(val1)
+                                    if key3 == "high filter" and (val1<0.45 or val1>0.6) and (val2<0.45 or val2>0.6):
+                                        scatter_x[key1][key2][key3].append(val2)
+                                        scatter_y[key1][key2][key3].append(val1)
                             except:
                                 continue
                             if val1 > bafErrorBarLow and val1 < bafErrorBarHigh:
@@ -430,10 +455,6 @@ def collectMatchInfo(isegs, bafrawdata, subdir):
                                     #print "antimatch", val1, val2
                             else:
                                 # One or both are balanced.  Put in 'balanced_evidence'.
-                                if (val1 > 0.5 and val2 > 0.5 and wt > bafErrorBarHigh) or (val1 < 0.5 and val2 < 0.5 and wt < bafErrorBarLow):
-                                    #print "Everyone matched."
-                                    wtmatch += 1
-                                    continue
                                 if segpair not in balanced_evidence[chr][isegrange]:
                                     balanced_evidence[chr][isegrange][segpair] = [0, 0]
                                 if (val1 > 0.5 and val2 > 0.5) or (val1 < 0.5 and val2 < 0.5):
@@ -442,30 +463,35 @@ def collectMatchInfo(isegs, bafrawdata, subdir):
                                 else:
                                     balanced_evidence[chr][isegrange][segpair][1] += 1
                                     #print "antimatch", val1, val2
-    for key in keys:
-        print "Value comparison for", key, "with", str(len(scatter_x[key])), "data points."
-        if len(scatter_x[key]) > 10000000:
-            print "Too many data points: reducing to 10%"
-            sx2 = []
-            sy2 = []
-            for xval in range(0, int(numpy.floor(len(scatter_x[key])/10))):
-                sx2.append(scatter_x[key][xval*10])
-                sy2.append(scatter_y[key][xval*10])
-            scatter_x[key] = sx2
-            scatter_y[key] = sy2
+    if showgraphs:
+        for key1 in key1s:
+            for key2 in key2s:
+                for key3 in key3s:
+                    print "Value comparison for", key1, ",", key2, ",", key3, "with", str(len(scatter_x[key1][key2][key3])), "data points."
 
-        plt.scatter(scatter_x[key], scatter_y[key], marker=".")
-        plt.gcf().set_size_inches(5,5)
-        plt.show()
-        plt.close()
+                    if key3 == "no filter":
+                        if len(scatter_x[key1][key2][key3]) > 10000000:
+                            print "Too many data points: reducing to 10%"
+                            sx2 = []
+                            sy2 = []
+                            for xval in range(0, int(numpy.floor(len(scatter_x[key1][key2][key3])/10))):
+                                sx2.append(scatter_x[key1][key2][key3][xval*10])
+                                sy2.append(scatter_y[key1][key2][key3][xval*10])
+                            scatter_x[key1][key2][key3] = sx2
+                            scatter_y[key1][key2][key3] = sy2
 
-        heatmap, xedges, yedges = numpy.histogram2d(scatter_x[key], scatter_y[key], bins=50)
-        extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-        plt.clf()
-        plt.imshow(heatmap.T, extent=extent, origin='lower')
-        plt.gcf().set_size_inches(5,5)
-        plt.show()
-        plt.close()
+                        plt.scatter(scatter_x[key1][key2][key3], scatter_y[key1][key2][key3], marker=".")
+                        plt.gcf().set_size_inches(5,5)
+                        plt.show()
+                        plt.close()
+
+                    heatmap, xedges, yedges = numpy.histogram2d(scatter_x[key1][key2][key3], scatter_y[key1][key2][key3], bins=50)
+                    extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+                    plt.clf()
+                    plt.imshow(heatmap.T, extent=extent, origin='lower')
+                    plt.gcf().set_size_inches(5,5)
+                    plt.show()
+                    plt.close()
     return (evidence, balanced_evidence)
 
 
@@ -524,7 +550,7 @@ def processEvidence(evidence, balanced_evidencek, osegs, allsamples):
                     unbalpercs_inpatient.append(perc)
                 else:
                     unbalpercs_crosspatient.append(perc)
-                if perc<0.95:
+                if perc<0.95 or perc<0.05:
                     #print "bad:", chrsegrange
                     bad_samples[segpair[0]] += 1
                     bad_samples[segpair[1]] += 1
@@ -564,7 +590,7 @@ def processEvidence(evidence, balanced_evidencek, osegs, allsamples):
                     crosscheck_percs.append(perc)
                 else:
                     allbal_percs.append(perc)
-                if perc>=0.95:
+                if perc>=0.95 or perc <= 0.05:
                     #print "missed_:", chrsegrange
                     missed_samples[segpair[0]] += 1
                     missed_samples[segpair[1]] += 1
@@ -572,33 +598,36 @@ def processEvidence(evidence, balanced_evidencek, osegs, allsamples):
                     missed_sca[segpair[0]].add(chrsegrange)
                     missed_sca[segpair[1]].add(chrsegrange)
                     missed_sca["overall"].add(chrsegrange)
-    print "All percent matches for all balanced segments:"
-    lsl.createPrintAndSaveHistogram(balanced_percs, "", .001)
-    print "Only in-patient percent matches for all balanced segments:"
-    lsl.createPrintAndSaveHistogram(balpercs_inpatient, "", .001)
-    print "Only cross-patient percent matches for all balanced segments:"
-    lsl.createPrintAndSaveHistogram(balpercs_crosspatient, "", .001)
+    if showgraphs:
+        print "All percent matches for all balanced-to-anything segments:"
+        lsl.createPrintAndSaveHistogram(balanced_percs, "", .001)
+        if twopatientcompare:
+            print "Only in-patient percent matches for all balanced-to-anything segments:"
+            lsl.createPrintAndSaveHistogram(balpercs_inpatient, "", .001)
+            print "Only cross-patient percent matches for all balanced-to-anything segments:"
+            lsl.createPrintAndSaveHistogram(balpercs_crosspatient, "", .001)
 
-    print "All percent matches for all unbalanced segments:"
-    lsl.createPrintAndSaveHistogram(unbalanced_percs, "", .001)
-    print "Only in-patient percent matches for all unbalanced segments:"
-    lsl.createPrintAndSaveHistogram(unbalpercs_inpatient, "", .001)
-    print "Only cross-patient percent matches for all unbalanced segments:"
-    lsl.createPrintAndSaveHistogram(unbalpercs_crosspatient, "", .001)
+    #    print "Number of bases/useable SNPs for unbalanced segments:"
+    #    lsl.createPrintAndSaveHistogram(ev_ratios, "", 0.1)
+    #    print "Mean of unbalanced segment ratios:", numpy.mean(ev_ratios)
+    #    print "Median of unbalanced segment ratios:", numpy.median(ev_ratios)
+    #    print "Number of bases/useable SNPs for balanced segments:"
+    #    lsl.createPrintAndSaveHistogram(balev_ratios, "", 0.1)
+    #    print "Mean of balanced segment ratios:", numpy.mean(balev_ratios)
+    #    print "Median of balanced segment ratios:", numpy.median(balev_ratios)
 
-#    print "Number of bases/useable SNPs for unbalanced segments:"
-#    lsl.createPrintAndSaveHistogram(ev_ratios, "", 0.1)
-#    print "Mean of unbalanced segment ratios:", numpy.mean(ev_ratios)
-#    print "Median of unbalanced segment ratios:", numpy.median(ev_ratios)
-#    print "Number of bases/useable SNPs for balanced segments:"
-#    lsl.createPrintAndSaveHistogram(balev_ratios, "", 0.1)
-#    print "Mean of balanced segment ratios:", numpy.mean(balev_ratios)
-#    print "Median of balanced segment ratios:", numpy.median(balev_ratios)
+        print "Percent matches for all balanced-to-unbalanced checks:"
+        lsl.createPrintAndSaveHistogram(crosscheck_percs, "", .001)
+        print "Percent matches for all balanced-to-balanced checks:"
+        lsl.createPrintAndSaveHistogram(allbal_percs, "", .001)
 
-    print "Percent matches for all balanced-to-unbalanced checks:"
-    lsl.createPrintAndSaveHistogram(crosscheck_percs, "", .001)
-    print "Percent matches for all balanced-to-balanced checks:"
-    lsl.createPrintAndSaveHistogram(allbal_percs, "", .001)
+        print "All percent matches for unbalanced-to-unbalanced segments:"
+        lsl.createPrintAndSaveHistogram(unbalanced_percs, "", .001)
+        if twopatientcompare:
+            print "Only in-patient percent matches for unbalanced-to-unbalanced segments:"
+            lsl.createPrintAndSaveHistogram(unbalpercs_inpatient, "", .001)
+            print "Only cross-patient percent matches for unbalanced-to-unbalanced segments:"
+            lsl.createPrintAndSaveHistogram(unbalpercs_crosspatient, "", .001)
 
     return (good_samples, bad_samples, missed_samples, good_sca, bad_sca, missed_sca)
 
@@ -621,17 +650,17 @@ for f in files:
     if (onlyonepatient and patient != onepatient):
         continue
 
-for twopatients in twopatients:
-#    bafrawdata, bafwt = readBafNormal(patient)
-#    allbafs = readBafSamples(patient, bafrawdata)
+#for twopatients in twopatients:
+    bafrawdata, bafwt = readBafNormal(patient)
 #    if (True):
 #        #only check bafs
 #        continue
-    patient1, patient2 = twopatients
-    patient = patient1 + patient2
-    bafrawdata, bafwt, allbafs, allwtbafs, allsamples = combineTwoBafs(patient1, patient2)
+#    patient1, patient2 = twopatients
+#    patient = patient1 + patient2
+#    bafrawdata, bafwt, allbafs, allwtbafs, allsamples = combineTwoBafs(patient1, patient2)
     if (len(bafrawdata)==0):
         continue
+    allbafs, allsamples = readBafSamples(patient, bafrawdata)
 
     summary_out = open(outdir + patient + "_gamma_summary.txt", "w")
     writeSummaryFileHeader(summary_out)
@@ -693,9 +722,12 @@ for twopatients in twopatients:
                     length = chrsegpair[2] - chrsegpair[1]
                     balancedsca += length
                     missed_lengths[samp].append(length)
+                samponly = samp
+                if samponly.find("_") != -1:
+                    samponly = samponly.split("_")[1]
                 summary_out.write(gamma + "\t")
                 summary_out.write(patient + "\t")
-                summary_out.write(samp + "\t")
+                summary_out.write(samponly + "\t")
                 summary_out.write(subdir + "\t")
                 if samp in ploidies:
                     summary_out.write(ploidies[samp] + "\t")
