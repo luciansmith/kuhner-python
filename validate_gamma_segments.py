@@ -13,6 +13,7 @@ from os import walk
 from os import path
 from os import readlink
 from os.path import isfile
+from copy import deepcopy
 
 import numpy
 import math
@@ -40,10 +41,17 @@ bafrawdata = {}
 patient_samples = {}
 
 showgraphs = False
+
 onlyonepatient = True
-onepatient = "908"
+onepatient = "575"
+
 twopatientcompare = False
 twopatients = [("360", "672")]
+
+compareEverythingToGamma100 = True
+
+compareXiaohongSegments = True
+
 #twopatients = [("521", "252")]
 #samples from patient 360:
 onepatientsamples = ["360_21620", "360_18370", "360_18354", "360_18358", "360_21608", "360_21606", "360_21604", "360_21602", "360_18356", "360_21600", "360_24412", "360_18350", "360_18444", "360_18446", "360_18352", "360_18366", "360_21618", "360_21598", "360_18362", "360_21596", "360_21614", "360_21594", "360_21616", "360_21592", "360_21610", "360_21612", "360_24409", "360_24810", "360_24813", "360_18372"]
@@ -279,31 +287,56 @@ def combineTwoBafs(patient1, patient2):
     bafwt = bafwt[patient1]
     return bafrawdata, bafwt, allbafs, allwtbafs, allsamples
 
-def readCopynumberFile(patient):
+#cnfile = open(outdir + "copynumber_summaries.txt", "w")
+#cnfile.write("patient\tg0\tg0\tg50\tg50\tg100\tg100\tg150\tg150\n")
+def readCopynumberFiles(patient, g):
     isegs = {}
-    isegfilename = root_dir + patient + "_copynumber_segments.txt"
-    if not(isfile(isegfilename)):
-        print "copynumber not run for patient", patient, "gamma", gamma
-        return isegs
-    isegfile = open(isegfilename, "r")
-    for line in isegfile:
-        if line.find("Chr") != -1:
+    total_segments = {}
+    total_seglengths = {}
+#    cnfile.write(patient)
+    glist = ("0", "50", "100")
+    if len(g)>0:
+        glist = [g]
+    for gamma in glist:
+        isegs[gamma] = {}
+        total_segments[gamma] = 0
+        total_seglengths[gamma] = 0
+        root_dir = gamma_outdir + "pASCAT_input_g" + gamma + "/"
+        isegfilename = root_dir + patient + "_copynumber_segments.txt"
+        if not(isfile(isegfilename)):
+#            cnfile.write("\t\t")
             continue
-        (chr, start, end, nlogr, nbaf) = line.split()
-        if nbaf <10:
-            continue
-        if chr not in isegs:
-            isegs[chr] = []
-        isegs[chr].append([int(start), int(end), {}])
+        isegfile = open(isegfilename, "r")
+        for line in isegfile:
+            if line.find("Chr") != -1:
+                continue
+            (chr, start, end, nlogr, nbaf) = line.split()
+            if nbaf <10:
+                continue
+            start = int(start)
+            end = int(end)
+            total_segments[gamma] += 1
+            total_seglengths[gamma] += end-start
+            if chr not in isegs[gamma]:
+                isegs[gamma][chr] = []
+            isegs[gamma][chr].append([start, end, {}])
+#        cnfile.write("\t" + str(total_segments[gamma]))
+#        cnfile.write("\t" + str(total_seglengths[gamma]))
+#    cnfile.write("\n")
+#    print total_segments
+#    print total_seglengths
+    if len(g)>0:
+        return isegs[g]
     return isegs
 
-def writeSummaryFileHeader(summary_out):
+def writeSummaryFileHeader(summary_out, ASC_not_X):
     summary_out.write("gamma\t")
     summary_out.write("patient\t")
     summary_out.write("sample\t")
-    summary_out.write("subdir\t")
-    summary_out.write("ploidy\t")
-    summary_out.write("purity\t")
+    if ASC_not_X:
+        summary_out.write("subdir\t")
+        summary_out.write("ploidy\t")
+        summary_out.write("purity\t")
     summary_out.write("good matches\t")
     summary_out.write("mismatches\t")
     summary_out.write("missed matches\t")
@@ -343,9 +376,11 @@ def readPurityFile(purityfile):
     pf.close()
     return purities
 
-def readSegmentationFile(ascsegfile):
+def readSegmentationFile(ascsegfile, allsamples):
     totsca = {}
     totsca["overall"] = set()
+    for sample in allsamples:
+        totsca[sample] = set()
     osegs = {}
     for line in open(ascsegfile):
         if line.find("Chr") != -1:
@@ -358,7 +393,6 @@ def readSegmentationFile(ascsegfile):
             continue
         if sample not in osegs:
             osegs[sample] = {}
-            totsca[sample] = set()
         if chr not in osegs[sample]:
             osegs[sample][chr] = []
         osegs[sample][chr].append((start, end))
@@ -366,11 +400,56 @@ def readSegmentationFile(ascsegfile):
         totsca["overall"].add((chr, start, end))
     return (osegs, totsca)
 
+def addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end):
+    svec = full_sample.split("-")
+    patient = svec[0]
+    sample = svec[1]
+    if patient not in Xiaohong_segments:
+        Xiaohong_segments[patient] = {}
+    if sample not in Xiaohong_segments[patient]:
+        Xiaohong_segments[patient][sample] = {}
+    if chr not in Xiaohong_segments[patient][sample]:
+        Xiaohong_segments[patient][sample][chr] = []
+    start = int(start)
+    end = int(end)
+    Xiaohong_segments[patient][sample][chr].append((start, end))
+
+def readXiaohongLOHFile(f, Xiaohong_segments):
+    xfile = open(f, "r")
+    for line in xfile:
+        (__, full_sample, __, chr, start, end) = line.split()
+        addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end)
+    xfile.close()
+
+def readXiaohongCopynumFile(f, Xiaohong_segments):
+    xfile = open(f, "r")
+    for line in xfile:
+        (__, full_sample, __, chr, start, end, __, __, __, code) = line.split()
+        if code == "34" or code=="41":
+            #balanced gain or loss: continue
+            continue
+        addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end)
+    xfile.close()
+
+def readAllXiaohongSegmentation():
+    print "Reading all Xiaohong segmentation."
+    Xiaohong_segments = {}
+    files = []
+    for (__, __, f) in walk("Xiaohong_WGS_segmentation/"):
+        files += f
+    for f in files:
+        if f.find("read") == -1:
+            continue
+        if f.find("LOH"):
+            readXiaohongLOHFile(f, Xiaohong_segments)
+        else:
+            readXiaohongCopynumFile(f, Xiaohong_segments)
+    return Xiaohong_segments
+
 def markInputSegmentsWithUnbalancedSamples(isegs, osegs, subdir):
     for sample in osegs:
         for chr in osegs[sample]:
             for oseg in osegs[sample][chr]:
-#                        print oseg
                 for iseg in isegs[chr]:
                     if (iseg[0] >= oseg[0] and iseg[1] <= oseg[1]):
                         if subdir not in iseg[2]:
@@ -640,112 +719,58 @@ def printInfoAbout(missedsca, bafrawdata):
                 if pos >= start and pos <= end:
                     print bafrawdata[chr][pos]
 
-files = []
-for (__, __, f) in walk(BAF_dir):
-    files += f
-for f in files:
-    if f.find("_Normal_BAF.txt") == -1:
-        continue
-    patient = f.split("_")[0]
-    if (onlyonepatient and patient != onepatient):
-        continue
-
-#for twopatients in twopatients:
-    bafrawdata, bafwt = readBafNormal(patient)
-#    if (True):
-#        #only check bafs
-#        continue
-#    patient1, patient2 = twopatients
-#    patient = patient1 + patient2
-#    bafrawdata, bafwt, allbafs, allwtbafs, allsamples = combineTwoBafs(patient1, patient2)
-    if (len(bafrawdata)==0):
-        continue
-    allbafs, allsamples = readBafSamples(patient, bafrawdata)
-
-    summary_out = open(outdir + patient + "_gamma_summary.txt", "w")
-    writeSummaryFileHeader(summary_out)
-#    patient_file = open(outdir + "gamma_full_" + patient + ".txt", "w")
-#    patient_file.write("gamma\tsubdir\tchr\tstart\tend\tminNBafs\tavg\tstdev\tlist\n")
-
-    for gamma in gamma_list:
-        print "Processing results from a gamma of", gamma
-        root_dir = gamma_outdir + "pASCAT_input_g" + gamma + "/"
-        isegs = readCopynumberFile(patient)
-
-        for subdir in subdirs:
-            ploidyfile = root_dir + subdir + "/" + patient + "_fcn_ascat_ploidy.txt"
-            if not(isfile(ploidyfile)):
-                print "No ploidy for", patient, ", gamma", gamma, ": ASCAT failure for this patient."
-                continue
-            ploidies = readPloidyFile(ploidyfile)
-            purityfile = root_dir + subdir + "/" + patient + "_fcn_ascat_cont.txt"
-            if not(isfile(purityfile)):
-                print "No purity for", patient, ", gamma", gamma, ": ASCAT failure for this patient."
-                continue
-            purities = readPurityFile(purityfile)
-            ascsegfile = root_dir + subdir + "/" + patient + "_fcn_ascat_segments.txt"
-            if not(isfile(ascsegfile)):
-                print "ASCAT seems to have failed for", root_dir, ",",subdir,",",patient,"."
-                continue
-
-            (osegs, totsca) = readSegmentationFile(ascsegfile)
-            markInputSegmentsWithUnbalancedSamples(isegs, osegs, subdir)
-            (evidence, balanced_evidence) = collectMatchInfo(isegs, bafrawdata, subdir)
-
-            (good_samples, bad_samples, missed_samples, good_sca, bad_sca, missed_sca) = processEvidence(evidence, balanced_evidence, osegs, allsamples)
-            #printInfoAbout(missed_sca, bafrawdata)
-
-            #now count up everything for each sample and output to a file:
-            missed_lengths = {}
-            for samp in good_samples:
-                missed_lengths[samp] = []
-                validatedsca = 0
-                mixedsca = 0
-                invalidsca = 0
-                balancedsca = 0
-                sumsca = 0
-                for chrsegpair in totsca[samp]:
-                    length = chrsegpair[2] - chrsegpair[1]
-                    #print length
-                    sumsca += length
-                for chrsegpair in good_sca[samp]:
-                    length = chrsegpair[2] - chrsegpair[1]
-                    if chrsegpair in bad_sca[samp]:
-                        mixedsca += length
-                    else:
-                        validatedsca += length
-                for chrsegpair in bad_sca[samp]:
-                    length = chrsegpair[2] - chrsegpair[1]
-                    if chrsegpair not in good_sca[samp]:
-                        invalidsca += length
-                for chrsegpair in missed_sca[samp]:
-                    length = chrsegpair[2] - chrsegpair[1]
-                    balancedsca += length
-                    missed_lengths[samp].append(length)
-                samponly = samp
-                if samponly.find("_") != -1:
-                    samponly = samponly.split("_")[1]
-                summary_out.write(gamma + "\t")
-                summary_out.write(patient + "\t")
-                summary_out.write(samponly + "\t")
-                summary_out.write(subdir + "\t")
-                if samp in ploidies:
-                    summary_out.write(ploidies[samp] + "\t")
-                    summary_out.write(purities[samp] + "\t")
-                else:
-                    summary_out.write("---\t")
-                    summary_out.write("---\t")
-                summary_out.write(str(good_samples[samp]) + "\t")
-                summary_out.write(str(bad_samples[samp]) + "\t")
-                summary_out.write(str(missed_samples[samp]) + "\t")
-                if subdir == "tetraploid":
-                    summary_out.write("\t")
-                summary_out.write(str(sumsca) + "\t\t")
-                summary_out.write(str(validatedsca) + "\t\t")
-                summary_out.write(str(mixedsca) + "\t\t")
-                summary_out.write(str(invalidsca) + "\t\t")
-                summary_out.write(str(balancedsca) + "\t\t")
-                summary_out.write("\n")
+def writeSummaries(summary_out, good_samples, bad_samples, missed_samples, ASC_not_X):
+    missed_lengths = {}
+    for samp in good_samples:
+        missed_lengths[samp] = []
+        validatedsca = 0
+        mixedsca = 0
+        invalidsca = 0
+        balancedsca = 0
+        sumsca = 0
+        for chrsegpair in totsca[samp]:
+            length = chrsegpair[2] - chrsegpair[1]
+            #print length
+            sumsca += length
+        for chrsegpair in good_sca[samp]:
+            length = chrsegpair[2] - chrsegpair[1]
+            if chrsegpair in bad_sca[samp]:
+                mixedsca += length
+            else:
+                validatedsca += length
+        for chrsegpair in bad_sca[samp]:
+            length = chrsegpair[2] - chrsegpair[1]
+            if chrsegpair not in good_sca[samp]:
+                invalidsca += length
+        for chrsegpair in missed_sca[samp]:
+            length = chrsegpair[2] - chrsegpair[1]
+            balancedsca += length
+            missed_lengths[samp].append(length)
+        samponly = samp
+        if samponly.find("_") != -1:
+            samponly = samponly.split("_")[1]
+        summary_out.write(gamma + "\t")
+        summary_out.write(patient + "\t")
+        summary_out.write(samponly + "\t")
+        if ASC_not_X:
+            summary_out.write(subdir + "\t")
+            if samp in ploidies:
+                summary_out.write(ploidies[samp] + "\t")
+                summary_out.write(purities[samp] + "\t")
+            else:
+                summary_out.write("---\t")
+                summary_out.write("---\t")
+        summary_out.write(str(good_samples[samp]) + "\t")
+        summary_out.write(str(bad_samples[samp]) + "\t")
+        summary_out.write(str(missed_samples[samp]) + "\t")
+        if subdir == "tetraploid":
+            summary_out.write("\t")
+        summary_out.write(str(sumsca) + "\t\t")
+        summary_out.write(str(validatedsca) + "\t\t")
+        summary_out.write(str(mixedsca) + "\t\t")
+        summary_out.write(str(invalidsca) + "\t\t")
+        summary_out.write(str(balancedsca) + "\t\t")
+        summary_out.write("\n")
             #lsl.createPrintAndSaveHistogram(allpercs, outdir + patient + "_" + str(gamma) + ".txt", .001, xdata="Percent match or anti-match")
 #            print "Bad samples:"
 #            print bad_samples
@@ -764,6 +789,83 @@ for f in files:
 #                    summary_out.write("\n")
 #    patient_file.close()
 
-summary_out.close()
+
+#Xiaohong_segments = readAllXiaohongSegmentation()
+files = []
+for (__, __, f) in walk(BAF_dir):
+    files += f
+for f in files:
+    if f.find("_Normal_BAF.txt") == -1:
+        continue
+    patient = f.split("_")[0]
+    if (onlyonepatient and patient != onepatient):
+        continue
+
+#Two-patient comparison code:
+#for twopatients in twopatients:
+#    patient1, patient2 = twopatients
+#    patient = patient1 + patient2
+#    bafrawdata, bafwt, allbafs, allwtbafs, allsamples = combineTwoBafs(patient1, patient2)
+
+#Normal one-patient code:
+    bafrawdata, bafwt = readBafNormal(patient)
+    if (len(bafrawdata)==0):
+        continue
+    allbafs, allsamples = readBafSamples(patient, bafrawdata)
+
+    summary_out = open(outdir + patient + "_gamma_summary.txt", "w")
+    writeSummaryFileHeader(summary_out, True)
+#    patient_file = open(outdir + "gamma_full_" + patient + ".txt", "w")
+#    patient_file.write("gamma\tsubdir\tchr\tstart\tend\tminNBafs\tavg\tstdev\tlist\n")
+
+    if compareEverythingToGamma100:
+        all_isegs = readCopynumberFiles(patient, "")
+
+    for gamma in gamma_list:
+        print "Processing results from a gamma of", gamma
+        root_dir = gamma_outdir + "pASCAT_input_g" + gamma + "/"
+        isegs = {}
+        if compareEverythingToGamma100:
+            if gamma in all_isegs:
+                isegs = deepcopy(all_isegs[gamma])
+            elif "100" in all_isegs:
+                isegs = deepcopy(all_isegs["100"])
+            else:
+                isegs = deepcopy(all_isegs["50"])
+        else:
+            isegs = readCopynumberFiles(patient, gamma)
+
+        for subdir in subdirs:
+            ploidyfile = root_dir + subdir + "/" + patient + "_fcn_ascat_ploidy.txt"
+            if not(isfile(ploidyfile)):
+                print "No ploidy for", patient, "gamma", gamma, "for the", subdir, "constrained run: ASCAT failure for this patient."
+                continue
+            ploidies = readPloidyFile(ploidyfile)
+            purityfile = root_dir + subdir + "/" + patient + "_fcn_ascat_cont.txt"
+            if not(isfile(purityfile)):
+                print "No purity for", patient, "gamma", gamma, "for the", subdir, "constrained run: ASCAT failure for this patient."
+                continue
+            purities = readPurityFile(purityfile)
+            ascsegfile = root_dir + subdir + "/" + patient + "_fcn_ascat_segments.txt"
+            if not(isfile(ascsegfile)):
+                print "ASCAT seems to have failed for", root_dir, ",",subdir,",",patient,"."
+                continue
+
+            (osegs, totsca) = readSegmentationFile(ascsegfile, allsamples)
+            markInputSegmentsWithUnbalancedSamples(isegs, osegs, subdir)
+            (evidence, balanced_evidence) = collectMatchInfo(isegs, bafrawdata, subdir)
+
+            (good_samples, bad_samples, missed_samples, good_sca, bad_sca, missed_sca) = processEvidence(evidence, balanced_evidence, osegs, allsamples)
+            #printInfoAbout(missed_sca, bafrawdata)
+
+            #now count up everything for each sample and output to a file:
+            writeSummaries(summary_out, good_samples, bad_samples, missed_samples)
+
+    summary_out.close()
+
+    if compareXiaohongSegments:
+        xsummary_out = open(outdir + patient + "_xiaohong_summary.txt", "w")
+        writeSummaryFileHeader(xsummary_out, False)
+
 
 
