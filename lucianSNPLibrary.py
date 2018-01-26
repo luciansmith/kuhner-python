@@ -50,12 +50,12 @@ def combineHistograms(newhist, fullhist, num, weight=1):
 
 def createPrintAndSaveHistogram(data, filename, binwidth, xdata="log2r", axis=(), show=True):
     if len(data) == 0:
-        print "Cannot create a histogram with no data for file ", filename
+        print("Cannot create a histogram with no data for file ", filename)
         return
     kw = getKernelWidth(data, binwidth)
     hist = {}
     if (show):
-        print "Histogram for", filename, "with", len(data), "datapoints:"
+        print("Histogram for", filename, "with", len(data), "datapoints:")
     for val in data:
         addKernelToHistogram(val, 1, hist, kw, len(data), binwidth)
     if (show):
@@ -74,17 +74,17 @@ def createPrintAndSaveHistogram(data, filename, binwidth, xdata="log2r", axis=()
 
 def createPrintAndSaveMultipleHistograms(data, filename, binwidth, xdata="log2r", ydata = [], axis=(), show=True):
     if len(data) == 0:
-        print "Cannot create a histogram with no data for file ", filename
+        print("Cannot create a histogram with no data for file ", filename)
         return
     hists = []
     for onehist in data:
         if len(onehist) == 0:
-            print "Cannot create a histogram with no data for a subset of the data in", filename
+            print("Cannot create a histogram with no data for a subset of the data in", filename)
             continue
         kw = getKernelWidth(onehist, binwidth)
         hist = {}
         if (show):
-            print "One histogram in", filename, "with", len(onehist), "datapoints:"
+            print("One histogram in", filename, "with", len(onehist), "datapoints:")
         for val in onehist:
             addKernelToHistogram(val, 1, hist, kw, len(onehist), binwidth)
         if (show):
@@ -120,7 +120,7 @@ def createPrintAndSaveMultipleHistograms(data, filename, binwidth, xdata="log2r"
 
 def saveScatterPlot(data, filename, labels):
     if len(data) == 0:
-        print "Cannot create a scatterplot with no data for file ", filename
+        print("Cannot create a scatterplot with no data for file ", filename)
         return
     outfile = open(filename, "w")
     outfile.write(labels + "\n")
@@ -182,7 +182,7 @@ def getChromosomeMax(chr):
     elif (chr==24):
         return 28800000
     else:
-        print "Unknown chromosome #", chr
+        print("Unknown chromosome #", chr)
 
 def getChromosomeCentromere(chr):
     if (chr==1):
@@ -234,7 +234,7 @@ def getChromosomeCentromere(chr):
     elif (chr==24):
         return (10400000, 13200000)
     else:
-        print "Unknown chromosome #", chr
+        print("Unknown chromosome #", chr)
 
 def getLengthFrom(chr, min, max):
     if (max=="inf"):
@@ -282,7 +282,7 @@ def getSNPLabels1M(zeroes):
             try:
                 int(chr)
             except ValueError:
-                #print "problematic chr: " + chr
+                #print("problematic chr: " + chr)
                 continue
             if (not zeroes):
                 if (pos == "0"):
@@ -291,7 +291,7 @@ def getSNPLabels1M(zeroes):
                     continue
             try:
                 rev_labels[chr, pos]
-                #print "Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos
+                #print("Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos)
                 #duplicates.write(id + "\t" + rev_labels[chr, pos] + "\t" + chr + "\t" + pos + "\n")
                 #continue
                 #UPDATE:  it appears that Partek uses all SNPs, even if they map to the same location.
@@ -322,7 +322,7 @@ def getSNPLabels2_5M(zeroes):
             try:
                 int(chr)
             except ValueError:
-                #print "problematic chr: " + chr
+                #print("problematic chr: " + chr)
                 continue
             if (not zeroes):
                 if (pos == "0"):
@@ -331,7 +331,7 @@ def getSNPLabels2_5M(zeroes):
                     continue
             try:
                 rev_labels[chr, pos]
-                #print "Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos
+                #print("Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos)
                 #duplicates.write(id + "\t" + rev_labels[chr, pos] + "\t" + chr + "\t" + pos + "\n")
                 #continue
                 #UPDATE:  it appears that Partek uses all SNPs, even if they map to the same location.
@@ -360,7 +360,7 @@ def getSNPLabelsAll(zeroes):
             try:
                 int(chr)
             except ValueError:
-                #print "problematic chr: " + chr
+                #print("problematic chr: " + chr)
                 continue
             if (not zeroes):
                 if (pos == "0"):
@@ -369,7 +369,7 @@ def getSNPLabelsAll(zeroes):
                     continue
             try:
                 rev_labels[chr, pos]
-                #print "Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos
+                #print("Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos)
                 #duplicates.write(id + "\t" + rev_labels[chr, pos] + "\t" + chr + "\t" + pos + "\n")
                 #continue
                 #UPDATE:  it appears that Partek uses all SNPs, even if they map to the same location.
@@ -398,7 +398,7 @@ def getSNPLabelsAveraged(zeroes):
             try:
                 int(chr)
             except ValueError:
-                #print "problematic chr: " + chr
+                #print("problematic chr: " + chr)
                 continue
             if (not zeroes):
                 if (pos == "0"):
@@ -407,7 +407,7 @@ def getSNPLabelsAveraged(zeroes):
                     continue
             try:
                 rev_labels[chr, pos]
-                #print "Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos
+                #print("Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos)
                 #duplicates.write(id + "\t" + rev_labels[chr, pos] + "\t" + chr + "\t" + pos + "\n")
                 #continue
                 #UPDATE:  it appears that Partek uses all SNPs, even if they map to the same location.
@@ -536,9 +536,9 @@ def getBestOverlap(armlist, numsamples, mindiff):
         (chr, start, end, pops) = segment
         if not(allZeroes(pops)):
             allMutantSegments.append([segment, []])
-    #print "All samples: ", allsamples, ", all mutant segments", allMutantSegments
+    #print("All samples: ", allsamples, ", all mutant segments", allMutantSegments)
     for proposedSegment in allMutantSegments:
-        #print "proposed segment", proposedSegment
+        #print("proposed segment", proposedSegment)
         for segpair in armlist:
             (sample, segment) = segpair
             (chr, start, end, pops) = segment
@@ -546,19 +546,19 @@ def getBestOverlap(armlist, numsamples, mindiff):
                 valid = True
                 for oldsegcheck in proposedSegment[1]:
                     if sample == oldsegcheck[0]:
-                        print "Two segments from sample", sample, "both seem to overlap."
-                        print "First = ", oldsegcheck
-                        print "New   = ", segpair
-                        print "Match = ", proposedSegment[0]
+                        print("Two segments from sample", sample, "both seem to overlap.")
+                        print("First = ", oldsegcheck)
+                        print("New   = ", segpair)
+                        print("Match = ", proposedSegment[0])
                         valid = False
                 if (valid):
                     proposedSegment[1].append(segpair)
-                #print "added-to proposed segment", proposedSegment
+                #print("added-to proposed segment", proposedSegment)
     for proposedSegment in allMutantSegments:
         if len(proposedSegment[1]) == numsamples:
             return proposedSegment
         if len(proposedSegment[1]) > numsamples:
-            print "What???", proposedSegment, numsamples
+            print("What???", proposedSegment, numsamples)
     return []
 
 def AddSegmentToPerArm(sample, segment, perarm):
@@ -575,7 +575,7 @@ def AddSegmentToPerArm(sample, segment, perarm):
                 perarm[highpair] = []
             perarm[highpair].append((sample, segment))
         #else:
-            #print pops
+            #print(pops)
     elif end == 1:
         if not (highpair in perarm):
             perarm[highpair] = []
@@ -594,11 +594,11 @@ def OneSegmentPerArm(segmentlist, numsamples, mindiff):
             AddSegmentToPerArm(sample, segment, perarm)
     bestsegs = []
     for armlist in perarm:
-        #print armlist
+        #print(armlist)
         bestOverlap = getBestOverlap(perarm[armlist], numsamples, mindiff)
         if (len(bestOverlap) > 0):
             bestsegs.append(bestOverlap)
-    #print len(bestsegs), "best segments: ", bestsegs
+    #print(len(bestsegs), "best segments: ", bestsegs)
     return bestsegs
 
 def CalculateAverageDiseq(allpops, probones, numsegs, numpops):
@@ -653,16 +653,16 @@ def GetVariedRowsAndColumns(shuffled):
     for pop in range(0,len(shuffled)):
         psum = numpy.sum(shuffled[pop])
         if psum == 0 or psum == len(shuffled[0]):
-#            print "original pass: ", pop, "no good in "
-#            print shuffled
+#            print("original pass: ", pop, "no good in ")
+#            print(shuffled)
             continue
         goodpops.append(pop)
     goodcols = []
     for col in range(0,len(shuffled[0])):
         csum = numpy.sum(shuffled[:,col])
         if csum == 0 or csum == len(shuffled):
-#            print "original pass: ", col, "no good in "
-#            print shuffled
+#            print("original pass: ", col, "no good in ")
+#            print(shuffled)
             continue
         goodcols.append(col)
     (goodpops, goodcols) = GetInternallyVariedRowsAndColumns(shuffled, goodpops, goodcols)
@@ -685,7 +685,7 @@ def GetInternallyVariedRowsAndColumns(shuffled, goodpops, goodcols):
         if csum == 0 or csum == len(goodcols):
             badcols.append(col)
     if (len(badpops) > 0 or len(badcols) > 0):
-#        print "Found some extra bad rows or columns", badpops, badcols
+#        print("Found some extra bad rows or columns", badpops, badcols)
 #        numpy.nothing()
         for bp in badpops:
             goodpops.remove(bp)
@@ -708,7 +708,7 @@ def FindFourGametes(allpops):
         for s in range(n+1, len(allpops)):
             gametes2 = allpops[s]
             if (len(gametes1) != len(gametes2)):
-                print "Error!"
+                print("Error!")
                 return (0,0)
             g4test = set()
             g4test.add("zerozero") #Because we know that the ancestral allele was WT.
@@ -868,7 +868,7 @@ def validateSegments(BAFs_by_sample, BAF_averages, validation_output, id, failfi
                         antimatch += 1
                     elif baf1 > 0.5 and baf2 < 0.5:
                         antimatch += 1
-                    #print baf1, baf2, match, antimatch
+                    #print(baf1, baf2, match, antimatch)
                 matches.append((match, antimatch))
                 nmax = match + antimatch
                 if nmax >= 2:
@@ -911,11 +911,11 @@ def validateSegments(BAFs_by_sample, BAF_averages, validation_output, id, failfi
                 if numBAFs<=1:
                     continue
                 elif (match/numBAFs) > .9:
-                    #print "Match", match, antimatch, numBAFs, match/numBAFs
+                    #print("Match", match, antimatch, numBAFs, match/numBAFs)
                     nummatches += 1
                 elif (antimatch/numBAFs) > .9:
                     numantimatches += 1
-                    #print "Antimatch", match, antimatch, numBAFs, match/numBAFs
+                    #print("Antimatch", match, antimatch, numBAFs, match/numBAFs)
                 else:
                     numfails += 1
                     (sample1, sample2) = sampair.split("_")
@@ -927,7 +927,7 @@ def validateSegments(BAFs_by_sample, BAF_averages, validation_output, id, failfi
                     for pos in BAFs_by_sample[sample2][segname]:
                         failfile.write("\t" + str(BAFs_by_sample[sample2][segname][pos]))
                     failfile.write("\n")
-                    #print "Fail", match, antimatch, numBAFs, match/numBAFs
+                    #print("Fail", match, antimatch, numBAFs, match/numBAFs)
             else:
                 outline += "\t--\t--"
         outfile.write("\t" + str(maxBAFs) + "\t" + str(nummatches) + "\t" + str(numantimatches) + "\t" + str(numfails) + outline + "\n")
@@ -1079,7 +1079,7 @@ def collatepASCATOutput(infiledir, infilename, outfile,markerlocations):
   try:
     segdata = open(infiledir + infilename,"r").readlines()
   except:
-    print "Unable to open file",infiledir + infilename
+    print("Unable to open file",infiledir + infilename)
     return False
 
   startsnps = readblock(segdata,"track_start")
@@ -1088,8 +1088,8 @@ def collatepASCATOutput(infiledir, infilename, outfile,markerlocations):
   Braw = readblock(segdata,"track_nBraw")
   Aint = readblock(segdata,"track_nAint")
   Bint = readblock(segdata,"track_nBint")
-#  print len(startsnps)
-#  print len(endsnps)
+#  print(len(startsnps))
+#  print(len(endsnps))
 
   # find the positions corresponding to start and end probes
   chr = []
@@ -1111,7 +1111,7 @@ def collatepASCATOutput(infiledir, infilename, outfile,markerlocations):
     startpos.append(stp)
     endpos.append(enp)
     if (ch == prevchr and float(prevend)>float(stp)):
-        print "ERROR: overlapping segments, possibly due to pASCAT mislabeling segments."
+        print("ERROR: overlapping segments, possibly due to pASCAT mislabeling segments.")
         foo()
         return False
     prevchr = ch

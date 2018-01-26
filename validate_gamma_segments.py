@@ -23,7 +23,12 @@ import lucianSNPLibrary as lsl
 
 #Use this value to set up whether to use the 'rejoined' segments or not
 
-BAF_dir = "gamma_template/"
+BAF_links = False
+if BAF_links:
+    BAF_dir = "gamma_template/"
+else:
+    BAF_dir = "pASCAT_input_combined_everything/"
+
 subdirs = ["diploid", "tetraploid"]
 #subdirs = ["diploid"]
 subdirdict = {}
@@ -35,14 +40,15 @@ outdir = "gamma_test_output/summaries/"
 #gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600"]
 #gamma_list = ["50"]
 #gamma_list = ["Test"]
-gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
-#gamma_list = ["800"]
+gamma_list = ["100", "500", "1000", "3000"]
+#gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
+#gamma_list = []
 bafrawdata = {}
 patient_samples = {}
 
 showgraphs = False
 
-onlyonepatient = True
+onlyonepatient = False
 onepatient = "575"
 
 twopatientcompare = False
@@ -65,7 +71,7 @@ mirror_percentages = False
 bafErrorBarLow = 0.5
 bafErrorBarHigh = 0.5
 
-print "Using BAF filtering for comparison from ", str(bafErrorBarLow), "to", str(bafErrorBarHigh)
+print("Using BAF filtering for comparison from ", str(bafErrorBarLow), "to", str(bafErrorBarHigh))
 
 bafWtLow = 0.4
 bafWtHigh = 0.65
@@ -76,12 +82,15 @@ def readBafNormal(patient):
     bafrawdata = {}
     bafwt = {}
 #    allcnvis = []
-    bafnormal = readlink(BAF_dir + patient + "_Normal_BAF.txt")
+    if BAF_links:
+        bafnormal = readlink(BAF_dir + patient + "_Normal_BAF.txt")
+    else:
+        bafnormal = BAF_dir + patient + "_Normal_BAF.txt"
     if not(isfile(bafnormal)):
-        print "ERROR:  no Normal BAF file found for patient", patient
+        print("ERROR:  no Normal BAF file found for patient", patient)
         return ({}, {})
     bafnormal = open(bafnormal, "r")
-    print "Reading BAF normal data for patient", patient
+    print("Reading BAF normal data for patient", patient)
     for line in bafnormal:
         lvec = line.split()
         if line.find("Chr") != -1:
@@ -105,19 +114,22 @@ def readBafNormal(patient):
         bafrawdata[chr][pos] = {}
         bafwt[chr][pos] = value
     bafnormal.close()
-#    print "All normal CNVI bafs:"
+#    print("All normal CNVI bafs:")
 #    lsl.createPrintAndSaveHistogram(allcnvis, "", .01)
     return bafrawdata, bafwt
 
 def readBafSamples(baffile, bafrawdata):
     labels = []
     allsamples = []
-    baffile = readlink(BAF_dir + patient + "_BAF.txt")
+    if BAF_links:
+        baffile = readlink(BAF_dir + patient + "_BAF.txt")
+    else:
+        baffile = BAF_dir + patient + "_BAF.txt"
     if not(isfile(baffile)):
-        print "ERROR:  no BAF file found for patient", patient
+        print("ERROR:  no BAF file found for patient", patient)
         bafrawdata = {}
         return
-    print "Reading BAF sample data for patient", patient
+    print("Reading BAF sample data for patient", patient)
     baffile = open(baffile, "r")
     allbafs = {}
     allbafs["cnvi"] = []
@@ -148,9 +160,9 @@ def readBafSamples(baffile, bafrawdata):
                 continue
     baffile.close()
     if showgraphs:
-        print "Sample CNVI bafs for normal CNVIs that were 0.5 in wt:"
+        print("Sample CNVI bafs for normal CNVIs that were 0.5 in wt:")
         lsl.createPrintAndSaveHistogram(allbafs["cnvi"], "", .01)
-#    print "all other bafs:"
+#    print("all other bafs:")
 #    lsl.createPrintAndSaveHistogram(allbafs["normal"], "", .01)
     return allbafs, allsamples
 
@@ -166,7 +178,7 @@ def compareNormalBafs(bafwt, patient1, patient2):
     plt.gcf().set_size_inches(5,5)
     plt.show()
     plt.close()
-    print "Same thing as a heat map:"
+    print("Same thing as a heat map:")
     heatmap, xedges, yedges = numpy.histogram2d(scatterx, scattery, bins=200)
     extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
 
@@ -183,12 +195,15 @@ def combineTwoBafs(patient1, patient2):
     for patient in (patient1, patient2):
         brd[patient] = {}
         bafwt[patient] = {}
-        bafnormal = readlink(BAF_dir + patient + "_Normal_BAF.txt")
+        if BAF_links:
+            bafnormal = readlink(BAF_dir + patient + "_Normal_BAF.txt")
+        else:
+            bafnormal = BAF_dir + patient + "_Normal_BAF.txt"
         if not(isfile(bafnormal)):
-            print "ERROR:  no Normal BAF file found for patient", patient
+            print("ERROR:  no Normal BAF file found for patient", patient)
             return ({}, {})
         bafnormal = open(bafnormal, "r")
-        print "Reading BAF normal data for patient", patient
+        print("Reading BAF normal data for patient", patient)
         for line in bafnormal:
     #        if (line.find("cnvi") != -1):
     #            continue
@@ -210,14 +225,16 @@ def combineTwoBafs(patient1, patient2):
                 brd[patient][chr] = {}
             if chr not in bafwt[patient]:
                 bafwt[patient][chr] = {}
+                #print("Adding", chr, "to patient", patient)
             brd[patient][chr][pos] = {}
             bafwt[patient][chr][pos] = value
         bafnormal.close()
-#        print "Number of 0.5 BAFs for patient", patient, ":"
+#        print("Number of 0.5 BAFs for patient", patient, ":")
 #        for chr in brd[patient]:
-#            print len(brd[patient][chr])
-    compareNormalBafs(bafwt, patient1, patient2)
-    lsl.createPrintAndSaveHistogram(allwtbafs, "", 0.01)
+#            print(len(brd[patient][chr]))
+    if showgraphs:
+        compareNormalBafs(bafwt, patient1, patient2)
+        lsl.createPrintAndSaveHistogram(allwtbafs, "", 0.01)
 
     todelete = []
     for chr in brd[patient1]:
@@ -227,19 +244,22 @@ def combineTwoBafs(patient1, patient2):
     for (chr, pos) in todelete:
         del brd[patient1][chr][pos]
     bafrawdata = brd[patient1]
-#    print "Number of 0.5 BAFs for both combined:"
+#    print("Number of 0.5 BAFs for both combined:")
 #    for chr in bafrawdata:
-#        print len(bafrawdata[chr])
+#        print(len(bafrawdata[chr]))
 
     allsamples = []
     for patient in [patient1, patient2]:
         labels = []
-        baffile = readlink(BAF_dir + patient + "_BAF.txt")
+        if BAF_links:
+            baffile = readlink(BAF_dir + patient + "_BAF.txt")
+        else:
+            baffile = BAF_dir + patient + "_BAF.txt"
         if not(isfile(baffile)):
-            print "ERROR:  no BAF file found for patient", patient
+            print("ERROR:  no BAF file found for patient", patient)
             bafrawdata = {}
             return
-        print "Reading BAF sample data for patient", patient
+        print("Reading BAF sample data for patient", patient)
         baffile = open(baffile, "r")
         allbafs = {}
         allbafs["cnvi"] = []
@@ -311,6 +331,7 @@ def readCopynumberFiles(patient, g):
             if line.find("Chr") != -1:
                 continue
             (chr, start, end, nlogr, nbaf) = line.split()
+            nbaf = int(nbaf)
             if nbaf <10:
                 continue
             start = int(start)
@@ -323,14 +344,15 @@ def readCopynumberFiles(patient, g):
 #        cnfile.write("\t" + str(total_segments[gamma]))
 #        cnfile.write("\t" + str(total_seglengths[gamma]))
 #    cnfile.write("\n")
-#    print total_segments
-#    print total_seglengths
+#    print(total_segments)
+#    print(total_seglengths)
     if len(g)>0:
         return isegs[g]
     return isegs
 
 def writeSummaryFileHeader(summary_out, ASC_not_X):
-    summary_out.write("gamma\t")
+    if ASC_not_X:
+        summary_out.write("gamma\t")
     summary_out.write("patient\t")
     summary_out.write("sample\t")
     if ASC_not_X:
@@ -400,51 +422,100 @@ def readSegmentationFile(ascsegfile, allsamples):
         totsca["overall"].add((chr, start, end))
     return (osegs, totsca)
 
-def addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end):
+def addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca):
+    if chr == "23":
+        return
+    if chr == "24":
+        return
+    if chr=="0":
+        #print("There's a chromosome zero segment, weirdly:", full_sample, chr, start, end)
+        return
     svec = full_sample.split("-")
+    if len(svec) < 4:
+        svec = full_sample.split("_")
     patient = svec[0]
-    sample = svec[1]
+    sample = svec[0] + "_" + svec[1]
     if patient not in Xiaohong_segments:
         Xiaohong_segments[patient] = {}
+        totsca[patient] = {}
     if sample not in Xiaohong_segments[patient]:
         Xiaohong_segments[patient][sample] = {}
+        totsca[patient][sample] = set()
     if chr not in Xiaohong_segments[patient][sample]:
         Xiaohong_segments[patient][sample][chr] = []
     start = int(start)
     end = int(end)
     Xiaohong_segments[patient][sample][chr].append((start, end))
+    totsca[patient][sample].add((chr, start, end))
+    if "overall" not in totsca[patient]:
+        totsca[patient]["overall"] = set()
+    totsca[patient]["overall"].add((chr, start, end))
 
-def readXiaohongLOHFile(f, Xiaohong_segments):
+def readXiaohongWGSLOHFile(f, Xiaohong_segments, totsca):
+    print("reading", f)
     xfile = open(f, "r")
     for line in xfile:
         (__, full_sample, __, chr, start, end) = line.split()
-        addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end)
+        addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca)
     xfile.close()
 
-def readXiaohongCopynumFile(f, Xiaohong_segments):
+def readXiaohong1MLOHFile(f, Xiaohong_segments, totsca):
+    print("reading", f)
+    xfile = open(f, "r")
+    for line in xfile:
+        (full_sample, chr, start, end, __, __) = line.split()
+        addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca)
+    xfile.close()
+
+def readXiaohongWGSCopynumFile(f, Xiaohong_segments, totsca):
+    print("reading", f)
     xfile = open(f, "r")
     for line in xfile:
         (__, full_sample, __, chr, start, end, __, __, __, code) = line.split()
         if code == "34" or code=="41":
             #balanced gain or loss: continue
             continue
-        addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end)
+        addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca)
+    xfile.close()
+
+def readXiaohong1MCopynumFile(f, Xiaohong_segments, totsca):
+    print("reading", f)
+    xfile = open(f, "r")
+    for line in xfile:
+        (full_sample, chr, start, end, __, __, code) = line.split()
+        if code == "Double_d" or code=="Balanced_gain":
+            #balanced gain or loss: continue
+            continue
+        addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca)
     xfile.close()
 
 def readAllXiaohongSegmentation():
-    print "Reading all Xiaohong segmentation."
+    print("Reading all Xiaohong segmentation.")
     Xiaohong_segments = {}
+    totsca = {}
     files = []
-    for (__, __, f) in walk("Xiaohong_WGS_segmentation/"):
+    Xdir_WGS = "Xiaohong_WGS_segmentation/"
+    Xdir_1M = "CN_Xiaohong_segmentation/"
+    for (__, __, f) in walk(Xdir_WGS):
         files += f
     for f in files:
-        if f.find("read") == -1:
+        if f.find("read") != -1:
             continue
-        if f.find("LOH"):
-            readXiaohongLOHFile(f, Xiaohong_segments)
+        if f.find("LOH") != -1:
+            readXiaohongWGSLOHFile(Xdir_WGS + f, Xiaohong_segments, totsca)
         else:
-            readXiaohongCopynumFile(f, Xiaohong_segments)
-    return Xiaohong_segments
+            readXiaohongWGSCopynumFile(Xdir_WGS + f, Xiaohong_segments, totsca)
+    files = []
+    for (__, __, f) in walk(Xdir_1M):
+        files += f
+    for f in files:
+        if f.find("read") != -1:
+            continue
+        if f.find("LOH") != -1:
+            readXiaohong1MLOHFile(Xdir_1M + f, Xiaohong_segments, totsca)
+        else:
+            readXiaohong1MCopynumFile(Xdir_1M + f, Xiaohong_segments, totsca)
+    return Xiaohong_segments, totsca
 
 def markInputSegmentsWithUnbalancedSamples(isegs, osegs, subdir):
     for sample in osegs:
@@ -487,7 +558,7 @@ def collectMatchInfo(isegs, bafrawdata, subdir):
             balanced_evidence[chr][isegrange] = {}
             for pos in bafrawdata[chr]:
                 if pos >= iseg[0] and pos <= iseg[1]:
-                    rdsamples = bafrawdata[chr][pos].keys()
+                    rdsamples = list(bafrawdata[chr][pos].keys())
                     rdsamples.sort()
                     for sample1 in range(0, len(rdsamples)-1):
                         for sample2 in range(sample1+1, len(rdsamples)):
@@ -528,29 +599,29 @@ def collectMatchInfo(isegs, bafrawdata, subdir):
                                     evidence[chr][isegrange][segpair] = [0, 0]
                                 if (val1 > 0.5 and val2 > 0.5) or (val1 < 0.5 and val2 < 0.5):
                                     evidence[chr][isegrange][segpair][0] += 1
-                                    #print "match", val1, val2
+                                    #print("match", val1, val2)
                                 else:
                                     evidence[chr][isegrange][segpair][1] += 1
-                                    #print "antimatch", val1, val2
+                                    #print("antimatch", val1, val2)
                             else:
                                 # One or both are balanced.  Put in 'balanced_evidence'.
                                 if segpair not in balanced_evidence[chr][isegrange]:
                                     balanced_evidence[chr][isegrange][segpair] = [0, 0]
                                 if (val1 > 0.5 and val2 > 0.5) or (val1 < 0.5 and val2 < 0.5):
                                     balanced_evidence[chr][isegrange][segpair][0] += 1
-                                    #print "match", val1, val2
+                                    #print("match", val1, val2)
                                 else:
                                     balanced_evidence[chr][isegrange][segpair][1] += 1
-                                    #print "antimatch", val1, val2
+                                    #print("antimatch", val1, val2)
     if showgraphs:
         for key1 in key1s:
             for key2 in key2s:
                 for key3 in key3s:
-                    print "Value comparison for", key1, ",", key2, ",", key3, "with", str(len(scatter_x[key1][key2][key3])), "data points."
+                    print("Value comparison for", key1, ",", key2, ",", key3, "with", str(len(scatter_x[key1][key2][key3])), "data points.")
 
                     if key3 == "no filter":
                         if len(scatter_x[key1][key2][key3]) > 10000000:
-                            print "Too many data points: reducing to 10%"
+                            print("Too many data points: reducing to 10%")
                             sx2 = []
                             sy2 = []
                             for xval in range(0, int(numpy.floor(len(scatter_x[key1][key2][key3])/10))):
@@ -574,7 +645,7 @@ def collectMatchInfo(isegs, bafrawdata, subdir):
     return (evidence, balanced_evidence)
 
 
-def processEvidence(evidence, balanced_evidencek, osegs, allsamples):
+def processEvidence(evidence, balanced_evidence, osegs, allsamples):
     good_samples = {}
     bad_samples = {}
     missed_samples = {}
@@ -630,7 +701,7 @@ def processEvidence(evidence, balanced_evidencek, osegs, allsamples):
                 else:
                     unbalpercs_crosspatient.append(perc)
                 if perc<0.95 or perc<0.05:
-                    #print "bad:", chrsegrange
+                    #print("bad:", chrsegrange)
                     bad_samples[segpair[0]] += 1
                     bad_samples[segpair[1]] += 1
                     bad_samples["overall"] += 1
@@ -638,7 +709,7 @@ def processEvidence(evidence, balanced_evidencek, osegs, allsamples):
                     bad_sca[segpair[1]].add(chrsegrange)
                     bad_sca["overall"].add(chrsegrange)
                 else:
-                    #print "good:", chrsegrange
+                    #print("good:", chrsegrange)
                     good_samples[segpair[0]] += 1
                     good_samples[segpair[1]] += 1
                     good_samples["overall"] += 1
@@ -655,7 +726,7 @@ def processEvidence(evidence, balanced_evidencek, osegs, allsamples):
                 perc = match/tot
                 if mirror_percentages and antimatch>match:
                     perc = antimatch/tot
-                #print match, antimatch, tot, perc
+                #print(match, antimatch, tot, perc)
                 balanced_percs.append(perc)
                 if (segpair[0] in onepatientsamples and segpair[1] in onepatientsamples) or (segpair[0] not in onepatientsamples and segpair[1] not in onepatientsamples):
                     balpercs_inpatient.append(perc)
@@ -670,7 +741,7 @@ def processEvidence(evidence, balanced_evidencek, osegs, allsamples):
                 else:
                     allbal_percs.append(perc)
                 if perc>=0.95 or perc <= 0.05:
-                    #print "missed_:", chrsegrange
+                    #print("missed_:", chrsegrange)
                     missed_samples[segpair[0]] += 1
                     missed_samples[segpair[1]] += 1
                     missed_samples["overall"] += 1
@@ -678,34 +749,34 @@ def processEvidence(evidence, balanced_evidencek, osegs, allsamples):
                     missed_sca[segpair[1]].add(chrsegrange)
                     missed_sca["overall"].add(chrsegrange)
     if showgraphs:
-        print "All percent matches for all balanced-to-anything segments:"
+        print("All percent matches for all balanced-to-anything segments:")
         lsl.createPrintAndSaveHistogram(balanced_percs, "", .001)
         if twopatientcompare:
-            print "Only in-patient percent matches for all balanced-to-anything segments:"
+            print("Only in-patient percent matches for all balanced-to-anything segments:")
             lsl.createPrintAndSaveHistogram(balpercs_inpatient, "", .001)
-            print "Only cross-patient percent matches for all balanced-to-anything segments:"
+            print("Only cross-patient percent matches for all balanced-to-anything segments:")
             lsl.createPrintAndSaveHistogram(balpercs_crosspatient, "", .001)
 
-    #    print "Number of bases/useable SNPs for unbalanced segments:"
+    #    print("Number of bases/useable SNPs for unbalanced segments:")
     #    lsl.createPrintAndSaveHistogram(ev_ratios, "", 0.1)
-    #    print "Mean of unbalanced segment ratios:", numpy.mean(ev_ratios)
-    #    print "Median of unbalanced segment ratios:", numpy.median(ev_ratios)
-    #    print "Number of bases/useable SNPs for balanced segments:"
+    #    print("Mean of unbalanced segment ratios:", numpy.mean(ev_ratios))
+    #    print("Median of unbalanced segment ratios:", numpy.median(ev_ratios))
+    #    print("Number of bases/useable SNPs for balanced segments:")
     #    lsl.createPrintAndSaveHistogram(balev_ratios, "", 0.1)
-    #    print "Mean of balanced segment ratios:", numpy.mean(balev_ratios)
-    #    print "Median of balanced segment ratios:", numpy.median(balev_ratios)
+    #    print("Mean of balanced segment ratios:", numpy.mean(balev_ratios))
+    #    print("Median of balanced segment ratios:", numpy.median(balev_ratios))
 
-        print "Percent matches for all balanced-to-unbalanced checks:"
+        print("Percent matches for all balanced-to-unbalanced checks:")
         lsl.createPrintAndSaveHistogram(crosscheck_percs, "", .001)
-        print "Percent matches for all balanced-to-balanced checks:"
+        print("Percent matches for all balanced-to-balanced checks:")
         lsl.createPrintAndSaveHistogram(allbal_percs, "", .001)
 
-        print "All percent matches for unbalanced-to-unbalanced segments:"
+        print("All percent matches for unbalanced-to-unbalanced segments:")
         lsl.createPrintAndSaveHistogram(unbalanced_percs, "", .001)
         if twopatientcompare:
-            print "Only in-patient percent matches for unbalanced-to-unbalanced segments:"
+            print("Only in-patient percent matches for unbalanced-to-unbalanced segments:")
             lsl.createPrintAndSaveHistogram(unbalpercs_inpatient, "", .001)
-            print "Only cross-patient percent matches for unbalanced-to-unbalanced segments:"
+            print("Only cross-patient percent matches for unbalanced-to-unbalanced segments:")
             lsl.createPrintAndSaveHistogram(unbalpercs_crosspatient, "", .001)
 
     return (good_samples, bad_samples, missed_samples, good_sca, bad_sca, missed_sca)
@@ -713,13 +784,13 @@ def processEvidence(evidence, balanced_evidencek, osegs, allsamples):
 def printInfoAbout(missedsca, bafrawdata):
     for seg in missedsca["overall"]:
         (chr, start, end) = seg
-        print "segment", seg
+        print("segment", seg)
         if (end==4965152):
             for pos in bafrawdata[chr]:
                 if pos >= start and pos <= end:
-                    print bafrawdata[chr][pos]
+                    print(bafrawdata[chr][pos])
 
-def writeSummaries(summary_out, good_samples, bad_samples, missed_samples, ASC_not_X):
+def writeSummaries(summary_out, good_samples, bad_samples, missed_samples, ASC_not_X, totsca, gamma, patient, subdir):
     missed_lengths = {}
     for samp in good_samples:
         missed_lengths[samp] = []
@@ -728,28 +799,33 @@ def writeSummaries(summary_out, good_samples, bad_samples, missed_samples, ASC_n
         invalidsca = 0
         balancedsca = 0
         sumsca = 0
-        for chrsegpair in totsca[samp]:
-            length = chrsegpair[2] - chrsegpair[1]
-            #print length
-            sumsca += length
-        for chrsegpair in good_sca[samp]:
-            length = chrsegpair[2] - chrsegpair[1]
-            if chrsegpair in bad_sca[samp]:
-                mixedsca += length
-            else:
-                validatedsca += length
-        for chrsegpair in bad_sca[samp]:
-            length = chrsegpair[2] - chrsegpair[1]
-            if chrsegpair not in good_sca[samp]:
-                invalidsca += length
-        for chrsegpair in missed_sca[samp]:
-            length = chrsegpair[2] - chrsegpair[1]
-            balancedsca += length
-            missed_lengths[samp].append(length)
+        if samp in totsca:
+            for chrsegpair in totsca[samp]:
+                length = chrsegpair[2] - chrsegpair[1]
+                #print(length)
+                sumsca += length
+        if samp in good_sca:
+            for chrsegpair in good_sca[samp]:
+                length = chrsegpair[2] - chrsegpair[1]
+                if chrsegpair in bad_sca[samp]:
+                    mixedsca += length
+                else:
+                    validatedsca += length
+        if samp in bad_sca:
+            for chrsegpair in bad_sca[samp]:
+                length = chrsegpair[2] - chrsegpair[1]
+                if chrsegpair not in good_sca[samp]:
+                    invalidsca += length
+        if samp in missed_sca:
+            for chrsegpair in missed_sca[samp]:
+                length = chrsegpair[2] - chrsegpair[1]
+                balancedsca += length
+                missed_lengths[samp].append(length)
         samponly = samp
         if samponly.find("_") != -1:
             samponly = samponly.split("_")[1]
-        summary_out.write(gamma + "\t")
+        if ASC_not_X:
+            summary_out.write(gamma + "\t")
         summary_out.write(patient + "\t")
         summary_out.write(samponly + "\t")
         if ASC_not_X:
@@ -772,14 +848,14 @@ def writeSummaries(summary_out, good_samples, bad_samples, missed_samples, ASC_n
         summary_out.write(str(balancedsca) + "\t\t")
         summary_out.write("\n")
             #lsl.createPrintAndSaveHistogram(allpercs, outdir + patient + "_" + str(gamma) + ".txt", .001, xdata="Percent match or anti-match")
-#            print "Bad samples:"
-#            print bad_samples
-#            print "Good samples:"
-#            print good_samples
+#            print("Bad samples:")
+#            print(bad_samples)
+#            print("Good samples:")
+#            print(good_samples)
 #                for sampIgnore in allpercsminus:
 #                    if bad_samples[sampIgnore] < 10 or good_samples[sampIgnore] / bad_samples[sampIgnore] > 0.8:
 #                        continue
-#                    print "Histogram without any data from sample", sampIgnore, ", which had more bad samples than good:"
+#                    print("Histogram without any data from sample", sampIgnore, ", which had more bad samples than good:")
 #                    lsl.createPrintAndSaveHistogram(allpercsminus[sampIgnore], "", 0.001, xdata="Percent match or anti-match")
 #                    summary_out.write(gamma + "\t")
 #                    summary_out.write(patient + "\twithout_" + sampIgnore + "\t")
@@ -789,8 +865,9 @@ def writeSummaries(summary_out, good_samples, bad_samples, missed_samples, ASC_n
 #                    summary_out.write("\n")
 #    patient_file.close()
 
+if compareXiaohongSegments:
+    (Xiaohong_segments, X_totsca) = readAllXiaohongSegmentation()
 
-#Xiaohong_segments = readAllXiaohongSegmentation()
 files = []
 for (__, __, f) in walk(BAF_dir):
     files += f
@@ -813,6 +890,9 @@ for f in files:
         continue
     allbafs, allsamples = readBafSamples(patient, bafrawdata)
 
+    if not onlyonepatient and not twopatientcompare and isfile(outdir + patient + "_gamma_summary.txt"):
+        print("Skipping patient", patient, ": analysis already exists.")
+        continue
     summary_out = open(outdir + patient + "_gamma_summary.txt", "w")
     writeSummaryFileHeader(summary_out, True)
 #    patient_file = open(outdir + "gamma_full_" + patient + ".txt", "w")
@@ -822,7 +902,7 @@ for f in files:
         all_isegs = readCopynumberFiles(patient, "")
 
     for gamma in gamma_list:
-        print "Processing results from a gamma of", gamma
+        print("Processing results from a gamma of", gamma)
         root_dir = gamma_outdir + "pASCAT_input_g" + gamma + "/"
         isegs = {}
         if compareEverythingToGamma100:
@@ -838,17 +918,17 @@ for f in files:
         for subdir in subdirs:
             ploidyfile = root_dir + subdir + "/" + patient + "_fcn_ascat_ploidy.txt"
             if not(isfile(ploidyfile)):
-                print "No ploidy for", patient, "gamma", gamma, "for the", subdir, "constrained run: ASCAT failure for this patient."
+                print("No ploidy for", patient, "gamma", gamma, "for the", subdir, "constrained run: ASCAT failure for this patient.")
                 continue
             ploidies = readPloidyFile(ploidyfile)
             purityfile = root_dir + subdir + "/" + patient + "_fcn_ascat_cont.txt"
             if not(isfile(purityfile)):
-                print "No purity for", patient, "gamma", gamma, "for the", subdir, "constrained run: ASCAT failure for this patient."
+                print("No purity for", patient, "gamma", gamma, "for the", subdir, "constrained run: ASCAT failure for this patient.")
                 continue
             purities = readPurityFile(purityfile)
             ascsegfile = root_dir + subdir + "/" + patient + "_fcn_ascat_segments.txt"
             if not(isfile(ascsegfile)):
-                print "ASCAT seems to have failed for", root_dir, ",",subdir,",",patient,"."
+                print("ASCAT seems to have failed for", root_dir, ",",subdir,",",patient,".")
                 continue
 
             (osegs, totsca) = readSegmentationFile(ascsegfile, allsamples)
@@ -859,13 +939,24 @@ for f in files:
             #printInfoAbout(missed_sca, bafrawdata)
 
             #now count up everything for each sample and output to a file:
-            writeSummaries(summary_out, good_samples, bad_samples, missed_samples)
+            writeSummaries(summary_out, good_samples, bad_samples, missed_samples, True, totsca, gamma, patient, subdir)
 
     summary_out.close()
 
     if compareXiaohongSegments:
+        print("Running SCA analysis for Xiaohong data for patient", patient)
         xsummary_out = open(outdir + patient + "_xiaohong_summary.txt", "w")
         writeSummaryFileHeader(xsummary_out, False)
+        if "100" in all_isegs:
+            isegs = deepcopy(all_isegs["100"])
+        else:
+            isegs = deepcopy(all_isegs["50"])
+        subdir = "Xiaohong" #just for 
+        markInputSegmentsWithUnbalancedSamples(isegs, Xiaohong_segments[patient], "Xiaohong")
+        (evidence, balanced_evidence) = collectMatchInfo(isegs, bafrawdata, subdir)
+        (good_samples, bad_samples, missed_samples, good_sca, bad_sca, missed_sca) = processEvidence(evidence, balanced_evidence, Xiaohong_segments[patient], allsamples)
+        writeSummaries(xsummary_out, good_samples, bad_samples, missed_samples, False, X_totsca[patient], "", patient, subdir)
+        xsummary_out.close()
 
 
 
