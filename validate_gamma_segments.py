@@ -423,6 +423,8 @@ def readSegmentationFile(ascsegfile, allsamples):
     return (osegs, totsca)
 
 def addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca):
+    if chr == "":
+        return
     if chr == "23":
         return
     if chr == "24":
@@ -450,6 +452,7 @@ def addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca):
     if "overall" not in totsca[patient]:
         totsca[patient]["overall"] = set()
     totsca[patient]["overall"].add((chr, start, end))
+    #print("Adding", chr, start, end)
 
 def readXiaohongWGSLOHFile(f, Xiaohong_segments, totsca):
     print("reading", f)
@@ -467,27 +470,34 @@ def readXiaohong1MLOHFile(f, Xiaohong_segments, totsca):
         addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca)
     xfile.close()
 
-def readXiaohongWGSCopynumFile(f, Xiaohong_segments, totsca):
+def readXiaohongCopynumFile(f, Xiaohong_segments, totsca):
     print("reading", f)
     xfile = open(f, "r")
+    lastseg = ["", 0, 0, 0]
     for line in xfile:
-        (__, full_sample, __, chr, start, end, __, __, __, code) = line.split()
-        if code == "34" or code=="41":
-            #balanced gain or loss: continue
+        lvec = line.split()
+        if len(lvec) == 7:
+            (full_sample, chr, start, end, __, __, code) = line.split()
+        elif len(lvec) == 10:
+            (__, full_sample, __, chr, start, end, __, __, __, code) = line.split()
+        else:
+            print("Incorrect line length:", line)
             continue
-        addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca)
-    xfile.close()
-
-def readXiaohong1MCopynumFile(f, Xiaohong_segments, totsca):
-    print("reading", f)
-    xfile = open(f, "r")
-    for line in xfile:
-        (full_sample, chr, start, end, __, __, code) = line.split()
-        if code == "Double_d" or code=="Balanced_gain":
+        start =int(start)
+        end = int(end)
+        if code == "Double_d" or code=="Balanced_gain" or code == "34" or code=="41":
             #balanced gain or loss: continue
+            addXiaohongSegment(Xiaohong_segments, full_sample, lastseg[0], lastseg[1], lastseg[2], totsca)
+            lastseg = ["", 0, 0, 0]
             continue
-        addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca)
+        if chr == lastseg[0] and code == lastseg[3] and start-lastseg[2] < 5000:
+            #print("Combining", chr, str(lastseg[1]), str(lastseg[2]), str(lastseg[3]), "with", start, end, code)
+            lastseg[2] = end
+        else:
+            addXiaohongSegment(Xiaohong_segments, full_sample, lastseg[0], lastseg[1], lastseg[2], totsca)
+            lastseg = [chr, start, end, code]
     xfile.close()
+    addXiaohongSegment(Xiaohong_segments, full_sample, lastseg[0], lastseg[1], lastseg[2], totsca)
 
 def readAllXiaohongSegmentation():
     print("Reading all Xiaohong segmentation.")
@@ -501,10 +511,12 @@ def readAllXiaohongSegmentation():
     for f in files:
         if f.find("read") != -1:
             continue
+        if f.find("test") != -1:
+            continue
         if f.find("LOH") != -1:
             readXiaohongWGSLOHFile(Xdir_WGS + f, Xiaohong_segments, totsca)
         else:
-            readXiaohongWGSCopynumFile(Xdir_WGS + f, Xiaohong_segments, totsca)
+            readXiaohongCopynumFile(Xdir_WGS + f, Xiaohong_segments, totsca)
     files = []
     for (__, __, f) in walk(Xdir_1M):
         files += f
@@ -514,7 +526,7 @@ def readAllXiaohongSegmentation():
         if f.find("LOH") != -1:
             readXiaohong1MLOHFile(Xdir_1M + f, Xiaohong_segments, totsca)
         else:
-            readXiaohong1MCopynumFile(Xdir_1M + f, Xiaohong_segments, totsca)
+            readXiaohongCopynumFile(Xdir_1M + f, Xiaohong_segments, totsca)
     return Xiaohong_segments, totsca
 
 def markInputSegmentsWithUnbalancedSamples(isegs, osegs, subdir):
