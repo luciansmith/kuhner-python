@@ -465,15 +465,24 @@ def readXiaohongWGSLOHFile(f, Xiaohong_segments, totsca):
 def readXiaohong1MLOHFile(f, Xiaohong_segments, totsca):
     print("reading", f)
     xfile = open(f, "r")
+    lastseg = ["", 0, 0, ""]
     for line in xfile:
         (full_sample, chr, start, end, __, __) = line.split()
-        addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca)
+        start =int(start)
+        end = int(end)
+        if full_sample == lastseg[3] and chr == lastseg[0] and start-lastseg[2] < 5000:
+            print("Combining", chr, str(lastseg[1]), str(lastseg[2]), "with", start, end)
+            lastseg[2] = end
+        else:
+            addXiaohongSegment(Xiaohong_segments, full_sample, lastseg[0], lastseg[1], lastseg[2], totsca)
+            lastseg = [chr, start, end, full_sample]
     xfile.close()
+    addXiaohongSegment(Xiaohong_segments, full_sample, lastseg[0], lastseg[1], lastseg[2], totsca)
 
 def readXiaohongCopynumFile(f, Xiaohong_segments, totsca):
     print("reading", f)
     xfile = open(f, "r")
-    lastseg = ["", 0, 0, 0]
+    lastseg = ["", 0, 0, 0, ""]
     for line in xfile:
         lvec = line.split()
         if len(lvec) == 7:
@@ -488,14 +497,14 @@ def readXiaohongCopynumFile(f, Xiaohong_segments, totsca):
         if code == "Double_d" or code=="Balanced_gain" or code == "34" or code=="41":
             #balanced gain or loss: continue
             addXiaohongSegment(Xiaohong_segments, full_sample, lastseg[0], lastseg[1], lastseg[2], totsca)
-            lastseg = ["", 0, 0, 0]
+            lastseg = ["", 0, 0, 0, ""]
             continue
-        if chr == lastseg[0] and code == lastseg[3] and start-lastseg[2] < 5000:
+        if full_sample == lastseg[4] and chr == lastseg[0] and code == lastseg[3] and start-lastseg[2] < 5000:
             #print("Combining", chr, str(lastseg[1]), str(lastseg[2]), str(lastseg[3]), "with", start, end, code)
             lastseg[2] = end
         else:
             addXiaohongSegment(Xiaohong_segments, full_sample, lastseg[0], lastseg[1], lastseg[2], totsca)
-            lastseg = [chr, start, end, code]
+            lastseg = [chr, start, end, code, full_sample]
     xfile.close()
     addXiaohongSegment(Xiaohong_segments, full_sample, lastseg[0], lastseg[1], lastseg[2], totsca)
 
