@@ -40,8 +40,8 @@ outdir = "gamma_test_output/summaries/"
 #gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600"]
 #gamma_list = ["50"]
 #gamma_list = ["Test"]
-gamma_list = ["100", "500", "1000", "3000"]
-#gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
+#gamma_list = ["100", "500", "1000", "3000"]
+gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
 #gamma_list = []
 bafrawdata = {}
 patient_samples = {}
@@ -49,7 +49,7 @@ patient_samples = {}
 showgraphs = False
 
 onlyonepatient = False
-onepatient = "575"
+onepatient = "12"
 
 twopatientcompare = False
 twopatients = [("360", "672")]
