@@ -23,7 +23,7 @@ import lucianSNPLibrary as lsl
 
 #Use this value to set up whether to use the 'rejoined' segments or not
 
-BAF_links = False
+BAF_links = True
 if BAF_links:
     BAF_dir = "gamma_template/"
 else:
