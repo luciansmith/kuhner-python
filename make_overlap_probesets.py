@@ -14,9 +14,9 @@ import math
 #from os import path
 #import string
 
-print "Loading 2.5M and 1M SNPs."
-m1labels, m1rev_labels = lsl.getSNPLabels(True, True)
-m25labels, m25rev_labels = lsl.getSNPLabels(False, True)
+print("Loading 2.5M and 1M SNPs.")
+m1labels, m1rev_labels = lsl.getSNPLabels1M(True)
+m25labels, m25rev_labels = lsl.getSNPLabels2_5M(True)
 
 all_out = open("probe_set_1_25_all.txt", "w")
 overlap_out = open("probe_set_1_25_strict_overlap.txt", "w")
@@ -42,7 +42,7 @@ for label in m25labels:
     m25_sorted[chr].append(int(pos))
 
 doubled = 0
-print "Writing out overlaps."
+print("Writing out overlaps.")
 for label in m1labels:
     m1l = m1labels[label]
     if label in m25labels:
@@ -70,7 +70,7 @@ for label in m1labels:
 
 overlap_out.close()
 
-print "Writing 2.5M SNPs that weren't in 1M list."
+print("Writing 2.5M SNPs that weren't in 1M list.")
 for label in m25labels:
     if label in m1labels:
         continue
@@ -80,10 +80,10 @@ for label in m25labels:
 all_out.close()
 
 for chr in m25_sorted:
-    print "Sorting chromosome", chr
+    print("Sorting chromosome", chr)
     m25_sorted[chr].sort()
 
-print "Averaging positions of close-enough SNPs from 1M and 2.5M"
+print("Averaging positions of close-enough SNPs from 1M and 2.5M")
 for label in m1_moved:
     m1l = m1_moved[label]
     (chr, pos) = m1l
@@ -124,7 +124,7 @@ only_averaged_out.close()
 #print "new m1's", len(new_m1)
 #print "new m25's", len(new_m25)
 for chr in m25_sorted:
-    print "m25 leftovers for chromosome", chr, ":", len(m25_sorted[chr])
-print "Next-best-SNPs found:", len(m1_moved)
-print "Doubled originally, and now have separate SNPs:", doubled
+    print("m25 leftovers for chromosome", chr, ":", len(m25_sorted[chr]))
+print("Next-best-SNPs found:", len(m1_moved))
+print("Doubled originally, and now have separate SNPs:", doubled)
         

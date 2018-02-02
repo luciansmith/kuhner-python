@@ -265,39 +265,39 @@ def WhichArm(chr, start, end):
 
 def getSNPLabels1M(zeroes):
     # read the probeset file, which correlates name to position.
-    infilename = "probe_set_build37_forpartek.txt"
+    infilename = "HumanOmni1-Quad_v1-0_H_SNPlist.txt"
     infile = open(infilename,"r")
     #duplicates = open("duplicates.txt", "w")
 
     labels = {}
     rev_labels = {}
     for line in infile:
-        line = line.rstrip().split()
-        if (len(line) == 3):
-            (id, chr, pos) = line[0:3]
-            if chr=="X":
-                chr = "23"
-            if chr=="Y":
-                chr = "24"
-            try:
-                int(chr)
-            except ValueError:
-                #print("problematic chr: " + chr)
+        if line.find("Chr") != -1:
+            continue
+        (id, __, chr, pos) = line.rstrip().split()
+        if chr=="X":
+            chr = "23"
+        if chr=="Y":
+            chr = "24"
+        try:
+            int(chr)
+        except ValueError:
+            #print("problematic chr: " + chr)
+            continue
+        if (not zeroes):
+            if (pos == "0"):
                 continue
-            if (not zeroes):
-                if (pos == "0"):
-                    continue
-                if (chr == "0"):
-                    continue
-            try:
-                rev_labels[chr, pos]
-                #print("Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos)
-                #duplicates.write(id + "\t" + rev_labels[chr, pos] + "\t" + chr + "\t" + pos + "\n")
-                #continue
-                #UPDATE:  it appears that Partek uses all SNPs, even if they map to the same location.
-            except:
-                rev_labels[(chr, pos)] = id
-            labels[id] = (chr, pos)
+            if (chr == "0"):
+                continue
+        try:
+            rev_labels[chr, pos]
+            #print("Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos)
+            #duplicates.write(id + "\t" + rev_labels[chr, pos] + "\t" + chr + "\t" + pos + "\n")
+            #continue
+            #UPDATE:  it appears that Partek uses all SNPs, even if they map to the same location.
+        except:
+            rev_labels[(chr, pos)] = id
+        labels[id] = (chr, pos)
     infile.close()
     return labels, rev_labels
 
