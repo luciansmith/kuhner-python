@@ -11,14 +11,14 @@ from os import path
 from os import mkdir
 
 # read the file that correlates patient data with which omni file the 'canonical' version of that data can be found.
-use_averaged_SNPs = True
-use_canonical = True
-checkonly = True
+use_averaged_SNPs = False
+use_canonical = False
+checkonly = False
 onepatientonly = False
 onepatient = "512"
 
 CN_raw_dir = "CN_raw_data/"
-tag = ""
+tag = "_1M"
 if use_averaged_SNPs:
     tag += "_averaged"
 else:
@@ -134,6 +134,8 @@ for file in filenames:
             outfile = open(CN_out_dir + id + "_" + sample + "_copynumber_all.txt", "w")
             outfile.write("SNPid\tchr\tpos\tlog2R\n")
             for entry in range(1,len(SNPnames)):
+                if SNPnames[entry].find("cnvi") != -1:
+                    continue
                 label = labels.get(SNPnames[entry])
                 if (label == None):
                     #print "No label for", SNPnames[entry]

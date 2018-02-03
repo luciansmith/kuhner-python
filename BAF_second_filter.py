@@ -14,10 +14,10 @@ import string
 
 tolerance = 0.15
 
-onepatientonly = True
+onepatientonly = False
 onepatient = "997"
 
-tag = "_25M_only"
+tag = "_1M_only"
 BAF_input = "BAF_first_filtered_data" + tag + "/"
 BAF_output = "BAF_filtered_data" + tag + "_" + str(int(tolerance*100)) + "/"
 if not(path.isdir(BAF_output)):
@@ -70,6 +70,8 @@ for file in wt_files:
         if (line.find("BAF") != -1):
             continue
         (id, chr, pos, baf) = line.rstrip().split("\t")
+        if id.find("cnvi") != -1:
+            continue
         try:
             baf = float(baf)
         except:

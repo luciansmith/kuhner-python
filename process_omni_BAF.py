@@ -13,10 +13,10 @@ from os import mkdir
 
 # read the file that correlates patient data with which omni file the 'canonical' version of that data can be found.
 use_canonical = False
-use_averaged_SNPs = True
+use_averaged_SNPs = False
 
-baf_dir = "BAF_raw_data_25M/"
-tag = "_25M"
+baf_dir = "BAF_raw_data/"
+tag = "_1M"
 if use_averaged_SNPs:
     tag += "_averaged"
 else:
