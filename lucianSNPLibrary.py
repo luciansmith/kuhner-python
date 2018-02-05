@@ -289,14 +289,16 @@ def getSNPLabels1M(zeroes):
                 continue
             if (chr == "0"):
                 continue
-        try:
-            rev_labels[chr, pos]
+        if (chr, pos) not in rev_labels:
+            rev_labels[(chr, pos)] = id
+        elif "cnvi" in rev_labels[(chr, pos)]:
+            rev_labels[(chr, pos)] = id
+        #else:
             #print("Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos)
             #duplicates.write(id + "\t" + rev_labels[chr, pos] + "\t" + chr + "\t" + pos + "\n")
             #continue
             #UPDATE:  it appears that Partek uses all SNPs, even if they map to the same location.
         except:
-            rev_labels[(chr, pos)] = id
         labels[id] = (chr, pos)
     infile.close()
     return labels, rev_labels
@@ -329,14 +331,15 @@ def getSNPLabels2_5M(zeroes):
                     continue
                 if (chr == "0"):
                     continue
-            try:
-                rev_labels[chr, pos]
+            if (chr, pos) not in rev_labels:
+                rev_labels[(chr, pos)] = id
+            elif "cnvi" in rev_labels[(chr, pos)]:
+                rev_labels[(chr, pos)] = id
+            #else:
                 #print("Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos)
                 #duplicates.write(id + "\t" + rev_labels[chr, pos] + "\t" + chr + "\t" + pos + "\n")
                 #continue
                 #UPDATE:  it appears that Partek uses all SNPs, even if they map to the same location.
-            except:
-                rev_labels[(chr, pos)] = id
             labels[id] = (chr, pos)
     infile.close()
     return labels, rev_labels
@@ -367,14 +370,15 @@ def getSNPLabelsAll(zeroes):
                     continue
                 if (chr == "0"):
                     continue
-            try:
-                rev_labels[chr, pos]
+            if (chr, pos) not in rev_labels:
+                rev_labels[(chr, pos)] = id
+            elif "cnvi" in rev_labels[(chr, pos)]:
+                rev_labels[(chr, pos)] = id
+            #else:
                 #print("Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos)
                 #duplicates.write(id + "\t" + rev_labels[chr, pos] + "\t" + chr + "\t" + pos + "\n")
                 #continue
                 #UPDATE:  it appears that Partek uses all SNPs, even if they map to the same location.
-            except:
-                rev_labels[(chr, pos)] = id
             labels[id] = (chr, pos)
     infile.close()
     return labels, rev_labels
@@ -405,14 +409,15 @@ def getSNPLabelsAveraged(zeroes):
                     continue
                 if (chr == "0"):
                     continue
-            try:
-                rev_labels[chr, pos]
+            if (chr, pos) not in rev_labels:
+                rev_labels[(chr, pos)] = id
+            elif "cnvi" in rev_labels[(chr, pos)]:
+                rev_labels[(chr, pos)] = id
+            #else:
                 #print("Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos)
                 #duplicates.write(id + "\t" + rev_labels[chr, pos] + "\t" + chr + "\t" + pos + "\n")
                 #continue
                 #UPDATE:  it appears that Partek uses all SNPs, even if they map to the same location.
-            except:
-                rev_labels[(chr, pos)] = id
             labels[id] = (chr, pos)
     infile.close()
     return labels, rev_labels
