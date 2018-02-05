@@ -17,8 +17,8 @@ cndirs = {}
 
 use_averaged_SNPs = False
 
-onepatientonly = False
-onepatient = "572"
+onepatientonly = True
+onepatient = "163"
 
 if use_averaged_SNPs:
     labels, rev_labels = lsl.getSNPLabelsAveraged(False)
@@ -41,9 +41,9 @@ def readBAFFile(baffilename, sample, avgstraight):
     for line in baffile:
         if "SNPid" in line:
             continue
-        (id, chr, pos, l2r) = line.rstrip().split("\t")
-        if id.find("cnvi") != -1:
+        if "cnvi" in line:
             continue
+        (id, chr, pos, l2r) = line.rstrip().split("\t")
         if use_averaged_SNPs:
             if id not in labels:
                 continue
@@ -231,6 +231,8 @@ for (only25, only1) in [(False, False), (False, True), (True, False)]:
             print "Reading", cnfilename
             for line in cnfile:
                 if "SNPid" in line:
+                    continue
+                if "cnvi" in line:
                     continue
                 (id, chr, pos, l2r) = line.rstrip().split("\t")
                 if chr == "23" or chr=="24":

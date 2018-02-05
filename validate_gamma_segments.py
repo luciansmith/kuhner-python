@@ -456,11 +456,20 @@ def addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca):
 
 def readXiaohongWGSLOHFile(f, Xiaohong_segments, totsca):
     print("reading", f)
+    lastseg = ["", 0, 0, ""]
     xfile = open(f, "r")
     for line in xfile:
         (__, full_sample, __, chr, start, end) = line.split()
-        addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca)
+        start =int(start)
+        end = int(end)
+        if full_sample == lastseg[3] and chr == lastseg[0] and start-lastseg[2] < 5000:
+            print("Combining", chr, str(lastseg[1]), str(lastseg[2]), "with", start, end)
+            lastseg[2] = end
+        else:
+            addXiaohongSegment(Xiaohong_segments, full_sample, lastseg[0], lastseg[1], lastseg[2], totsca)
+            lastseg = [chr, start, end, full_sample]
     xfile.close()
+    addXiaohongSegment(Xiaohong_segments, full_sample, lastseg[0], lastseg[1], lastseg[2], totsca)
 
 def readXiaohong1MLOHFile(f, Xiaohong_segments, totsca):
     print("reading", f)
