@@ -15,9 +15,9 @@ bafdirs = {}
 cndirs = {}
 
 
-use_averaged_SNPs = True
+use_averaged_SNPs = False
 
-onepatientonly = True
+onepatientonly = False
 onepatient = "572"
 
 if use_averaged_SNPs:
@@ -42,6 +42,8 @@ def readBAFFile(baffilename, sample, avgstraight):
         if "SNPid" in line:
             continue
         (id, chr, pos, l2r) = line.rstrip().split("\t")
+        if id.find("cnvi") != -1:
+            continue
         if use_averaged_SNPs:
             if id not in labels:
                 continue
@@ -71,7 +73,7 @@ def readBAFFile(baffilename, sample, avgstraight):
                 l2r = str((l2r+avgwith)/2)
         baf_data[chr][pos][sample] = l2r
 
-for (only25, only1) in [(False, True), (True, False)]:
+for (only25, only1) in [(False, False), (False, True), (True, False)]:
     onlytag = ""
     if (only25):
         onlytag = "_only25M"
