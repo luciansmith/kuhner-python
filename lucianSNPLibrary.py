@@ -298,7 +298,6 @@ def getSNPLabels1M(zeroes):
             #duplicates.write(id + "\t" + rev_labels[chr, pos] + "\t" + chr + "\t" + pos + "\n")
             #continue
             #UPDATE:  it appears that Partek uses all SNPs, even if they map to the same location.
-        except:
         labels[id] = (chr, pos)
     infile.close()
     return labels, rev_labels
