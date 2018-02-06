@@ -23,11 +23,11 @@ import lucianSNPLibrary as lsl
 
 #Use this value to set up whether to use the 'rejoined' segments or not
 
-BAF_links = True
+BAF_links = False
 if BAF_links:
     BAF_dir = "gamma_template/"
 else:
-    BAF_dir = "pASCAT_input_combined_everything/"
+    BAF_dir = "pASCAT_input_combined_all/"
 
 subdirs = ["diploid", "tetraploid"]
 #subdirs = ["diploid"]
@@ -167,7 +167,7 @@ def getIsegsFromCopynumberFileFor(patient):
         isegfilename = root_dir + patient + "_copynumber_segments.txt"
         gindex += 1
     if gindex >= len(glist):
-        print "Cannot find any copynumber file for patient", patient
+        print("Cannot find any copynumber file for patient", patient)
         return {}
     isegfile = open(isegfilename, "r")
     for line in isegfile:
@@ -179,6 +179,14 @@ def getIsegsFromCopynumberFileFor(patient):
             continue
         start = int(start)
         end = int(end)
+        if chr=="3" and end==198837449:
+            end = 198022430
+        elif chr=="19" and end==121485079:
+            end = 59128983
+        elif chr=="21" and (end==106115710 or end==207101487):
+            end = 48129895
+        elif chr=="22" and end==51666786:
+            end = 51304566
         if chr not in isegs:
             isegs[chr] = []
         isegs[chr].append([start, end, [], [], {}])
@@ -433,6 +441,39 @@ def scoreAnalysis(isegs, osegs, sample, analysis):
                 else:
                     iseg[4][sample][analysis] = "UN" #"Unvalidatable negative"
 
+def writeBalanceFiles(isegs, patient, all_samples):
+    for sample in all_samples:
+        outfile = open(outdir + sample + "_balanced_calls.txt", "w")
+        outfile.write("Patient\tSample\tChr\tStart\tEnd\tCall\n")
+        for chr in isegs:
+            for iseg in isegs[chr]:
+                outfile.write(patient)
+                outfile.write("\t" + sample.split("_")[1])
+                outfile.write("\t" + chr)
+                outfile.write("\t" + str(iseg[0]))
+                outfile.write("\t" + str(iseg[1]))
+                matches = iseg[2]
+                nonmatches = iseg[3]
+                sample_in_matches = False
+                sample_in_nonmatches = False
+                for match in matches:
+                    if sample in match:
+                        sample_in_matches = True
+                        break
+                for nonmatch in nonmatches:
+                    if sample in nonmatch:
+                        sample_in_nonmatches = True
+                        break
+                if sample_in_matches:
+                    outfile.write("\tUnbalanced")
+                elif not sample_in_nonmatches:
+                    outfile.write("\tShort")
+                elif len(matches)>0:
+                    outfile.write("\tBalanced")
+                else:
+                    outfile.write("\tUnknown")
+                outfile.write("\n")
+
 def writeSummary(isegs, patient, all_samples, all_analyses):
     if not onlyonepatient and isfile(outdir + patient + "_analysis_overview.txt"):
         print("Skipping patient", patient, ": analysis already exists.")
@@ -551,5 +592,6 @@ for f in files:
         scoreAnalysis(isegs, Xiaohong_segments[patient], sample, "Xiaohong")
 
     writeSummary(isegs, patient, all_samples, all_analyses)
+    writeBalanceFiles(isegs, patient, all_samples)
 
 
