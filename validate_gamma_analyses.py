@@ -37,6 +37,7 @@ for subdir in subdirs:
 gamma_outdir = "gamma_test_output/"
 #gamma_outdir = "gamma_test_output/"
 outdir = "gamma_test_output/analysis_compare/"
+balanced_outdir = "balanced_calls/"
 #gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600"]
 #gamma_list = ["50"]
 #gamma_list = ["Test"]
@@ -47,7 +48,7 @@ bafrawdata = {}
 patient_samples = {}
 
 onlyonepatient = False
-onepatient = "163"
+onepatient = "1047"
 
 #twopatients = [("521", "252")]
 #samples from patient 360:
@@ -66,6 +67,9 @@ print("Using BAF filtering for comparison from ", str(bafErrorBarLow), "to", str
 
 bafWtLow = 0.4
 bafWtHigh = 0.65
+
+if not(path.isdir(balanced_outdir)):
+    mkdir(balanced_outdir)
 
 #original cutoff: 0.35 to 0.65, or 0.15 out from 0.5.  The above values account for dye bias.
 
@@ -443,7 +447,7 @@ def scoreAnalysis(isegs, osegs, sample, analysis):
 
 def writeBalanceFiles(isegs, patient, all_samples):
     for sample in all_samples:
-        outfile = open(outdir + sample + "_balanced_calls.txt", "w")
+        outfile = open(balanced_outdir + sample + "_balanced_calls.txt", "w")
         outfile.write("Patient\tSample\tChr\tStart\tEnd\tCall\n")
         for chr in isegs:
             for iseg in isegs[chr]:

@@ -17,8 +17,8 @@ cndirs = {}
 
 use_averaged_SNPs = False
 
-onepatientonly = True
-onepatient = "163"
+onepatientonly = False
+onepatient = "1047"
 
 if use_averaged_SNPs:
     labels, rev_labels = lsl.getSNPLabelsAveraged(False)

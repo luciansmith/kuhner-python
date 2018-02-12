@@ -23,13 +23,8 @@ import lucianSNPLibrary as lsl
 
 #Use this value to set up whether to use the 'rejoined' segments or not
 
-BAF_links = False
-if BAF_links:
-    BAF_dir = "gamma_template/"
-else:
-    BAF_dir = "pASCAT_input_combined_all/"
-
 gamma_outdir = "gamma_test_output/"
+balanced_dir = "balanced_calls/"
 outdir = "gamma_test_output/analysis_compare/"
 gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
 
@@ -65,8 +60,34 @@ def getIsegsFromCopynumberFileFor(patient):
         end = int(end)
         if chr not in isegs:
             isegs[chr] = []
-        isegs[chr].append([start, end])
+        isegs[chr].append([start, end, {}])
     return isegs
+
+def readBalancedUnbalancedAndStoreInIsegs(isegs, patient):
+    files = []
+    for (__, __, f) in walk(balanced_dir):
+        files += f
+    for f in files:
+        if f.find(patient) != 0:
+            continue
+        if "balanced_calls" not in f:
+            continue
+        sample = f.split("_")[1]
+        balfile = open(balanced_dir + f, "r")
+        for line in balfile:
+            if "Chr" in line:
+                continue
+            (fpatient, fsample, chr, start, end, call) = line.rstrip().split()
+            if fpatient != patient:
+                print "Wrong patient!", f, patient, fpatient
+                continue
+            start = int(start)
+            end = int(end)
+            for iseg in isegs[chr]:
+                if iseg[0] == start and iseg[1] == end:
+                    iseg[2][sample] = call
+                    break
+
 
 def readSegmentationFile(ascsegfile, all_samples):
     totsca = {}
@@ -231,10 +252,13 @@ def readAscatSegmentationFor(patient, canon):
             else:
                 call = "Balanced_gain"
         else:
-            if nA==0 and nB == 1:
-                call = "Loss"
-            elif nA==0:
-                call = "CNLOH"
+            if nA==0:
+                if nB == 1:
+                    call = "Loss"
+                elif nB == 2:
+                    call = "CNLOH"
+                else:
+                    call = "LOH_Gain"
             else:
                 call = "Gain"
         segments[chr].append((int(start), int(end), call))
@@ -270,7 +294,7 @@ def getSummary(calls, wtNotCalled):
     return ret
 
 def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
-    compareout = open(outdir + "compare_xiaohong_to_ascat_" + patient + "_" + sample + "_g" + gamma + "_" + ploidy + ".txt", "w")
+    compareout = open(outdir + patient + "_" + sample + "_g" + gamma + "_" + ploidy + "_xiaohong_to_ascat_compare.txt", "w")
     compareout.write("Patient")
     compareout.write("\tSample")
     compareout.write("\tChr")
@@ -280,10 +304,13 @@ def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
     compareout.write("\tACall")
     compareout.write("\tLength")
     compareout.write("\tSame?")
+    compareout.write("\tBalanced")
+    compareout.write("\tXCall_validated")
+    compareout.write("\tACall_validated")
     compareout.write("\n")
     for chr in isegs:
         sumdiff = 0
-        for (start, end) in isegs[chr]:
+        for (start, end, balanced_calls) in isegs[chr]:
             xcalls = []
             acalls = []
             if chr in Xsegs[patient][sample]:
@@ -297,7 +324,31 @@ def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
                     acalls.append(acall)
             xcall = getSummary(xcalls, True)
             acall = getSummary(acalls, False)
-            
+            x_matches_balanced = "Unknown"
+            a_matches_balanced = "Unknown"
+            if balanced_calls[sample] == "Balanced":
+                if "wt" in xcall or "Double_d" in xcall or "Balanced_gain" in xcall:
+                    x_matches_balanced = "Validated"
+                else:
+                    x_matches_balanced = "Contradicted"
+                if "wt" in acall or "Double_d" in acall or "Balanced_gain" in acall:
+                    a_matches_balanced = "Validated"
+                else:
+                    a_matches_balanced = "Contradicted"
+            elif balanced_calls[sample] == "Unbalanced":
+                if "Gain" in xcall or "Loss" in xcall or "LOH" in xcall:
+                    x_matches_balanced = "Validated"
+                else:
+                    x_matches_balanced = "Contradicted"
+                if "Gain" in acall or "Loss" in acall or "LOH" in acall:
+                    a_matches_balanced = "Validated"
+                else:
+                    a_matches_balanced = "Contradicted"
+
+            a_x_match = str(acall in xcall)
+            if acall == "LOH_Gain" and ("Gain" in xcall or "LOH" in xcall):
+                a_x_match = "True"
+
             compareout.write(patient)
             compareout.write("\t" + sample)
             compareout.write("\t" + chr)
@@ -306,9 +357,12 @@ def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
             compareout.write("\t" + xcall)
             compareout.write("\t" + acall)
             compareout.write("\t" + str(end-start))
-            compareout.write("\t" + str(acall in xcall))
+            compareout.write("\t" + a_x_match)
+            compareout.write("\t" + balanced_calls[sample])
+            compareout.write("\t" + x_matches_balanced)
+            compareout.write("\t" + a_matches_balanced)
             compareout.write("\n")
-            if acall not in xcall:
+            if a_x_match != "True":
                 sumdiff += end-start
         compareout.write(patient)
         compareout.write("\t" + sample)
@@ -319,15 +373,16 @@ def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
         compareout.write("\t" + "--")
         compareout.write("\t" + str(sumdiff))
         compareout.write("\n")
-        
-            
+
+
 
 Xiaohong_segments = readAllXiaohongSegmentation()
 
 for patient in ["163", "184", "396", "1047"]:
     isegs = getIsegsFromCopynumberFileFor(patient)
+    readBalancedUnbalancedAndStoreInIsegs(isegs, patient)
     canonical_ascat = getCanonicalAscatCallsFor(patient)
     for canon in canonical_ascat:
         Ascat_segments = readAscatSegmentationFor(patient, canon)
         writeComparison(Xiaohong_segments, Ascat_segments, patient, canon[0], canon[1], canon[2], isegs)
-        
+
