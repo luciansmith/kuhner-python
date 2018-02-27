@@ -1,4 +1,4 @@
-c#!/usr/bin/env python2
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 30 11:36:41 2017
@@ -20,6 +20,8 @@ if not(path.isdir(gamma_out)):
 allfile = open(gamma_out + "run_all.bat", "w")
 makelinks = open(gamma_out + "make_links.bat", "w")
 
+firstpatients = ["17", "42", "55", "59", "74", "43", "184", "163", "396", "1047"]
+
 infiles = []
 patients = []
 for (_, _, f) in walk(gamma_dir):
@@ -30,8 +32,8 @@ for file in infiles:
 
 
 #for gamma in [0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 2000, 2500, 3000]:
-for gamma in [3000, 2000, 1000, 600, 400, 200, 100, 50, 0, 800, 150, 250, 300, 350, 450, 500, 700, 900, 1200, 1400, 1600, 2500]:
-
+#for patient in firstpatients:
+for gamma in [3000, 1000, 400, 100, 50, 0, 2000, 200, 600, 800, 150, 250, 300, 350, 450, 500, 700, 900, 1200, 1400, 1600, 2500]:
     pASCAT_dir = "pASCAT_input_g" + str(gamma) + "/"
 
     if not(path.isdir(gamma_out + pASCAT_dir)):
@@ -39,15 +41,22 @@ for gamma in [3000, 2000, 1000, 600, 400, 200, 100, 50, 0, 800, 150, 250, 300, 3
 
 #    copytree(gamma_dir, gamma_out + pASCAT_dir)
 
-    if not(path.isdir(gamma_out + pASCAT_dir + "unconstrained/")):
-        mkdir(gamma_out + pASCAT_dir + "unconstrained/")
+    if not(path.isdir(gamma_out + pASCAT_dir + "diploid/")):
+        mkdir(gamma_out + pASCAT_dir + "diploid/")
+
+    if not(path.isdir(gamma_out + pASCAT_dir + "tetraploid/")):
+        mkdir(gamma_out + pASCAT_dir + "tetraploid/")
 
     if not(path.isdir(gamma_out + pASCAT_dir + "Rout/")):
         mkdir(gamma_out + pASCAT_dir + "Rout/")
 
 
     makelinks.write("cd " + pASCAT_dir + "\n")
-    for patient in patients: #["266", "303", "360"]:
+    makelinks.write("cp ../../" + gamma_dir + "*.R .\n")
+    for patient in patients:
+        if patient in firstpatients:
+            continue
+#    for patient in patients: #["266", "303", "360"]:
         outfname = "run_" + patient + "_g" + str(gamma) + ".sge"
         outfile = open(gamma_out + pASCAT_dir + outfname, "w")
         outfile.write("module load modules modules-init modules-gs gmp/5.0.2 mpfr/latest mpc/0.8.2 gcc/latest R/latest java_jdk/latest\n")
@@ -68,11 +77,10 @@ for gamma in [3000, 2000, 1000, 600, 400, 200, 100, 50, 0, 800, 150, 250, 300, 3
         makelinks.write("ln -s ../../" + gamma_dir + patient + "_BAF.txt " + patient + "_BAF.txt\n")
         makelinks.write("ln -s ../../" + gamma_dir + patient + "_Normal_BAF.txt " + patient + "_Normal_BAF.txt\n")
         makelinks.write("ln -s ../../" + gamma_dir + patient + "_logR.txt " + patient + "_logR.txt\n")
-    makelinks.write("cp ../../" + gamma_dir + "*.R .\n")
-    makelinks.write("mkdir Rout\n")
-    makelinks.write("mkdir unconstrained\n")
-    makelinks.write("mkdir diploid\n")
-    makelinks.write("mkdir tetraploid\n")
+    #    makelinks.write("mkdir Rout\n")
+    #    makelinks.write("mkdir unconstrained\n")
+    #    makelinks.write("mkdir diploid\n")
+    #    makelinks.write("mkdir tetraploid\n")
     makelinks.write("cd ..\n")
 
 allfile.close()

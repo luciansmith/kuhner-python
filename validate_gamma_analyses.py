@@ -12,6 +12,7 @@ from __future__ import division
 from os import walk
 from os import path
 from os import readlink
+from os import mkdir
 from os.path import isfile
 from copy import deepcopy
 
@@ -47,8 +48,9 @@ gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450",
 bafrawdata = {}
 patient_samples = {}
 
-onlyonepatient = False
-onepatient = "1047"
+onlysomepatients = True
+somepatients = ["163", "184", "396", "1047", "17", "42", "43", "55", "59", "74"]
+#somepatients = ["43"]
 
 #twopatients = [("521", "252")]
 #samples from patient 360:
@@ -68,6 +70,8 @@ print("Using BAF filtering for comparison from ", str(bafErrorBarLow), "to", str
 bafWtLow = 0.4
 bafWtHigh = 0.65
 
+if not(path.isdir(outdir)):
+    mkdir(outdir)
 if not(path.isdir(balanced_outdir)):
     mkdir(balanced_outdir)
 
@@ -447,7 +451,7 @@ def scoreAnalysis(isegs, osegs, sample, analysis):
 
 def writeBalanceFiles(isegs, patient, all_samples):
     for sample in all_samples:
-        outfile = open(balanced_outdir + sample + "_balanced_calls.txt", "w")
+        outfile = open(balanced_outdir + sample + "_balanced_calls.tsv", "w")
         outfile.write("Patient\tSample\tChr\tStart\tEnd\tCall\n")
         for chr in isegs:
             for iseg in isegs[chr]:
@@ -478,8 +482,19 @@ def writeBalanceFiles(isegs, patient, all_samples):
                     outfile.write("\tUnknown")
                 outfile.write("\n")
 
+def writeDerivedStatistic(ov_out, ov, sample, analysis, numerator, denom2):
+    denom = ov[sample][analysis][numerator]+ov[sample][analysis][denom2]
+    value = 0
+    if denom != 0:
+        value = ov[sample][analysis][numerator]/denom
+        ov_out.write("\t" + str(value))
+    else:
+        ov_out.write("\t--")
+    return value
+
+
 def writeSummary(isegs, patient, all_samples, all_analyses):
-    if not onlyonepatient and isfile(outdir + patient + "_analysis_overview.txt"):
+    if not onlysomepatients and isfile(outdir + patient + "_analysis_overview.txt"):
         print("Skipping patient", patient, ": analysis already exists.")
         return
     overview = {}
@@ -494,7 +509,7 @@ def writeSummary(isegs, patient, all_samples, all_analyses):
             for call in calls:
                 overview[sample][analysis][call] = 0
                 overview_bases[sample][analysis][call] = 0
-    summary_out = open(outdir + patient + "_full_analysis.txt", "w")
+    summary_out = open(outdir + patient + "_full_analysis.tsv", "w")
     summary_out.write("Patient")
     summary_out.write("\tSample")
     summary_out.write("\tchr")
@@ -518,24 +533,51 @@ def writeSummary(isegs, patient, all_samples, all_analyses):
                 summary_out.write("\n")
     summary_out.close()
 
-    overview_out = open(outdir + patient + "_analysis_overview.txt", "w")
+    overview_out = open(outdir + patient + "_analysis_overview.tsv", "w")
     overview_out.write("Patient")
     overview_out.write("\tSample")
-    overview_out.write("\tAnalysis")
+    overview_out.write("\tAnalysis gamma")
+    overview_out.write("\tAnalysis ploidy")
     for call in calls:
         overview_out.write("\t" + call + "_num")
     for call in calls:
         overview_out.write("\t" + call + "_len")
+    overview_out.write("\tnum_precision")
+    overview_out.write("\tnum_sensitivity")
+    overview_out.write("\tnum_specificity")
+    overview_out.write("\tlen_precision")
+    overview_out.write("\tlen_sensitivity")
+    overview_out.write("\tlen_specificity")
     overview_out.write("\n")
     for sample in all_samples:
         for analysis in all_analyses:
             overview_out.write(patient)
             overview_out.write("\t" + sample.split("_")[1])
-            overview_out.write("\t" + analysis)
+            analysis_split = analysis.find("t")
+            atype = "tetraploid"
+            if analysis_split == -1:
+                analysis_split = analysis.find("d")
+                atype = "diploid"
+            if analysis_split == -1:
+                overview_out.write("\t0\tXiaohong")
+                analysis_split = len(analysis)
+                atype = "Xiaohong"
+            else:
+                overview_out.write("\t" + analysis[:analysis_split] + "\t" + analysis[analysis_split:])
             for call in calls:
                 overview_out.write("\t" + str(overview[sample][analysis][call]))
             for call in calls:
                 overview_out.write("\t" + str(overview_bases[sample][analysis][call]))
+            writeDerivedStatistic(overview_out, overview, sample, analysis,  "TP", "FP")
+            writeDerivedStatistic(overview_out, overview, sample, analysis, "TP", "FN")
+            writeDerivedStatistic(overview_out, overview, sample, analysis,  "TN", "FP")
+            writeDerivedStatistic(overview_out, overview_bases, sample, analysis,  "TP", "FP")
+#            if atype=="tetraploid":
+#                overview_out.write("\t\t")
+#            elif atype == "Xiaohong":
+#                overview_out.write("\t\t\t\t")
+            writeDerivedStatistic(overview_out, overview_bases, sample, analysis,  "TP", "FN")
+            writeDerivedStatistic(overview_out, overview_bases, sample, analysis,  "TN", "FP")
             overview_out.write("\n")
     overview_out.close()
 
@@ -549,7 +591,7 @@ for f in files:
     if f.find("_Normal_BAF.txt") == -1:
         continue
     patient = f.split("_")[0]
-    if (onlyonepatient and patient != onepatient):
+    if (onlysomepatients and patient not in somepatients):
         continue
 
     bafrawdata, bafwt = readBafNormal(patient)

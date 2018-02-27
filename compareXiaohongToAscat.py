@@ -29,7 +29,7 @@ outdir = "gamma_test_output/analysis_compare/"
 gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
 
 onlyonepatient = False
-onepatient = "163"
+onepatient = "43"
 
 def getIsegsFromCopynumberFileFor(patient):
     #This function reads the lowest-gamma-value copynumber file it can, reads it, and returns it as 'isegs'.
@@ -74,19 +74,21 @@ def readBalancedUnbalancedAndStoreInIsegs(isegs, patient):
             continue
         sample = f.split("_")[1]
         balfile = open(balanced_dir + f, "r")
+        print("Reading file", f)
         for line in balfile:
             if "Chr" in line:
                 continue
             (fpatient, fsample, chr, start, end, call) = line.rstrip().split()
             if fpatient != patient:
-                print "Wrong patient!", f, patient, fpatient
+                print("Wrong patient!", f, patient, fpatient)
                 continue
             start = int(start)
             end = int(end)
-            for iseg in isegs[chr]:
-                if iseg[0] == start and iseg[1] == end:
-                    iseg[2][sample] = call
-                    break
+            if chr in isegs:
+                for iseg in isegs[chr]:
+                    if iseg[0] == start and iseg[1] == end:
+                        iseg[2][sample] = call
+                        break
 
 
 def readSegmentationFile(ascsegfile, all_samples):
@@ -214,14 +216,47 @@ def readAllXiaohongSegmentation():
     return Xiaohong_segments
 
 def getCanonicalAscatCallsFor(patient):
-    if patient=="163":
-        return [("24735", "900", "tetraploid"), ("23740", "900", "tetraploid"), ("23743", "800", "tetraploid"), ("23749", "200", "tetraploid")]
-    if patient=="184":
-        return [("24325", "2500", "diploid"), ("24325", "2500", "tetraploid"), ("24328", "2500", "diploid"), ("24328", "2500", "tetraploid"), ("24331", "2500", "diploid"), ("24331", "2500", "tetraploid"), ("24334", "2500", "diploid"), ("24334", "2500", "tetraploid"), ("24340", "2500", "diploid"), ("24340", "2500", "tetraploid"), ]
-    if patient=="396":
-        return [("24445", "100", "diploid"), ("24445", "100", "tetraploid"), ("24448", "100", "diploid"), ("24448", "100", "tetraploid"), ("24448", "1200", "diploid"), ("24448", "1200", "tetraploid"), ("24448", "300", "diploid"), ("24448", "300", "tetraploid"), ("24457", "1000", "diploid"), ("24457", "1000", "tetraploid"), ("24461", "100", "tetraploid")]
-    if patient=="1047":
-        return[("24271", "2500", "diploid"), ("24274", "2500", "diploid"), ("24277", "2500", "diploid"), ("24280", "2500", "diploid"), ("24271", "2500", "tetraploid"), ("24274", "2500", "tetraploid"), ("24277", "2500", "tetraploid"), ("24280", "2500", "tetraploid"), ]
+#    if patient=="163":
+#        return [("24735", "900", "tetraploid"), ("23740", "900", "tetraploid"), ("23743", "800", "tetraploid"), ("23749", "200", "tetraploid")]
+#    if patient=="184":
+#        return [("24325", "2500", "diploid"), ("24325", "2500", "tetraploid"), ("24328", "2500", "diploid"), ("24328", "2500", "tetraploid"), ("24331", "2500", "diploid"), ("24331", "2500", "tetraploid"), ("24334", "2500", "diploid"), ("24334", "2500", "tetraploid"), ("24340", "2500", "diploid"), ("24340", "2500", "tetraploid"), ]
+#    if patient=="396":
+#        return [("24445", "100", "diploid"), ("24445", "100", "tetraploid"), ("24448", "100", "diploid"), ("24448", "100", "tetraploid"), ("24448", "1200", "diploid"), ("24448", "1200", "tetraploid"), ("24448", "300", "diploid"), ("24448", "300", "tetraploid"), ("24457", "1000", "diploid"), ("24457", "1000", "tetraploid"), ("24461", "100", "tetraploid")]
+#    if patient=="1047":
+#        return[("24271", "2500", "diploid"), ("24274", "2500", "diploid"), ("24277", "2500", "diploid"), ("24280", "2500", "diploid"), ("24271", "2500", "tetraploid"), ("24274", "2500", "tetraploid"), ("24277", "2500", "tetraploid"), ("24280", "2500", "tetraploid"), ]
+#    if patient=="43":
+#        return[("25093", "1400", "diploid"),\
+#               ("25093", "1400", "tetraploid"),\
+#               ("24696", "200", "diploid"),\
+#               ("24696", "200", "tetraploid"),\
+#               ("23590", "50", "diploid"),\
+#               ("23590", "1400", "tetraploid"),\
+#               ("23585", "1400", "diploid"),\
+#               ("23585", "100", "tetraploid"),\
+#               ("23593", "1400", "diploid"),\
+#               ("23593", "2500", "tetraploid")]
+        
+    files = []
+    for (__, __, f) in walk("best_analyses/"):
+        files += f
+    for f in files:
+        print("Testing file", f)
+        fpatient = f.split("_")[0]
+        if fpatient != patient:
+            print("wrong file", fpatient)
+            continue
+        print("Reading best analysis file", f)
+        best_file = open("best_analyses/" + f, "r")
+        ret = []
+        for line in best_file:
+            if "Patient" in line:
+                continue
+            lvec = line.split()
+            (patient, sample, ploidy, compare, gb, gamma) = lvec[0:6]
+            if ploidy != "Xiaohong":
+                ret.append((sample, gamma, ploidy))
+        return ret
+        
     print("Unknown patient")
     return []
 
@@ -237,30 +272,33 @@ def readAscatSegmentationFor(patient, canon):
             continue
         if chr not in segments:
             segments[chr] = []
-        nA = int(nA)
-        nB = int(nB)
-        if nA > nB:
-            temp = nA
-            nA = nB
-            nB = temp
-        call = "wt"
-        if nA == nB:
-            if nA==0:
-                call = "Double_d"
-            elif nA==1:
-                call = "wt"
-            else:
-                call = "Balanced_gain"
+        if nA=="NA" or nB=="NA":
+            call = "Unknown"
         else:
-            if nA==0:
-                if nB == 1:
-                    call = "Loss"
-                elif nB == 2:
-                    call = "CNLOH"
+            nA = int(nA)
+            nB = int(nB)
+            if nA > nB:
+                temp = nA
+                nA = nB
+                nB = temp
+            call = "wt"
+            if nA == nB:
+                if nA==0:
+                    call = "Double_d"
+                elif nA==1:
+                    call = "wt"
                 else:
-                    call = "LOH_Gain"
+                    call = "Balanced_gain"
             else:
-                call = "Gain"
+                if nA==0:
+                    if nB == 1:
+                        call = "Loss"
+                    elif nB == 2:
+                        call = "CNLOH"
+                    else:
+                        call = "LOH_Gain"
+                else:
+                    call = "Gain"
         segments[chr].append((int(start), int(end), call))
     return segments
 
@@ -294,7 +332,7 @@ def getSummary(calls, wtNotCalled):
     return ret
 
 def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
-    compareout = open(outdir + patient + "_" + sample + "_g" + gamma + "_" + ploidy + "_xiaohong_to_ascat_compare.txt", "w")
+    compareout = open(outdir + patient + "_" + sample + "_g" + gamma + "_" + ploidy + "_xiaohong_to_ascat_compare.tsv", "w")
     compareout.write("Patient")
     compareout.write("\tSample")
     compareout.write("\tChr")
@@ -313,7 +351,7 @@ def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
         for (start, end, balanced_calls) in isegs[chr]:
             xcalls = []
             acalls = []
-            if chr in Xsegs[patient][sample]:
+            if sample in Xsegs[patient] and chr in Xsegs[patient][sample]:
                 for xseg in Xsegs[patient][sample][chr]:
                     xcall = getCallFor(start, end, xseg)
                     if xcall[1] > 0:
@@ -378,7 +416,12 @@ def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
 
 Xiaohong_segments = readAllXiaohongSegmentation()
 
-for patient in ["163", "184", "396", "1047"]:
+files = []
+for (__, __, f) in walk("best_analyses/"):
+    files += f
+for f in files:
+    patient = f.split("_")[0]
+#for patient in ["43"]:
     isegs = getIsegsFromCopynumberFileFor(patient)
     readBalancedUnbalancedAndStoreInIsegs(isegs, patient)
     canonical_ascat = getCanonicalAscatCallsFor(patient)
