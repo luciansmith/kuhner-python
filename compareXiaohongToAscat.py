@@ -13,6 +13,8 @@ from os import walk
 from os import path
 from os import readlink
 from os.path import isfile
+from os import mkdir
+from shutil import copy2 as copy
 from copy import deepcopy
 
 import numpy
@@ -25,11 +27,14 @@ import lucianSNPLibrary as lsl
 
 gamma_outdir = "gamma_test_output/"
 balanced_dir = "balanced_calls/"
-outdir = "gamma_test_output/analysis_compare/"
+outdir = "Xiaohong_pASCAT_compare/"
 gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
 
 onlyonepatient = False
 onepatient = "43"
+
+if not path.isdir(outdir):
+    mkdir(outdir)
 
 def getIsegsFromCopynumberFileFor(patient):
     #This function reads the lowest-gamma-value copynumber file it can, reads it, and returns it as 'isegs'.
@@ -235,26 +240,22 @@ def getCanonicalAscatCallsFor(patient):
 #               ("23585", "100", "tetraploid"),\
 #               ("23593", "1400", "diploid"),\
 #               ("23593", "2500", "tetraploid")]
-        
-    files = []
-    for (__, __, f) in walk("best_analyses/"):
-        files += f
-    for f in files:
-        print("Testing file", f)
-        fpatient = f.split("_")[0]
-        if fpatient != patient:
-            print("wrong file", fpatient)
-            continue
+    bestfilename = "best_analyses/" + patient + "_best.tsv"
+    if not isfile(bestfilename):
+        print("no such file", bestfilename)
+        return []
+    else:
         print("Reading best analysis file", f)
-        best_file = open("best_analyses/" + f, "r")
-        ret = []
+        best_file = open(bestfilename, "r")
+        ret = set()
         for line in best_file:
             if "Patient" in line:
                 continue
             lvec = line.split()
-            (patient, sample, ploidy, compare, gb, gamma) = lvec[0:6]
-            if ploidy != "Xiaohong":
-                ret.append((sample, gamma, ploidy))
+            (patient, sample, ploidy, compare, accuracy, gamma) = lvec[0:6]
+            if compare=="by_length" and len(lvec) > 7:
+                #length>7 filters against the 'overall' and 'Xiaohong' lines, plus any diploid or tetraploid lines with zero entries close to the overall best accuracy.
+                ret.add((sample, gamma, ploidy))
         return ret
         
     print("Unknown patient")
@@ -412,7 +413,15 @@ def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
         compareout.write("\t" + str(sumdiff))
         compareout.write("\n")
 
-
+def copyDataForJamboree(patient, data, gamma, ploidy):
+    infile = open(gamma_outdir + "pASCAT_input_g" + gamma + "/" + ploidy  + "/" + patient + "_fcn_ascat_segments.txt", "r")
+    outfile = open("jamboree_files/pASCAT_segmentation/" + patient + "_" + sample + "_g" + gamma + "_" + ploidy + "_segments.tsv", "w")
+    for line in infile:
+        if "SampleID" in line or patient + "_" + sample in line:
+            outfile.write(line)
+    copy(outdir + patient + "_" + sample + "_g" + gamma + "_" + ploidy + "_xiaohong_to_ascat_compare.tsv", "jamboree_files/xiaohong_compare/")
+    copy(balanced_dir + patient + "_" + sample + "_balanced_calls.tsv", "jamboree_files/balanced_calls/")
+    
 
 Xiaohong_segments = readAllXiaohongSegmentation()
 
@@ -420,12 +429,20 @@ files = []
 for (__, __, f) in walk("best_analyses/"):
     files += f
 for f in files:
+    if "catch" in f:
+        continue
     patient = f.split("_")[0]
 #for patient in ["43"]:
     isegs = getIsegsFromCopynumberFileFor(patient)
     readBalancedUnbalancedAndStoreInIsegs(isegs, patient)
     canonical_ascat = getCanonicalAscatCallsFor(patient)
     for canon in canonical_ascat:
+        sample = canon[0]
+        gamma = canon[1]
+        ploidy = canon[2]
         Ascat_segments = readAscatSegmentationFor(patient, canon)
-        writeComparison(Xiaohong_segments, Ascat_segments, patient, canon[0], canon[1], canon[2], isegs)
+        writeComparison(Xiaohong_segments, Ascat_segments, patient, sample, gamma, ploidy, isegs)
+        if int(sample) < 23341:
+            continue
+        copyDataForJamboree(patient, sample, gamma, ploidy)
 

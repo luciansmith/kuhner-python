@@ -23,7 +23,7 @@ import lucianSNPLibrary as lsl
 
 analysis_dir = "gamma_test_output/analysis_compare/"
 outdir = "best_analyses/"
-gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
+gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
 
 onlysomepatients = False
 somepatients = ["43"]
@@ -37,6 +37,15 @@ gamma_levels["by_length"] = {}
 for gamma in gamma_list:
     gamma_levels["by_segment"][gamma] = []
     gamma_levels["by_length"][gamma] = []
+
+catch_out = open(outdir + "catch_close.tsv", "w")
+catch_out.write("Patient")
+catch_out.write("\tSample")
+catch_out.write("\tSegOrLen")
+catch_out.write("\tBest match")
+catch_out.write("\tOrig best gamma")
+catch_out.write("\tOrig best ploidy")
+catch_out.write("\n")
 
 files = []
 for (__, __, f) in walk(analysis_dir):
@@ -67,15 +76,25 @@ for f in files:
     for sample in analysis_summaries:
         best[sample] = {}
         bestv[sample] = {}
+        best[sample]["overall"] = {}
+        bestv[sample]["overall"] = {}
         for ploidy in analysis_summaries[sample]:
+            best[sample][ploidy] = {}
+            bestv[sample][ploidy] = {}
             for gamma in analysis_summaries[sample][ploidy]:
                 for segorlen in analysis_summaries[sample][ploidy][gamma]:
-                    if segorlen not in best[sample]:
-                        best[sample][segorlen] = ("None", "None")
-                        bestv[sample][segorlen] = 0
-                    if analysis_summaries[sample][ploidy][gamma][segorlen] > bestv[sample][segorlen]:
-                        bestv[sample][segorlen] = analysis_summaries[sample][ploidy][gamma][segorlen]
-                        best[sample][segorlen] = (gamma, ploidy)
+                    if segorlen not in best[sample][ploidy]:
+                        best[sample][ploidy][segorlen] = ("None", "None")
+                        bestv[sample][ploidy][segorlen] = 0
+                    if segorlen not in best[sample]["overall"]:
+                        best[sample]["overall"][segorlen] = ("None", "None")
+                        bestv[sample]["overall"][segorlen] = 0
+                    if analysis_summaries[sample][ploidy][gamma][segorlen] > bestv[sample][ploidy][segorlen]:
+                        bestv[sample][ploidy][segorlen] = analysis_summaries[sample][ploidy][gamma][segorlen]
+                        best[sample][ploidy][segorlen] = (gamma, ploidy)
+                    if analysis_summaries[sample][ploidy][gamma][segorlen] > bestv[sample]["overall"][segorlen]:
+                        bestv[sample]["overall"][segorlen] = analysis_summaries[sample][ploidy][gamma][segorlen]
+                        best[sample]["overall"][segorlen] = (gamma, ploidy)
 #                    if analysis_summaries[sample][ploidy][gamma][segorlen] < 0:
 #                        print("Negative analysis level:", patient, sample, ploidy, segorlen, gamma)
 
@@ -90,30 +109,53 @@ for f in files:
     best_out.write("\tClose Gammas")
     best_out.write("\n")
     for sample in best:
-        for ploidy in ["diploid", "tetraploid"]:
-            for segorlen in best[sample]:
+        for ploidy in best[sample]:
+            for segorlen in best[sample][ploidy]:
                 best_out.write(patient)
                 best_out.write("\t" + sample)
                 best_out.write("\t" + ploidy)
                 best_out.write("\t" + segorlen)
-                best_out.write("\t" + str(bestv[sample][segorlen]))
-                best_out.write("\t" + best[sample][segorlen][1] + "_" + best[sample][segorlen][0])
-                for gamma in analysis_summaries[sample][ploidy]:
-                    if bestv[sample][segorlen]==0 or analysis_summaries[sample][ploidy][gamma][segorlen]/bestv[sample][segorlen] > 0.99:
+                best_out.write("\t" + str(bestv[sample][ploidy][segorlen]))
+                best_out.write("\t" + best[sample][ploidy][segorlen][0])
+                for gamma in gamma_list:
+                    if ploidy not in analysis_summaries[sample] or gamma not in analysis_summaries[sample][ploidy]:
+                        continue
+                    if bestv[sample][ploidy][segorlen]==0 or analysis_summaries[sample][ploidy][gamma][segorlen]/bestv[sample]["overall"][segorlen] > 0.99:
                         best_out.write("\t" + gamma)
-                    if bestv[sample][segorlen] == 0:
+                    if bestv[sample][ploidy][segorlen] == 0:
                         gamma_levels[segorlen][gamma].append(1)
                     elif analysis_summaries[sample][ploidy][gamma][segorlen] < 0:
                         gamma_levels[segorlen][gamma].append(0)
                     else:
-                        gamma_levels[segorlen][gamma].append(analysis_summaries[sample][ploidy][gamma][segorlen]/bestv[sample][segorlen])
+                        gamma_levels[segorlen][gamma].append(analysis_summaries[sample][ploidy][gamma][segorlen]/bestv[sample][ploidy][segorlen])
                 best_out.write("\n")
-    
+
+    for sample in best:
+        for segorlen in best[sample]["overall"]:
+            closestmatch = 0
+            matches = "No Match"
+            if bestv[sample]["overall"][segorlen]==0:
+                matches = "Best match was zero."
+            else:
+                for ploidy in ["diploid", "tetraploid"]:
+                    for gamma in ["3000", "1000", "400", "250", "100"]:
+                        if gamma in analysis_summaries[sample][ploidy]:
+                            match = analysis_summaries[sample][ploidy][gamma][segorlen]/bestv[sample]["overall"][segorlen]
+                            if match > closestmatch:
+                                closestmatch = match
+                matches = "Best Match:\t" + str(closestmatch)
+            catch_out.write(patient)
+            catch_out.write("\t" + sample)
+            catch_out.write("\t" + segorlen)
+            catch_out.write("\t" + str(closestmatch))
+            catch_out.write("\t" + best[sample]["overall"][segorlen][0])
+            catch_out.write("\t" + best[sample]["overall"][segorlen][1])
+            catch_out.write("\n")
     
     best_out.close()
 
-for segorlen in gamma_levels:
-    print("Histograms for", segorlen)
-    for gamma in gamma_levels[segorlen]:
-        print("Histogram for a gamma of", gamma)
-        lsl.createPrintAndSaveHistogram(gamma_levels[segorlen][gamma], "", 0.001)
+#for segorlen in gamma_levels:
+#    print("Histograms for", segorlen)
+#    for gamma in gamma_levels[segorlen]:
+#        print("Histogram for a gamma of", gamma)
+#        lsl.createPrintAndSaveHistogram(gamma_levels[segorlen][gamma], "", 0.001)
