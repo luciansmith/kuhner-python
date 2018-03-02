@@ -37,29 +37,30 @@ def addtoSummaries(summaries, patient, sample, gamma, ploidy, xcall, acall, leng
     length = int(length)
     if patient not in summaries:
         summaries[patient] = {}
-    if sample not in summaries[patient]:
-        summaries[patient][sample] = {}
-        summaries[patient][sample]["gploidy"] = (gamma, ploidy)
+    samGamPloidy = (sample, gamma, ploidy)
+    if samGamPloidy not in summaries[patient]:
+        summaries[patient][samGamPloidy] = {}
+        summaries[patient][samGamPloidy]["gploidy"] = (gamma, ploidy)
         for same in sameness:
-            summaries[patient][sample][same] = {}
+            summaries[patient][samGamPloidy][same] = {}
             if same=="same":
                 for category in categories:
-                    summaries[patient][sample][same][category] = 0
+                    summaries[patient][samGamPloidy][same][category] = 0
             else:
-                summaries[patient][sample][same]["Unknown"] = 0
+                summaries[patient][samGamPloidy][same]["Unknown"] = 0
                 for xv in ["Contradicted", "Validated"]:
-                    summaries[patient][sample][same][xv] = {}
+                    summaries[patient][samGamPloidy][same][xv] = {}
                     for av in ["Contradicted", "Validated"]:
-                        summaries[patient][sample][same][xv][av] = 0
+                        summaries[patient][samGamPloidy][same][xv][av] = 0
     if issame == "True":
         same = "same"
-        summaries[patient][sample][same][xvalid] += length
+        summaries[patient][samGamPloidy][same][xvalid] += length
     elif issame == "False":
         same = "different"
         if xvalid=="Unknown":
-            summaries[patient][sample][same][xvalid] += length
+            summaries[patient][samGamPloidy][same][xvalid] += length
         else:
-            summaries[patient][sample][same][xvalid][avalid] += length
+            summaries[patient][samGamPloidy][same][xvalid][avalid] += length
     else:
         print("Unknown 'is same':", issame)
 
@@ -80,33 +81,32 @@ def writeHeader(sumout):
     sumout.write("\tDifferent total")
     sumout.write("\n")
 
-def writeLine(sumout, psummaries, patient, sample):
-    for sample in psummaries:
-        sumout.write(patient)
-        sumout.write("\t" + sample)
-        sumout.write("\t" + str(psummaries[sample]["gploidy"][0]))
-        sumout.write("\t" + str(psummaries[sample]["gploidy"][1]))
-        sumout.write("\t" + str(psummaries[sample]["same"]["Validated"]))
-        sumout.write("\t" + str(psummaries[sample]["same"]["Contradicted"]))
-        sumout.write("\t" + str(psummaries[sample]["same"]["Unknown"]))
-        total = 0
-        for category in psummaries[sample]["same"]:
-            total += psummaries[sample]["same"][category]
-        sumout.write("\t" + str(total))
-        sumout.write("\t" + str(psummaries[sample]["different"]["Validated"]["Validated"]))
-        sumout.write("\t" + str(psummaries[sample]["different"]["Contradicted"]["Contradicted"]))
-        sumout.write("\t" + str(psummaries[sample]["different"]["Unknown"]))
-        sumout.write("\t" + str(psummaries[sample]["different"]["Validated"]["Contradicted"]))
-        sumout.write("\t" + str(psummaries[sample]["different"]["Contradicted"]["Validated"]))
-        total = 0
-        for category in psummaries[sample]["different"]:
-            if category == "Unknown":
-                total += psummaries[sample]["different"][category]
-            else:
-                for cat2 in psummaries[sample]["different"][category]:
-                    total += psummaries[sample]["different"][category][cat2]
-        sumout.write("\t" + str(total))
-        sumout.write("\n")
+def writeLine(sumout, psummaries, patient, samGamPloidy):
+    sumout.write(patient)
+    sumout.write("\t" + samGamPloidy[0])
+    sumout.write("\t" + samGamPloidy[1])
+    sumout.write("\t" + samGamPloidy[2])
+    sumout.write("\t" + str(psummaries[samGamPloidy]["same"]["Validated"]))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["same"]["Contradicted"]))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["same"]["Unknown"]))
+    total = 0
+    for category in psummaries[samGamPloidy]["same"]:
+        total += psummaries[samGamPloidy]["same"][category]
+    sumout.write("\t" + str(total))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Validated"]["Validated"]))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Contradicted"]["Contradicted"]))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Unknown"]))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Validated"]["Contradicted"]))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Contradicted"]["Validated"]))
+    total = 0
+    for category in psummaries[samGamPloidy]["different"]:
+        if category == "Unknown":
+            total += psummaries[samGamPloidy]["different"][category]
+        else:
+            for cat2 in psummaries[samGamPloidy]["different"][category]:
+                total += psummaries[samGamPloidy]["different"][category][cat2]
+    sumout.write("\t" + str(total))
+    sumout.write("\n")
 
 
 def saveSummaries(summaries):
@@ -115,10 +115,10 @@ def saveSummaries(summaries):
     writeHeader(sumout)
     writeHeader(jsumout)
     for patient in summaries:
-        for sample in summaries[patient]:
-            writeLine(sumout, summaries[patient], patient, sample)
-            if int(sample) >= 23341:
-                writeLine(jsumout, summaries[patient], patient, sample)
+        for samGamPloidy in summaries[patient]:
+            writeLine(sumout, summaries[patient], patient, samGamPloidy)
+            if int(samGamPloidy[0]) >= 23341:
+                writeLine(jsumout, summaries[patient], patient, samGamPloidy)
     sumout.close()
     jsumout.close()
         

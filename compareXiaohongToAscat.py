@@ -234,7 +234,7 @@ def getCanonicalAscatCallsFor(patient):
                 continue
             lvec = line.split()
             (patient, sample, ploidy, compare, accuracy, gamma) = lvec[0:6]
-            if compare=="by_length" and len(lvec) > 7:
+            if compare=="by_length" and len(lvec) > 6:
                 #length>7 filters against the 'overall' and 'Xiaohong' lines, plus any diploid or tetraploid lines with zero entries close to the overall best accuracy.
                 ret.add((sample, gamma, ploidy))
         return ret
