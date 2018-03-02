@@ -221,25 +221,6 @@ def readAllXiaohongSegmentation():
     return Xiaohong_segments
 
 def getCanonicalAscatCallsFor(patient):
-#    if patient=="163":
-#        return [("24735", "900", "tetraploid"), ("23740", "900", "tetraploid"), ("23743", "800", "tetraploid"), ("23749", "200", "tetraploid")]
-#    if patient=="184":
-#        return [("24325", "2500", "diploid"), ("24325", "2500", "tetraploid"), ("24328", "2500", "diploid"), ("24328", "2500", "tetraploid"), ("24331", "2500", "diploid"), ("24331", "2500", "tetraploid"), ("24334", "2500", "diploid"), ("24334", "2500", "tetraploid"), ("24340", "2500", "diploid"), ("24340", "2500", "tetraploid"), ]
-#    if patient=="396":
-#        return [("24445", "100", "diploid"), ("24445", "100", "tetraploid"), ("24448", "100", "diploid"), ("24448", "100", "tetraploid"), ("24448", "1200", "diploid"), ("24448", "1200", "tetraploid"), ("24448", "300", "diploid"), ("24448", "300", "tetraploid"), ("24457", "1000", "diploid"), ("24457", "1000", "tetraploid"), ("24461", "100", "tetraploid")]
-#    if patient=="1047":
-#        return[("24271", "2500", "diploid"), ("24274", "2500", "diploid"), ("24277", "2500", "diploid"), ("24280", "2500", "diploid"), ("24271", "2500", "tetraploid"), ("24274", "2500", "tetraploid"), ("24277", "2500", "tetraploid"), ("24280", "2500", "tetraploid"), ]
-#    if patient=="43":
-#        return[("25093", "1400", "diploid"),\
-#               ("25093", "1400", "tetraploid"),\
-#               ("24696", "200", "diploid"),\
-#               ("24696", "200", "tetraploid"),\
-#               ("23590", "50", "diploid"),\
-#               ("23590", "1400", "tetraploid"),\
-#               ("23585", "1400", "diploid"),\
-#               ("23585", "100", "tetraploid"),\
-#               ("23593", "1400", "diploid"),\
-#               ("23593", "2500", "tetraploid")]
     bestfilename = "best_analyses/" + patient + "_best.tsv"
     if not isfile(bestfilename):
         print("no such file", bestfilename)
