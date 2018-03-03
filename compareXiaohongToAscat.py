@@ -30,8 +30,8 @@ balanced_dir = "balanced_calls/"
 outdir = "Xiaohong_pASCAT_compare/"
 gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
 
-onlyonepatient = False
-onepatient = "43"
+onlysomepatients = True
+somepatients = ["163", "184", "396", "1047", "17", "42", "43", "55", "59", "74"]
 
 if not path.isdir(outdir):
     mkdir(outdir)
@@ -59,8 +59,8 @@ def getIsegsFromCopynumberFileFor(patient):
             continue
         (chr, start, end, nlogr, nbaf) = line.split()
         nbaf = int(nbaf)
-        if nbaf <10:
-            continue
+#        if nbaf <10:
+#            continue
         start = int(start)
         end = int(end)
         if chr not in isegs:
@@ -73,7 +73,7 @@ def readBalancedUnbalancedAndStoreInIsegs(isegs, patient):
     for (__, __, f) in walk(balanced_dir):
         files += f
     for f in files:
-        if f.find(patient) != 0:
+        if f.find(patient + "_") != 0:
             continue
         if "balanced_calls" not in f:
             continue
@@ -289,9 +289,15 @@ def getCallFor(start, end, seg):
     overlap = max(0, (min(end, tend) - max(start, tstart))) / (end-start)
     return (call, overlap)
 
+def addWtToCalls(calls):
+    totcalls = 0
+    for call in calls:
+        totcalls += call[1]
+    if totcalls < 0.8:
+        calls.append(("wt?", 1-totcalls))
+    
+
 def getSummary(calls, wtNotCalled):
-    if len(calls)==1:
-        return calls[0][0]
     if len(calls)==0:
         if wtNotCalled:
             return "wt?"
@@ -338,12 +344,14 @@ def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
                     xcall = getCallFor(start, end, xseg)
                     if xcall[1] > 0:
                         xcalls.append(xcall)
+                    addWtToCalls(xcall)
             for aseg in Asegs[chr]:
                 acall = getCallFor(start, end, aseg)
                 if acall[1] > 0:
                     acalls.append(acall)
             xcall = getSummary(xcalls, True)
             acall = getSummary(acalls, False)
+            
             x_matches_balanced = "Unknown"
             a_matches_balanced = "Unknown"
             if balanced_calls[sample] == "Balanced":
@@ -413,6 +421,8 @@ for f in files:
     if "catch" in f:
         continue
     patient = f.split("_")[0]
+    if onlysomepatients and patient not in somepatients:
+        continue
 #for patient in ["43"]:
     isegs = getIsegsFromCopynumberFileFor(patient)
     readBalancedUnbalancedAndStoreInIsegs(isegs, patient)

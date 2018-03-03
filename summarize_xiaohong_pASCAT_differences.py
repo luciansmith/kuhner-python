@@ -86,18 +86,18 @@ def writeLine(sumout, psummaries, patient, samGamPloidy):
     sumout.write("\t" + samGamPloidy[0])
     sumout.write("\t" + samGamPloidy[1])
     sumout.write("\t" + samGamPloidy[2])
-    sumout.write("\t" + str(psummaries[samGamPloidy]["same"]["Validated"]))
-    sumout.write("\t" + str(psummaries[samGamPloidy]["same"]["Contradicted"]))
-    sumout.write("\t" + str(psummaries[samGamPloidy]["same"]["Unknown"]))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["same"]["Validated"]/1000000))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["same"]["Contradicted"]/1000000))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["same"]["Unknown"]/1000000))
     total = 0
     for category in psummaries[samGamPloidy]["same"]:
         total += psummaries[samGamPloidy]["same"][category]
-    sumout.write("\t" + str(total))
-    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Validated"]["Validated"]))
-    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Contradicted"]["Contradicted"]))
-    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Unknown"]))
-    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Validated"]["Contradicted"]))
-    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Contradicted"]["Validated"]))
+    sumout.write("\t" + str(total/1000000))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Validated"]["Validated"]/1000000))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Contradicted"]["Contradicted"]/1000000))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Unknown"]/1000000))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Validated"]["Contradicted"]/1000000))
+    sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Contradicted"]["Validated"]/1000000))
     total = 0
     for category in psummaries[samGamPloidy]["different"]:
         if category == "Unknown":
@@ -105,7 +105,7 @@ def writeLine(sumout, psummaries, patient, samGamPloidy):
         else:
             for cat2 in psummaries[samGamPloidy]["different"][category]:
                 total += psummaries[samGamPloidy]["different"][category][cat2]
-    sumout.write("\t" + str(total))
+    sumout.write("\t" + str(total/1000000))
     sumout.write("\n")
 
 
@@ -121,6 +121,7 @@ def saveSummaries(summaries):
                 writeLine(jsumout, summaries[patient], patient, samGamPloidy)
     sumout.close()
     jsumout.close()
+    copy(xiaocompare_dir + "xiaocompare_jonly_summary.tsv", "jamboree_files/xiaohong_compare/")
         
         
 

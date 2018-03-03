@@ -120,7 +120,7 @@ for f in files:
                 for gamma in gamma_list:
                     if ploidy not in analysis_summaries[sample] or gamma not in analysis_summaries[sample][ploidy]:
                         continue
-                    if bestv[sample][ploidy][segorlen]==0 or analysis_summaries[sample][ploidy][gamma][segorlen]/bestv[sample]["overall"][segorlen] > 0.99:
+                    if bestv[sample][ploidy][segorlen]==0 or analysis_summaries[sample][ploidy][gamma][segorlen]/bestv[sample]["overall"][segorlen] > 0.95:
                         best_out.write("\t" + gamma)
                     if bestv[sample][ploidy][segorlen] == 0:
                         gamma_levels[segorlen][gamma].append(1)
