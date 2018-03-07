@@ -30,8 +30,9 @@ balanced_dir = "balanced_calls/"
 outdir = "Xiaohong_pASCAT_compare/"
 gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
 
-onlysomepatients = True
-somepatients = ["163", "184", "396", "1047", "17", "42", "43", "55", "59", "74"]
+onlysomepatients = False
+somepatients = ["572"]
+#somepatients = ["163", "184", "396", "1047", "17", "42", "43", "55", "59", "74"]
 
 if not path.isdir(outdir):
     mkdir(outdir)
@@ -73,11 +74,11 @@ def readBalancedUnbalancedAndStoreInIsegs(isegs, patient):
     for (__, __, f) in walk(balanced_dir):
         files += f
     for f in files:
-        if f.find(patient + "_") != 0:
-            continue
         if "balanced_calls" not in f:
             continue
-        sample = f.split("_")[1]
+        (ipatient, sample, __, __) = f.split("_")
+        if patient != ipatient:
+            continue
         balfile = open(balanced_dir + f, "r")
         print("Reading file", f)
         for line in balfile:
@@ -191,6 +192,13 @@ def readXiaohongCopynumFile(f, Xiaohong_segments):
         addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, call)
     xfile.close()
 
+def addCentromereToXiaohong(xsegs):
+    for patient in xsegs:
+        for sample in xsegs[patient]:
+            for chr in xsegs[patient][sample]:
+                (start, end) = lsl.getChromosomeCentromere(int(chr))
+                xsegs[patient][sample][chr].append([start, end, "Centromere"])
+
 def readAllXiaohongSegmentation():
     print("Reading all Xiaohong segmentation.")
     Xiaohong_segments = {}
@@ -218,6 +226,7 @@ def readAllXiaohongSegmentation():
             readXiaohong1MLOHFile(Xdir_1M + f, Xiaohong_segments)
         else:
             readXiaohongCopynumFile(Xdir_1M + f, Xiaohong_segments)
+    addCentromereToXiaohong(Xiaohong_segments)
     return Xiaohong_segments
 
 def getCanonicalAscatCallsFor(patient):
@@ -233,17 +242,16 @@ def getCanonicalAscatCallsFor(patient):
             if "Patient" in line:
                 continue
             lvec = line.split()
-            (patient, sample, ploidy, compare, accuracy, gamma) = lvec[0:6]
-            if compare=="by_length" and len(lvec) > 6:
-                #length>7 filters against the 'overall' and 'Xiaohong' lines, plus any diploid or tetraploid lines with zero entries close to the overall best accuracy.
-                ret.add((sample, gamma, ploidy))
+            (patient, sample, constraint, compare, accuracy, gamma) = lvec[0:6]
+            if compare=="by_length" and constraint != "Xiaohong" and constraint != "overall":
+                ret.add((sample, gamma, constraint, accuracy))
         return ret
         
     print("Unknown patient")
     return []
 
 def readAscatSegmentationFor(patient, canon):
-    (sample, gamma, ploidy) = canon
+    (sample, gamma, ploidy, __) = canon
     ascfile = open(gamma_outdir + "/pASCAT_input_g" + gamma + "/" + ploidy + "/" + patient + "_fcn_ascat_segments.txt", "r")
     segments = {}
     for line in ascfile:
@@ -295,7 +303,14 @@ def addWtToCalls(calls):
         totcalls += call[1]
     if totcalls < 0.8:
         calls.append(("wt?", 1-totcalls))
-    
+
+def addUnknownToCalls(calls):
+    totcalls = 0
+    for call in calls:
+        totcalls += call[1]
+    if totcalls < 0.6:
+        calls.append(("Unknown", 1-totcalls))
+
 
 def getSummary(calls, wtNotCalled):
     if len(calls)==0:
@@ -319,7 +334,47 @@ def getSummary(calls, wtNotCalled):
         ret += sumtype + "_" + str(round(summary[sumtype], 2)) + "_"
     return ret
 
-def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
+def getMatches(bcall, calls):
+    valid = 0
+    contradicted = 0
+    for call in calls:
+        if bcall == "Balanced":
+            if "wt" in call[0] or "Double_d" in call[0] or "Balanced_gain" in call[0] or "Centromere" in call[0]:
+                valid += call[1]
+            else:
+                contradicted += call[1]
+        elif bcall == "Unbalanced":
+            if "Gain" in call[0] or "Loss" in call[0] or "LOH" in call[0] or "Centromere" in call[0]:
+                valid += call[1]
+            else:
+                contradicted += call[1]
+    if valid == 0 and contradicted == 0:
+        return "Unknown"
+    if valid > contradicted:
+        return "Validated"
+    return "Contradicted"
+
+
+def getMatchTotal(xcalls, acalls):
+    matchtotal = 0
+    for acall in acalls:
+        if acall[0] == "Unknown":
+            matchtotal += acall[1]
+            continue
+        for xcall in xcalls:
+            if acall[0] in xcall[0]:
+                matchtotal += min(xcall[1], acall[1])
+            elif acall[0] == "LOH_Gain" and ("Gain" in xcall[0] or "LOH" in xcall[0]):
+                matchtotal += min(xcall[1], acall[1])
+            elif xcall[0] == "Centromere":
+                matchtotal += min(xcall[1], acall[1])
+#    if len(acalls) > 1:
+#        print(acalls, xcalls, matchtotal)
+    if matchtotal > 0.95:
+        return 1
+    return matchtotal
+
+def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, accuracy, isegs):
     compareout = open(outdir + patient + "_" + sample + "_g" + gamma + "_" + ploidy + "_xiaohong_to_ascat_compare.tsv", "w")
     compareout.write("Patient")
     compareout.write("\tSample")
@@ -329,7 +384,7 @@ def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
     compareout.write("\tXCall")
     compareout.write("\tACall")
     compareout.write("\tLength")
-    compareout.write("\tSame?")
+    compareout.write("\tLength mismatch")
     compareout.write("\tBalanced")
     compareout.write("\tXCall_validated")
     compareout.write("\tACall_validated")
@@ -344,38 +399,20 @@ def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
                     xcall = getCallFor(start, end, xseg)
                     if xcall[1] > 0:
                         xcalls.append(xcall)
-                    addWtToCalls(xcall)
             for aseg in Asegs[chr]:
                 acall = getCallFor(start, end, aseg)
                 if acall[1] > 0:
                     acalls.append(acall)
+            addWtToCalls(xcalls)
+            addUnknownToCalls(acalls)
             xcall = getSummary(xcalls, True)
             acall = getSummary(acalls, False)
             
-            x_matches_balanced = "Unknown"
-            a_matches_balanced = "Unknown"
-            if balanced_calls[sample] == "Balanced":
-                if "wt" in xcall or "Double_d" in xcall or "Balanced_gain" in xcall:
-                    x_matches_balanced = "Validated"
-                else:
-                    x_matches_balanced = "Contradicted"
-                if "wt" in acall or "Double_d" in acall or "Balanced_gain" in acall:
-                    a_matches_balanced = "Validated"
-                else:
-                    a_matches_balanced = "Contradicted"
-            elif balanced_calls[sample] == "Unbalanced":
-                if "Gain" in xcall or "Loss" in xcall or "LOH" in xcall:
-                    x_matches_balanced = "Validated"
-                else:
-                    x_matches_balanced = "Contradicted"
-                if "Gain" in acall or "Loss" in acall or "LOH" in acall:
-                    a_matches_balanced = "Validated"
-                else:
-                    a_matches_balanced = "Contradicted"
-
-            a_x_match = str(acall in xcall)
-            if acall == "LOH_Gain" and ("Gain" in xcall or "LOH" in xcall):
-                a_x_match = "True"
+            x_matches_balanced = getMatches(balanced_calls[sample], xcalls)
+            a_matches_balanced = getMatches(balanced_calls[sample], acalls)
+            
+            length = end-start
+            a_x_mismatch = int(length - (length*getMatchTotal(xcalls, acalls)))
 
             compareout.write(patient)
             compareout.write("\t" + sample)
@@ -385,13 +422,12 @@ def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
             compareout.write("\t" + xcall)
             compareout.write("\t" + acall)
             compareout.write("\t" + str(end-start))
-            compareout.write("\t" + a_x_match)
+            compareout.write("\t" + str(a_x_mismatch))
             compareout.write("\t" + balanced_calls[sample])
             compareout.write("\t" + x_matches_balanced)
             compareout.write("\t" + a_matches_balanced)
             compareout.write("\n")
-            if a_x_match != "True":
-                sumdiff += end-start
+            sumdiff += a_x_mismatch
         compareout.write(patient)
         compareout.write("\t" + sample)
         compareout.write("\t" + chr)
@@ -431,8 +467,11 @@ for f in files:
         sample = canon[0]
         gamma = canon[1]
         ploidy = canon[2]
+        accuracy = canon[3]
+        if gamma == "None":
+            continue
         Ascat_segments = readAscatSegmentationFor(patient, canon)
-        writeComparison(Xiaohong_segments, Ascat_segments, patient, sample, gamma, ploidy, isegs)
+        writeComparison(Xiaohong_segments, Ascat_segments, patient, sample, gamma, ploidy, accuracy, isegs)
         if int(sample) < 23341:
             continue
         copyDataForJamboree(patient, sample, gamma, ploidy)

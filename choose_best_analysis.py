@@ -63,6 +63,9 @@ for f in files:
         if "Patient" in line:
             continue
         (patient, sample, gamma, ploidy, TPn, FPn, UPn, TNn, FNn, UNn, NCn, Sn, TPl, FPl, UPl, TNl, FNl, UNl, NCl, Sl, __, __, __, __, __, __) = line.split()
+        if TPn == "0" and FPn == "0" and UPn == "0":
+            #This just failed?  I guess?
+            continue
         if sample not in analysis_summaries:
             analysis_summaries[sample] = {}
         if ploidy not in analysis_summaries[sample]:
@@ -70,6 +73,10 @@ for f in files:
         analysis_summaries[sample][ploidy][gamma] = {}
         analysis_summaries[sample][ploidy][gamma]["by_segment"] = (int(TPn) + int(TNn)) / (int(TPn) + int(FPn) + int(TNn) + int(FNn))
         analysis_summaries[sample][ploidy][gamma]["by_length"] =  (int(TPl) + int(TNl)) / (int(TPl) + int(FPl) + int(TNl) + int(FNl))
+        if TPn == "0" and FPn == "0" and UPn == "0":
+            #This means that ASCAT actually failed for this sample entirely, not that the 'true negatives' were wonderful.
+            analysis_summaries[sample][ploidy][gamma]["by_segment"] = 0
+            analysis_summaries[sample][ploidy][gamma]["by_length"] =  0
     analysis_file.close()
     best = {}
     bestv = {}
@@ -92,9 +99,10 @@ for f in files:
                     if analysis_summaries[sample][ploidy][gamma][segorlen] > bestv[sample][ploidy][segorlen]:
                         bestv[sample][ploidy][segorlen] = analysis_summaries[sample][ploidy][gamma][segorlen]
                         best[sample][ploidy][segorlen] = (gamma, ploidy)
-                    if analysis_summaries[sample][ploidy][gamma][segorlen] > bestv[sample]["overall"][segorlen]:
-                        bestv[sample]["overall"][segorlen] = analysis_summaries[sample][ploidy][gamma][segorlen]
-                        best[sample]["overall"][segorlen] = (gamma, ploidy)
+                    if ploidy != "Xiaohong":
+                        if analysis_summaries[sample][ploidy][gamma][segorlen] > bestv[sample]["overall"][segorlen]:
+                            bestv[sample]["overall"][segorlen] = analysis_summaries[sample][ploidy][gamma][segorlen]
+                            best[sample]["overall"][segorlen] = (gamma, ploidy)
 #                    if analysis_summaries[sample][ploidy][gamma][segorlen] < 0:
 #                        print("Negative analysis level:", patient, sample, ploidy, segorlen, gamma)
 
@@ -139,7 +147,7 @@ for f in files:
             else:
                 for ploidy in ["diploid", "tetraploid"]:
                     for gamma in ["3000", "1000", "400", "250", "100"]:
-                        if gamma in analysis_summaries[sample][ploidy]:
+                        if ploidy in analysis_summaries[sample] and gamma in analysis_summaries[sample][ploidy]:
                             match = analysis_summaries[sample][ploidy][gamma][segorlen]/bestv[sample]["overall"][segorlen]
                             if match > closestmatch:
                                 closestmatch = match

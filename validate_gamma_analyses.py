@@ -24,7 +24,7 @@ import lucianSNPLibrary as lsl
 
 #Use this value to set up whether to use the 'rejoined' segments or not
 
-BAF_links = False
+BAF_links = True
 if BAF_links:
     BAF_dir = "gamma_template/"
 else:
@@ -48,9 +48,9 @@ gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "60
 bafrawdata = {}
 patient_samples = {}
 
-onlysomepatients = True
-somepatients = ["163", "184", "396", "1047", "17", "42", "43", "55", "59", "74"]
-#somepatients = ["43"]
+onlysomepatients = False
+#somepatients = ["163", "184", "396", "1047", "17", "42", "43", "55", "59", "74"]
+somepatients = ["55"]
 
 #twopatients = [("521", "252")]
 #samples from patient 360:
@@ -183,8 +183,8 @@ def getIsegsFromCopynumberFileFor(patient):
             continue
         (chr, start, end, nlogr, nbaf) = line.split()
         nbaf = int(nbaf)
-        if nbaf <10:
-            continue
+#        if nbaf <10:
+#            continue
         start = int(start)
         end = int(end)
         if chr=="3" and end==198837449:
