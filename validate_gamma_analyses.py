@@ -48,7 +48,7 @@ gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "60
 bafrawdata = {}
 patient_samples = {}
 
-onlysomepatients = False
+onlysomepatients = True
 #somepatients = ["163", "184", "396", "1047", "17", "42", "43", "55", "59", "74"]
 somepatients = ["55"]
 

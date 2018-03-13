@@ -13,12 +13,12 @@ import numpy
 
 # read the processed data from the file Xiaohong sent me, which has segmentation and non-2N bafv values
 
-for subset in ["_g1000_"]: #, "_only1M"]
-    for ploidy in ["unconstrained"]: #["tetraploid", "diploid"]:
+for subset in ["_g250_"]: #, "_only1M"]
+    for ploidy in ["diploid"]: #["tetraploid", "diploid"]:
         tag = subset + ploidy
 
         joint_file = "joint_seg" + tag + ".txt"
-        baf_val_dir= "BAF_filtered_data_1M_only_15/"
+        baf_val_dir= "BAF_filtered_data_25M_15/"
         outdir = "BAF_joint_vals" + tag + "/"
 
         if not(path.isdir(outdir)):
@@ -44,12 +44,12 @@ for subset in ["_g1000_"]: #, "_only1M"]
         #        continue
             outfilename = outdir + patient + "_" + sample + "_avgbafvs.txt"
             if isfile(outfilename):
-                print "Already have output for", patient, sample
+                print("Already have output for", patient, sample)
                 continue
-            print "Processing patient/sample", patient, sample
+            print("Processing patient/sample", patient, sample)
             bafv_filename = baf_val_dir + patient + "_" + sample + "_BAF.txt"
             if (not(isfile(bafv_filename))):
-                print "Can't find patient/sample", patient, sample
+                print("Can't find patient/sample", patient, sample)
                 continue
             bafv_file = open(bafv_filename, "r")
             for line in bafv_file:
@@ -72,9 +72,9 @@ for subset in ["_g1000_"]: #, "_only1M"]
                         found = True
                         break
         #        if not(found):
-        #            print patient + "\t" + sample + "\t" + chr + "\t" + str(pos) + "\t" + str(bafv) + "\tnot_found"
+        #            print(patient + "\t" + sample + "\t" + chr + "\t" + str(pos) + "\t" + str(bafv) + "\tnot_found")
         #        else:
-        #            print patient + "\t" + sample + "\t" + chr + "\t" + str(pos) + "\t" + str(bafv) + "\tfound"
+        #            print(patient + "\t" + sample + "\t" + chr + "\t" + str(pos) + "\t" + str(bafv) + "\tfound")
             outfile = open(outfilename, "w")
             outfile.write("chr\tstartpos\tendpos\trawA\trawB\tintA\tintB\tavgBAF\tnBAF_SNPs\n")
             for chr in range(1,23):

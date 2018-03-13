@@ -11,7 +11,7 @@ from os import walk
 from os import path
 from os import mkdir
 
-tag = "_g1000_unconstrained/"
+tag = "_g250_diploid/"
 
 tree_input = "joint_processed_segmentation" + tag
 joint_output = "joint_segmentation_nodupes" + tag
@@ -27,7 +27,7 @@ for f in segment_files:
     if f.find("characters") == -1:
         continue
     patient = f.split("_")[0]
-    print "Processing", patient
+    print("Processing", patient)
     segfile = open(tree_input + f, "r")
     joint_out = open(joint_output + f, "w")
     prev = segfile.readline().split()

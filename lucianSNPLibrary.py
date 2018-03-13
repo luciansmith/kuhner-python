@@ -12,6 +12,7 @@ import numpy
 import matplotlib.pyplot as plt
 import random
 from os import walk
+from os.path import isfile
 
 def BiweightKernel(t):
     if (abs(t) > 1.0):
@@ -48,7 +49,7 @@ def combineHistograms(newhist, fullhist, num, weight=1):
         else:
             fullhist[val] += weight*newhist[val]/num
 
-def createPrintAndSaveHistogram(data, filename, binwidth, xdata="log2r", axis=(), show=True):
+def createPrintAndSaveHistogram(data, filename, binwidth, xdata="log2r", axis=(), show=True, savefig=False):
     if len(data) == 0:
         print("Cannot create a histogram with no data for file ", filename)
         return
@@ -58,19 +59,26 @@ def createPrintAndSaveHistogram(data, filename, binwidth, xdata="log2r", axis=()
         print("Histogram for", filename, "with", len(data), "datapoints:")
     for val in data:
         addKernelToHistogram(val, 1, hist, kw, len(data), binwidth)
-    if (show):
+    if (show or savefig):
         plt.plot(hist.keys(), hist.values(), "ro")
         paxis = list(plt.axis())
         for a in range(0,len(axis)):
             paxis[a] = axis[a]
         plt.axis(paxis)
-        plt.show()
+        if savefig:
+            if "png" not in filename:
+                plt.savefig(filename + ".png")
+            else:
+                plt.savefig(filename)
+        if show:
+            plt.show()
         plt.close()
-    if (filename != ""):
-        outfile = open(filename, "w")
+    if filename != "" and "png" not in filename:
+        outfile = open(filename + ".tsv", "w")
         outfile.write(xdata + "\tprobability\tnumpoints:\t" + str(len(data)) + "\tkernel width:\t" + str(kw) + "\n")
         for data in hist.keys():
             outfile.write(str(data) + "\t" + str(hist[data]) + "\n")
+    return hist
 
 def createPrintAndSaveMultipleHistograms(data, filename, binwidth, xdata="log2r", ydata = [], axis=(), show=True):
     if len(data) == 0:
@@ -117,6 +125,12 @@ def createPrintAndSaveMultipleHistograms(data, filename, binwidth, xdata="log2r"
             else:
                 outfile.write("\t")
         outfile.write("\n")
+
+def getPeaks(hist, binwidth):
+    low = min(hist.keys())
+    high = max(hist.keys())
+    npoints = (high-low)/binwidth
+    window = min(20, npoints)
 
 def saveScatterPlot(data, filename, labels):
     if len(data) == 0:
@@ -837,7 +851,7 @@ def resegmentLOHes(segvec):
 def validateSegments(BAFs_by_sample, BAF_averages, validation_output, id, failfile, summaryfile):
     #assumes that any double deletion is already removed.
     output = {}
-    samples = BAFs_by_sample.keys()
+    samples = list(BAFs_by_sample.keys())
     sampairs = set()
     summatches = 0
     sumantimatches = 0
@@ -1116,7 +1130,7 @@ def collatepASCATOutput(infiledir, infilename, outfile,markerlocations):
     endpos.append(enp)
     if (ch == prevchr and float(prevend)>float(stp)):
         print("ERROR: overlapping segments, possibly due to pASCAT mislabeling segments.")
-        foo()
+        assert False
         return False
     prevchr = ch
     prevend = enp
@@ -1130,6 +1144,27 @@ def collatepASCATOutput(infiledir, infilename, outfile,markerlocations):
 
   return True
 
+
+def getCanonicalAscatCallsFor(patient):
+    bestfilename = "best_analyses/" + patient + "_best.tsv"
+    if not isfile(bestfilename):
+        print("No such file", bestfilename)
+        return []
+    else:
+        print("Reading best analysis file", bestfilename)
+        best_file = open(bestfilename, "r")
+        ret = set()
+        for line in best_file:
+            if "Patient" in line:
+                continue
+            lvec = line.split()
+            (patient, sample, constraint, compare, accuracy, gamma) = lvec[0:6]
+            if compare=="by_length" and constraint != "Xiaohong" and constraint != "overall":
+                ret.add((sample, gamma, constraint, accuracy))
+        return ret
+        
+    print("Unknown patient")
+    return []
 
 
 

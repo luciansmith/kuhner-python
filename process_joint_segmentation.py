@@ -14,8 +14,8 @@ import os
 import numpy
 
 #for subset in ["", "_only25M"]: #, "_only1M"]
-for subset in ["g1000"]: #["25M_v2"]: #, "_only1M"]
-    for constraint in ["unconstrained"]: #, "diploid", "tetraploid"]:
+for subset in ["g250"]: #["25M_v2"]: #, "_only1M"]
+    for constraint in ["diploid"]: #, "diploid", "tetraploid"]:
 
         #tag = "_combined_avSNPs" + subset + "_" + constraint
         tag = "_" + subset + "_" + constraint
@@ -50,14 +50,14 @@ for subset in ["g1000"]: #["25M_v2"]: #, "_only1M"]
         #    if label != ("521", "18824"):
         #        continue
             if isfile(outdir + patient + "_" + sample + "_avglog2rs.txt"):
-                print "Already have output for", patient, sample
+                print("Already have output for", patient, sample)
                 continue
-            print "Processing patient/sample", patient, sample
+            print("Processing patient/sample", patient, sample)
             log2r_filename = CN_25M_val_dir + patient + "_" + sample + "_copynumber_all.txt"
             if (not(isfile(log2r_filename))):
                 log2r_filename = CN_1M_val_dir + patient + "_" + sample + "_copynumber_all.txt"
                 if (not(isfile(log2r_filename))):
-                    print "Can't find patient/sample", patient, sample
+                    print("Can't find patient/sample", patient, sample)
                     continue
             log2r_file = open(log2r_filename, "r")
             for line in log2r_file:
@@ -84,7 +84,7 @@ for subset in ["g1000"]: #["25M_v2"]: #, "_only1M"]
         #            print patient + "\t" + sample + "\t" + chr + "\t" + str(pos) + "\t" + str(log2r) + "\tfound"
             filename = outdir + patient + "_" + sample + "_avglog2rs.txt"
             if isfile(filename):
-                print "The file", filename, "already exists: assuming it's fine and moving on."
+                print("The file", filename, "already exists: assuming it's fine and moving on.")
             else:
                 outfile = open(filename, "w")
                 outfile.write("chr\tstartpos\tendpos\trawA\trawB\tintA\tintB\tavglog2r\tnSNPs\n")

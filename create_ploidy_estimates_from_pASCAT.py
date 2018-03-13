@@ -25,7 +25,7 @@ unconstrained_key = "unconstrained"
 diploid_key = "diploid"
 tetraploid_key = "tetraploid"
 
-for tag in ["combined_avSNPs_only1M"]:#["combined_avSNPs", "combined_avSNPs_only1M", "combined_avSNPs_only25M"]:
+for tag in ["g250_diploid"]:#["combined_avSNPs", "combined_avSNPs_only1M", "combined_avSNPs_only25M"]:
 
     print tag
     root_dir = "pASCAT_output_" + tag + "/"

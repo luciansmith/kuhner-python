@@ -15,7 +15,7 @@ from os import mkdir
 
 import lucianSNPLibrary as lsl
 
-tag = "_g1000_unconstrained/"
+tag = "_g250_diploid/"
 
 CN_input = "CN_joint_log2rs" + tag
 BAF_input = "BAF_joint_vals" + tag
@@ -47,7 +47,7 @@ for v in vallist:
 #    if patient != "862":
 #        continue
     vfile = open(validation_input + v, "r")
-    print "Reading", v
+    print("Reading", v)
     for line in vfile:
         if line.find("chr") != -1:
             validated_labels[patient] = line.split("\t")[8:]
@@ -69,7 +69,7 @@ for b in BAFlist:
 #    if patient != "862":
 #        continue
     bfile = open(BAF_input + b, "r")
-    print "Reading", b
+    print("Reading", b)
     for line in bfile:
         if line.find("chr") != -1:
             continue
@@ -91,7 +91,7 @@ for c in CNlist:
 #    if patient != "862":
 #        continue
     cfile = open(CN_input + c, "r")
-    print "Reading", c
+    print("Reading", c)
     for line in cfile:
         if line.find("chr") != -1:
             continue
@@ -110,7 +110,7 @@ for c in CNlist:
 for patient in CN_segments:
 #    if patient != "862":
 #        continue
-    print "Processing data for patient", patient
+    print("Processing data for patient", patient)
     all_segments = {}
     seg_maxBAFs = {}
     seg_nCNSNPs = {}
@@ -125,19 +125,19 @@ for patient in CN_segments:
                 except:
                     (brawA, brawB, bintA, bintB, avgBAF, nBAF_SNPs) = (rawA, rawB, intA, intB, "NA", 0)
 #                if rawA != brawA:
-#                    print "CN/BAF difference in rawA", patient, sample, chr, segpair, rawA, brawA
+#                    print("CN/BAF difference in rawA", patient, sample, chr, segpair, rawA, brawA)
 #                if rawB != brawB:
-#                    print "CN/BAF difference in rawB", patient, sample, chr, segpair, rawB, brawB
+#                    print("CN/BAF difference in rawB", patient, sample, chr, segpair, rawB, brawB)
 #                if intA != bintA:
-#                    print "CN/BAF difference in intA", patient, sample, chr, segpair, intA, bintA
+#                    print("CN/BAF difference in intA", patient, sample, chr, segpair, intA, bintA)
 #                if intB != bintB:
-#                    print "CN/BAF difference in intB", patient, sample, chr, segpair, intB, bintB
+#                    print("CN/BAF difference in intB", patient, sample, chr, segpair, intB, bintB)
                 try:
                     (vnBAF_SNPs, matches, antimatches, fails, whichmatch) = validated_segments[patient][chr][segpair]
                 except:
                     (vnBAF_SNPs, matches, antimatches, fails, whichmatch) = ("0", "0", "0", "0", [])
                 #if (vnBAF_SNPs != "0" and vnBAF_SNPs != nBAF_SNPs):
-                #    print "BAF/validation difference in nBAF_SNPs:", patient, sample, chr, segpair, nBAF_SNPs, vnBAF_SNPs
+                #    print("BAF/validation difference in nBAF_SNPs:", patient, sample, chr, segpair, nBAF_SNPs, vnBAF_SNPs)
                 ps_out.write(chr + "\t" + segpair[0] + "\t" + segpair[1] + "\t" + rawA + "\t" + rawB + "\t" + intA + "\t" + intB + "\t" + avgCN + "\t" + nCN_SNPs + "\t" + avgBAF + "\t" + str(nBAF_SNPs) + "\t" + matches + "\t" + antimatches + "\t" + fails + "\n")
                 intchr = int(chr)
                 if intchr not in all_segments:
@@ -156,7 +156,7 @@ for patient in CN_segments:
 
         ps_out.close()
     joint_out = open(tree_output + patient + "_characters.txt", "w")
-    samples = CN_segments[patient].keys()
+    samples = list(CN_segments[patient].keys())
     samples.sort()
     joint_out.write("chr\tstart\tend\tmaxnBAFs\tnCN_SNPs")
     for sample in samples:
@@ -168,17 +168,17 @@ for patient in CN_segments:
         collecting = False
         if chr not in all_segments:
             continue
-        segpairs = all_segments[chr].keys()
+        segpairs = list(all_segments[chr].keys())
         segpairs.sort()
         oneset = []
         for segpair in segpairs:
 #            if lsl.isAllWT(all_segments[chr][segpair]):
-#                print "All wt"
+#                print("All wt")
 #                if collecting==True:
 #                    n = lsl.writeOneSet(chr, oneset, n, joint_out, samples, output, validated_labels[patient])
 #                collecting = False
             if lsl.isAllEven(all_segments[chr][segpair]):
-                #print "All even"
+                #print("All even"))
                 if collecting==True:
                     n = lsl.writeOneSet(chr, oneset, n, joint_out, samples, output, validated_labels[patient], seg_maxBAFs[chr], seg_nCNSNPs[chr])
                 oneset = []

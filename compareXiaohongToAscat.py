@@ -229,27 +229,6 @@ def readAllXiaohongSegmentation():
     addCentromereToXiaohong(Xiaohong_segments)
     return Xiaohong_segments
 
-def getCanonicalAscatCallsFor(patient):
-    bestfilename = "best_analyses/" + patient + "_best.tsv"
-    if not isfile(bestfilename):
-        print("no such file", bestfilename)
-        return []
-    else:
-        print("Reading best analysis file", f)
-        best_file = open(bestfilename, "r")
-        ret = set()
-        for line in best_file:
-            if "Patient" in line:
-                continue
-            lvec = line.split()
-            (patient, sample, constraint, compare, accuracy, gamma) = lvec[0:6]
-            if compare=="by_length" and constraint != "Xiaohong" and constraint != "overall":
-                ret.add((sample, gamma, constraint, accuracy))
-        return ret
-        
-    print("Unknown patient")
-    return []
-
 def readAscatSegmentationFor(patient, canon):
     (sample, gamma, ploidy, __) = canon
     ascfile = open(gamma_outdir + "/pASCAT_input_g" + gamma + "/" + ploidy + "/" + patient + "_fcn_ascat_segments.txt", "r")
@@ -462,7 +441,7 @@ for f in files:
 #for patient in ["43"]:
     isegs = getIsegsFromCopynumberFileFor(patient)
     readBalancedUnbalancedAndStoreInIsegs(isegs, patient)
-    canonical_ascat = getCanonicalAscatCallsFor(patient)
+    canonical_ascat = lsl.getCanonicalAscatCallsFor(patient)
     for canon in canonical_ascat:
         sample = canon[0]
         gamma = canon[1]

@@ -14,18 +14,19 @@ from os import walk
 
 onepatientonly = True
 onepatient = ["74", "422", "450", "512", "728", "995", "997"]
-gamma_dir = "partial_gamma_test_output/gamma_test/pASCAT_input_"
+#onepatient = ["130"]
+gamma_dir = "gamma_test_output/pASCAT_input_"
 
 # read the probeset file, which correlates name to position.
 labels, rev_labels = lsl.getSNPLabelsAll(False)
 
 #for tag in ["_combined_avSNPs", "_combined_avSNPs_only25M", "_combined_avSNPs_only1M"]:
-for tag in ["g1000"]:
+for tag in ["g250"]:
 
     pASCAT_output_dir = gamma_dir + tag + "/"
     joint_out_name = "joint_seg_" + tag
 
-    for constraint in ["unconstrained"]: #["diploid", "tetraploid", "unconstrained"]:
+    for constraint in ["diploid"]: #["diploid", "tetraploid", "unconstrained"]:
         directory = pASCAT_output_dir + constraint + "/"
         joint_name = joint_out_name + "_" + constraint + ".txt"
 
@@ -47,6 +48,6 @@ for tag in ["g1000"]:
             if (f.find("raw_segments") == -1):
                 continue
 
-            print "Analyzing", f
+            print("Analyzing", f)
             lsl.collatepASCATOutput(directory, f, outfile, labels)
         outfile.close()

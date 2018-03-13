@@ -20,7 +20,7 @@ import lucianSNPLibrary as lsl
 
 #Use this value to set up whether to use the 'rejoined' segments or not
 
-tag = "_g1000_unconstrained/"
+tag = "_g250_diploid/"
 
 CN_input = "CN_joint_log2rs" + tag
 BAF_input = ["BAF_filtered_data_25M_only_15/", "BAF_filtered_data_1M_only_15/"]
@@ -46,9 +46,9 @@ for CNfile in CNlist:
 #    if id != "71":
 #        continue
     BAFname = id + "_" + sample + "_BAF.txt"
-    BAFname = BAFname.translate(None, 'b')
+    BAFname = BAFname.replace('b', '')
     if not(BAFname in BAFlist):
-        print "Couldn't find expected BAF file", BAFname, "from CN file", CNfile
+        print("Couldn't find expected BAF file", BAFname, "from CN file", CNfile)
         continue
     if not(id in segments):
         segments[id] = {}
@@ -94,7 +94,7 @@ for id in segments:
                 if not(segname in BAFs_by_sample[sample]):
                     BAFs_by_sample[sample][segname] = {}
         BAFname = id + "_" + sample + "_BAF.txt"
-        BAFname = BAFname.translate(None, 'b')
+        BAFname = BAFname.replace('b', '')
         baffilename = BAF_input[0] + BAFname
         if not isfile(baffilename):
             baffilename = BAF_input[1] + BAFname
@@ -138,7 +138,7 @@ for id in segments:
                 BAF_averages[sample][segname] = numpy.average(allbafs)
             else:
                 BAF_averages[sample][segname] = 0.5 #All wt entries are skipped, like this should be.
-    print "Processing patient", id
+    print("Processing patient", id)
     lsl.validateSegments(BAFs_by_sample, BAF_averages, validation_output, id, failfile, summaryfile)
 
 

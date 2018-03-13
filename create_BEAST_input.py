@@ -15,7 +15,7 @@ from os import mkdir
 
 import lucianSNPLibrary as lsl
 
-tag = "_g1000_unconstrained/"
+tag = "_g250_diploid/"
 
 tree_input = "joint_segmentation_nodupes" + tag
 beast_output = "BEAST" + tag
