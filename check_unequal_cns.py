@@ -22,19 +22,6 @@ somepatients = ["997"]
 firstpatients = ["17", "42", "55", "59", "74", "43", "184", "163", "396", "1047"]
 
 
-def readBalancedCalls(patient, sample):
-    balfile = open(balanced_dir + patient + "_" + sample + "_balanced_calls.tsv", "r")
-    balcalls = {}
-    for line in balfile:
-        if "Chr" in line:
-            continue
-        (fpatient, fsample, chr, start, end, call) = line.rstrip().split()
-        if chr not in balcalls:
-            balcalls[chr] = {}
-        balcalls[chr][(int(start), int(end))] = call
-    return balcalls
-
-
 def readAmbiguousCallsFromASCAT(f):
     cnfile = open(CNdir + f, "r")
     unbal_calls = {}
@@ -46,7 +33,7 @@ def readAmbiguousCallsFromASCAT(f):
             continue
         rawA = float(rawA)
         rawB = float(rawB)
-        if abs(rawA-rawB) < 0.000001 and intA != intB:
+        if abs(rawA-rawB) < 0.1 and intA != intB:
             if chr not in unbal_calls:
                 unbal_calls[chr] = []
             unbal_calls[chr].append((int(start), int(end), rawA))
@@ -80,11 +67,11 @@ for f in files:
     if onlysomepatients and patient not in somepatients:
         continue
     unbal_calls = readAmbiguousCallsFromASCAT(f)
-    bal_calls = readBalancedCalls(patient, sample)
+    bal_calls = lsl.readBalancedCalls(patient, sample)
     print ("Comparing", patient, sample, ploidy)
     compareAndReport(unbal_calls, bal_calls, patient, sample, ploidy, allbal, allunbal)
 
 print("All balanced values:")
 lsl.createPrintAndSaveHistogram(allbal, "", 0.001)
 print("All unbalanced values:")
-lsl.createPrintAndSaveHistogram(allunbal, "", 0.001)
+x = lsl.createPrintAndSaveHistogram(allunbal, "", 0.001, axis=[0, 5, 0])

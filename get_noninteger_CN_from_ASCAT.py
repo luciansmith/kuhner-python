@@ -14,6 +14,7 @@ from os import mkdir
 import lucianSNPLibrary as lsl
 
 pASCAT_root = "gamma_test_output/pASCAT_input_g"
+bestdir = "best_analyses/"
 outdir = "nonintegerCNs/"
 
 onlysomepatients = False
@@ -24,11 +25,12 @@ firstpatients = ["17", "42", "55", "59", "74", "43", "184", "163", "396", "1047"
 if not path.isdir(outdir):
     mkdir(outdir)
 
+missing = open(outdir + "missing_samples.tsv", "w")
 
 (labels, rev_labels) = lsl.getSNPLabelsAll(False)
 
 files = []
-for (__, __, f) in walk("best_analyses/"):
+for (__, __, f) in walk(bestdir):
     files += f
 for f in files:
     if "catch" in f:
@@ -36,20 +38,31 @@ for f in files:
     patient = f.split("_")[0]
     if onlysomepatients and patient not in somepatients:
         continue
-    if patient in firstpatients:
-        #These need to be re-run, since the SNPs were off.
-        continue
+#    if patient in firstpatients:
+#        #These need to be re-run, since the SNPs were off.
+#        continue
     canonical_ascats = lsl.getCanonicalAscatCallsFor(patient)
     for canon in canonical_ascats:
         (sample, gamma, constraint, accuracy) = canon
+        if gamma=="None":
+            continue
         
         rawsegs_dir = pASCAT_root + gamma + "/" + constraint + "/" 
         rawsegs_file = patient + "_" + sample + "_raw_segments.txt"
-        outname = outdir + patient + "_" + sample + "_" + constraint + "_nonint_CNs.txt"
+        outname = outdir + patient + "_" + sample + "_g" + gamma + "_" + constraint + "_nonint_CNs.txt"
         
         outfile = open(outname,"w")
         outfile.write("patient\tbiopsy\tchrom\tsegstart\tsegend\trawA\trawB\tintA\tintB\n")
 
         print("Analyzing", patient, sample, constraint)
-        lsl.collatepASCATOutput(rawsegs_dir, rawsegs_file, outfile, labels)
+        if not (lsl.collatepASCATOutput(rawsegs_dir, rawsegs_file, outfile, labels)):
+            missing.write(patient)
+            missing.write("\t" + sample)
+            missing.write("\t" + gamma)
+            missing.write("\t" + constraint)
+            missing.write("\t" + accuracy)
+            missing.write("\n")
+        
         outfile.close()
+
+missing.close()

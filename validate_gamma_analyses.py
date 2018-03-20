@@ -30,15 +30,18 @@ if BAF_links:
 else:
     BAF_dir = "pASCAT_input_combined_all/"
 
+Xdir_WGS = "Xiaohong_WGS_segmentation/"
+Xdir_1M = "CN_Xiaohong_segmentation/"
+gamma_outdir = "gamma_test_output/"
+outdir = "analysis_compare/"
+balanced_outdir = "balanced_calls/"
+
+
 subdirs = ["diploid", "tetraploid"]
 #subdirs = ["diploid"]
 subdirdict = {}
 for subdir in subdirs:
     subdirdict[subdir] = []
-gamma_outdir = "gamma_test_output/"
-#gamma_outdir = "gamma_test_output/"
-outdir = "gamma_test_output/analysis_compare/"
-balanced_outdir = "balanced_calls/"
 #gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600"]
 #gamma_list = ["50"]
 #gamma_list = ["Test"]
@@ -48,9 +51,17 @@ gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "60
 bafrawdata = {}
 patient_samples = {}
 
-onlysomepatients = True
+onlysomepatients = False
 #somepatients = ["163", "184", "396", "1047", "17", "42", "43", "55", "59", "74"]
-somepatients = ["55"]
+somepatients = ["17"]
+onlysomechroms = False
+somechroms = ["9"]
+
+if not path.isdir(outdir):
+    mkdir(outdir)
+
+if not path.isdir(balanced_outdir):
+    mkdir(balanced_outdir)
 
 #twopatients = [("521", "252")]
 #samples from patient 360:
@@ -106,6 +117,8 @@ def readBafNormal(patient):
             continue
         chr = lvec[1].split('"')[1]
         pos = int(lvec[2])
+        if onlysomechroms and chr not in somechroms:
+            continue
         if chr not in bafrawdata:
             bafrawdata[chr] = {}
         if chr not in bafwt:
@@ -142,6 +155,8 @@ def readBafSamples(baffile, bafrawdata):
             continue
         chr = lvec[1].split('"')[1]
         pos = int(lvec[2])
+        if onlysomechroms and chr not in somechroms:
+            continue
         if chr not in bafrawdata:
             continue
         if pos not in bafrawdata[chr]:
@@ -182,6 +197,8 @@ def getIsegsFromCopynumberFileFor(patient):
         if line.find("Chr") != -1:
             continue
         (chr, start, end, nlogr, nbaf) = line.split()
+        if onlysomechroms and chr not in somechroms:
+            continue
         nbaf = int(nbaf)
 #        if nbaf <10:
 #            continue
@@ -234,6 +251,8 @@ def readSegmentationFile(ascsegfile, all_samples):
         if line.find("Chr") != -1:
             continue
         (__, sample, chr, start, end, nprobes, mbaf, logr, nA, nB) = line.split()
+        if onlysomechroms and chr not in somechroms:
+            continue
         sample = sample.split('"')[1]
         start = int(start)
         end = int(end)
@@ -249,6 +268,8 @@ def readSegmentationFile(ascsegfile, all_samples):
     return (osegs, totsca)
 
 def addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca):
+    if onlysomechroms and chr not in somechroms:
+        return
     if chr == "":
         return
     if chr == "23":
@@ -262,6 +283,8 @@ def addXiaohongSegment(Xiaohong_segments, full_sample, chr, start, end, totsca):
     if len(svec) < 4:
         svec = full_sample.split("_")
     patient = svec[0]
+    if onlysomepatients and patient not in somepatients:
+        return
     sample = svec[0] + "_" + svec[1]
     if patient not in Xiaohong_segments:
         Xiaohong_segments[patient] = {}
@@ -339,8 +362,6 @@ def readAllXiaohongSegmentation():
     Xiaohong_segments = {}
     totsca = {}
     files = []
-    Xdir_WGS = "Xiaohong_WGS_segmentation/"
-    Xdir_1M = "CN_Xiaohong_segmentation/"
     for (__, __, f) in walk(Xdir_WGS):
         files += f
     for f in files:
@@ -366,6 +387,8 @@ def readAllXiaohongSegmentation():
 
 def storeMatchesInIsegs(isegs, bafrawdata):
     for chr in isegs:
+        if onlysomechroms and chr not in somechroms:
+            continue
         for iseg in isegs[chr]:
             patterns = {}
             for pos in bafrawdata[chr]:
@@ -399,6 +422,8 @@ def storeMatchesInIsegs(isegs, bafrawdata):
 
 def scoreAnalysis(isegs, osegs, sample, analysis):
     for chr in isegs:
+        if onlysomechroms and chr not in somechroms:
+            continue
         for iseg in isegs[chr]:
             if sample not in iseg[4]:
                 iseg[4][sample] = {}
@@ -482,11 +507,17 @@ def writeBalanceFiles(isegs, patient, all_samples):
                     outfile.write("\tUnknown")
                 outfile.write("\n")
 
-def writeDerivedStatistic(ov_out, ov, sample, analysis, numerator, denom2):
-    denom = ov[sample][analysis][numerator]+ov[sample][analysis][denom2]
+def writeDerivedStatistic(ov_out, ov, sample, analysis, numerators, denoms):
+    numerator = 0
+    denom = 0
+    for num in numerators:
+        numerator += ov[sample][analysis][num]
+        denom += ov[sample][analysis][num]
+    for den in denoms:
+        denom += ov[sample][analysis][den]
     value = 0
     if denom != 0:
-        value = ov[sample][analysis][numerator]/denom
+        value = numerator/denom
         ov_out.write("\t" + str(value))
     else:
         ov_out.write("\t--")
@@ -542,12 +573,8 @@ def writeSummary(isegs, patient, all_samples, all_analyses):
         overview_out.write("\t" + call + "_num")
     for call in calls:
         overview_out.write("\t" + call + "_len")
-    overview_out.write("\tnum_precision")
-    overview_out.write("\tnum_sensitivity")
-    overview_out.write("\tnum_specificity")
-    overview_out.write("\tlen_precision")
-    overview_out.write("\tlen_sensitivity")
-    overview_out.write("\tlen_specificity")
+    overview_out.write("\tnum_accuracy")
+    overview_out.write("\tlen_accuracy")
     overview_out.write("\n")
     for sample in all_samples:
         for analysis in all_analyses:
@@ -568,16 +595,8 @@ def writeSummary(isegs, patient, all_samples, all_analyses):
                 overview_out.write("\t" + str(overview[sample][analysis][call]))
             for call in calls:
                 overview_out.write("\t" + str(overview_bases[sample][analysis][call]))
-            writeDerivedStatistic(overview_out, overview, sample, analysis,  "TP", "FP")
-            writeDerivedStatistic(overview_out, overview, sample, analysis, "TP", "FN")
-            writeDerivedStatistic(overview_out, overview, sample, analysis,  "TN", "FP")
-            writeDerivedStatistic(overview_out, overview_bases, sample, analysis,  "TP", "FP")
-#            if atype=="tetraploid":
-#                overview_out.write("\t\t")
-#            elif atype == "Xiaohong":
-#                overview_out.write("\t\t\t\t")
-            writeDerivedStatistic(overview_out, overview_bases, sample, analysis,  "TP", "FN")
-            writeDerivedStatistic(overview_out, overview_bases, sample, analysis,  "TN", "FP")
+            writeDerivedStatistic(overview_out, overview, sample, analysis,  ["TP", "TN"], ["FP", "FN"])
+            writeDerivedStatistic(overview_out, overview_bases, sample, analysis,  ["TP", "TN"], ["FP", "FN"])
             overview_out.write("\n")
     overview_out.close()
 

@@ -21,12 +21,12 @@ import lucianSNPLibrary as lsl
 
 #Use this value to set up whether to use the 'rejoined' segments or not
 
-analysis_dir = "gamma_test_output/analysis_compare/"
+analysis_dir = "analysis_compare/"
 outdir = "best_analyses/"
 gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
 
 onlysomepatients = False
-somepatients = ["43"]
+somepatients = ["1001"]
 
 if not(path.isdir(outdir)):
     mkdir(outdir)
@@ -62,10 +62,11 @@ for f in files:
     for line in analysis_file:
         if "Patient" in line:
             continue
-        (patient, sample, gamma, ploidy, TPn, FPn, UPn, TNn, FNn, UNn, NCn, Sn, TPl, FPl, UPl, TNl, FNl, UNl, NCl, Sl, __, __, __, __, __, __) = line.split()
+        (patient, sample, gamma, ploidy, TPn, FPn, UPn, TNn, FNn, UNn, NCn, Sn, TPl, FPl, UPl, TNl, FNl, UNl, NCl, Sl, n_acc, l_acc) = line.split()
         if TPn == "0" and FPn == "0" and UPn == "0":
-            #This just failed?  I guess?
+#            #This just failed?  I guess?
             continue
+#            print("No positives called for", patient, sample, gamma, ploidy)
         if sample not in analysis_summaries:
             analysis_summaries[sample] = {}
         if ploidy not in analysis_summaries[sample]:

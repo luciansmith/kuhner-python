@@ -1166,6 +1166,19 @@ def getCanonicalAscatCallsFor(patient):
     print("Unknown patient")
     return []
 
+def readBalancedCalls(balanced_dir, patient, sample):
+    balfile = open(balanced_dir + patient + "_" + sample + "_balanced_calls.tsv", "r")
+    balcalls = {}
+    for line in balfile:
+        if "Chr" in line:
+            continue
+        (fpatient, fsample, chr, start, end, call) = line.rstrip().split()
+        if chr not in balcalls:
+            balcalls[chr] = {}
+        balcalls[chr][(int(start), int(end))] = call
+    return balcalls
+
+
 
 
 
