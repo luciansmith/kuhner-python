@@ -18,7 +18,7 @@ bestdir = "best_analyses/"
 outdir = "nonintegerCNs/"
 
 onlysomepatients = False
-somepatients = ["997"]
+somepatients = ["184"]
 
 firstpatients = ["17", "42", "55", "59", "74", "43", "184", "163", "396", "1047"]
 
@@ -54,7 +54,7 @@ for f in files:
         outfile = open(outname,"w")
         outfile.write("patient\tbiopsy\tchrom\tsegstart\tsegend\trawA\trawB\tintA\tintB\n")
 
-        print("Analyzing", patient, sample, constraint)
+        #print("Analyzing", patient, sample, constraint)
         if not (lsl.collatepASCATOutput(rawsegs_dir, rawsegs_file, outfile, labels)):
             missing.write(patient)
             missing.write("\t" + sample)

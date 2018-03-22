@@ -22,11 +22,12 @@ import lucianSNPLibrary as lsl
 #Use this value to set up whether to use the 'rejoined' segments or not
 
 analysis_dir = "analysis_compare/"
+pASCAT_root = "gamma_test_output/pASCAT_input_g"
 outdir = "best_analyses/"
 gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
 
 onlysomepatients = False
-somepatients = ["1001"]
+somepatients = ["1072"]
 
 if not(path.isdir(outdir)):
     mkdir(outdir)
@@ -47,6 +48,15 @@ catch_out.write("\tOrig best gamma")
 catch_out.write("\tOrig best ploidy")
 catch_out.write("\n")
 
+def noResultsFor(patient, sample, gamma, ploidy):
+    if ploidy=="Xiaohong":
+        return False
+    if ploidy=="overall":
+        return False
+#    file = pASCAT_root + gamma + "/" + ploidy + "/" + patient + "_" + sample + "_raw_segments.txt"
+#    print(file)
+    return not isfile(pASCAT_root + gamma + "/" + ploidy + "/" + patient + "_" + sample + "_raw_segments.txt")
+
 files = []
 for (__, __, f) in walk(analysis_dir):
     files += f
@@ -63,21 +73,29 @@ for f in files:
         if "Patient" in line:
             continue
         (patient, sample, gamma, ploidy, TPn, FPn, UPn, TNn, FNn, UNn, NCn, Sn, TPl, FPl, UPl, TNl, FNl, UNl, NCl, Sl, n_acc, l_acc) = line.split()
-        if TPn == "0" and FPn == "0" and UPn == "0":
+#        if TPn == "0" and FPn == "0" and UPn == "0":
 #            #This just failed?  I guess?
-            continue
+#            continue
 #            print("No positives called for", patient, sample, gamma, ploidy)
+        if noResultsFor(patient, sample, gamma, ploidy):
+            continue
         if sample not in analysis_summaries:
             analysis_summaries[sample] = {}
         if ploidy not in analysis_summaries[sample]:
             analysis_summaries[sample][ploidy] = {}
         analysis_summaries[sample][ploidy][gamma] = {}
-        analysis_summaries[sample][ploidy][gamma]["by_segment"] = (int(TPn) + int(TNn)) / (int(TPn) + int(FPn) + int(TNn) + int(FNn))
-        analysis_summaries[sample][ploidy][gamma]["by_length"] =  (int(TPl) + int(TNl)) / (int(TPl) + int(FPl) + int(TNl) + int(FNl))
-        if TPn == "0" and FPn == "0" and UPn == "0":
+        if TPn=="0" and TNn=="0" and FPn=="0" and FNn=="0":
+            analysis_summaries[sample][ploidy][gamma]["by_segment"] = "??"
+        else:
+            analysis_summaries[sample][ploidy][gamma]["by_segment"] = (int(TPn) + int(TNn)) / (int(TPn) + int(FPn) + int(TNn) + int(FNn))
+        if TPl=="0" and TNl=="0" and FPl=="0" and FNl=="0":
+            analysis_summaries[sample][ploidy][gamma]["by_length"] =  "??"
+        else:
+            analysis_summaries[sample][ploidy][gamma]["by_length"] =  (int(TPl) + int(TNl)) / (int(TPl) + int(FPl) +    int(TNl) + int(FNl))
+#        if TPn == "0" and FPn == "0" and UPn == "0":
             #This means that ASCAT actually failed for this sample entirely, not that the 'true negatives' were wonderful.
-            analysis_summaries[sample][ploidy][gamma]["by_segment"] = 0
-            analysis_summaries[sample][ploidy][gamma]["by_length"] =  0
+#            analysis_summaries[sample][ploidy][gamma]["by_segment"] = 0
+#            analysis_summaries[sample][ploidy][gamma]["by_length"] =  0
     analysis_file.close()
     best = {}
     bestv = {}
@@ -146,7 +164,7 @@ for f in files:
             if bestv[sample]["overall"][segorlen]==0:
                 matches = "Best match was zero."
             else:
-                for ploidy in ["diploid", "tetraploid"]:
+                for ploidy in ["diploid", "tetraploid", "eight"]:
                     for gamma in ["3000", "1000", "400", "250", "100"]:
                         if ploidy in analysis_summaries[sample] and gamma in analysis_summaries[sample][ploidy]:
                             match = analysis_summaries[sample][ploidy][gamma][segorlen]/bestv[sample]["overall"][segorlen]

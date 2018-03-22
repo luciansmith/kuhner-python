@@ -1098,6 +1098,7 @@ def collatepASCATOutput(infiledir, infilename, outfile,markerlocations):
     segdata = open(infiledir + infilename,"r").readlines()
   except:
     print("Unable to open file",infiledir + infilename)
+    assert False
     return False
 
   startsnps = readblock(segdata,"track_start")
@@ -1138,7 +1139,10 @@ def collatepASCATOutput(infiledir, infilename, outfile,markerlocations):
   for (ch, st, en, ar, br, ai, bi) in zip(chr,startpos,endpos,Araw,Braw,Aint,Bint):
     outline = pid + "\t" + sid + "\t"               # patient and sample
     outline += ch + "\t" + str(st) + "\t" + str(en) + "\t"    # segment position
-    outline += ar + "\t" + br + "\t"                # non-integer CN
+    if ar=="NA" or br=="NA":
+        outline += ar + "\t" + br + "\t"                # non-integer CN
+    else:
+        outline += str(float(ar)) + "\t" + str(float(br)) + "\t"                # non-integer CN
     outline += ai + "\t" + bi + "\n"                # integer CN
     outfile.write(outline)
 

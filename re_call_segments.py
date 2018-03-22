@@ -19,7 +19,7 @@ import lucianSNPLibrary as lsl
 nonint_dir = "nonintegerCNs/"
 balance_dir = "balanced_calls/"
 
-outdir = "pASCAT_processed_calls/"
+outdir = "noninteger_processed_CNs/"
 
 onlysomepatients = False
 somepatients = ["55"]
@@ -66,11 +66,11 @@ def modifyDifficultCalls(nonints, bal_calls):
 def writeNewNonInts(f, nonints):
     nonint = open(outdir + f, "w")
     (patient, sample, gamma, ploidy) = f.split("_")[0:4]
-    nonint.write("Patient")
-    nonint.write("\tSample")
-    nonint.write("\tChr")
-    nonint.write("\tStart")
-    nonint.write("\tEnd")
+    nonint.write("patient")
+    nonint.write("\tbiopsy")
+    nonint.write("\tchrom")
+    nonint.write("\tsegstart")
+    nonint.write("\tsegend")
     nonint.write("\trawA")
     nonint.write("\trawB")
     nonint.write("\tintA")

@@ -37,7 +37,7 @@ outdir = "analysis_compare/"
 balanced_outdir = "balanced_calls/"
 
 
-subdirs = ["diploid", "tetraploid"]
+subdirs = ["diploid", "tetraploid", "eight"]
 #subdirs = ["diploid"]
 subdirdict = {}
 for subdir in subdirs:
@@ -51,9 +51,10 @@ gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "60
 bafrawdata = {}
 patient_samples = {}
 
-onlysomepatients = False
+onlysomepatients = True
 #somepatients = ["163", "184", "396", "1047", "17", "42", "43", "55", "59", "74"]
-somepatients = ["17"]
+#somepatients = ["17"]
+somepatients = ["568", "403", "512", "572", "852"]
 onlysomechroms = False
 somechroms = ["9"]
 
@@ -580,11 +581,16 @@ def writeSummary(isegs, patient, all_samples, all_analyses):
         for analysis in all_analyses:
             overview_out.write(patient)
             overview_out.write("\t" + sample.split("_")[1])
-            analysis_split = analysis.find("t")
-            atype = "tetraploid"
-            if analysis_split == -1:
+            analysis_split = -1
+            if "tetraploid" in analysis:
+                analysis_split = analysis.find("t")
+                atype = "tetraploid"
+            if "diploid" in analysis:
                 analysis_split = analysis.find("d")
                 atype = "diploid"
+            elif "eight" in analysis:
+                analysis_split = analysis.find("e")
+                atype = "eight"
             if analysis_split == -1:
                 overview_out.write("\t0\tXiaohong")
                 analysis_split = len(analysis)

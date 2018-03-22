@@ -159,7 +159,7 @@ def saveSummaries(summaries):
             (purityval, ploidyval) = getPurityAndPloidyVal(patient, samGamPloidy)
             accuracies = getAccuracies(patient, samGamPloidy)
             writeLine(sumout, summaries[patient], patient, samGamPloidy, ploidyval, purityval, accuracies)
-            if int(samGamPloidy[0]) >= 23341:
+            if int(samGamPloidy[0]) >= 23341 or samGamPloidy[0] == 19578:
                 writeLine(jsumout, summaries[patient], patient, samGamPloidy, ploidyval, purityval, accuracies)
     sumout.close()
     jsumout.close()

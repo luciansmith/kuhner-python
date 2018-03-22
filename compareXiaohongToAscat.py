@@ -32,7 +32,7 @@ outdir = "Xiaohong_pASCAT_compare/"
 gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
 
 onlysomepatients = False
-somepatients = ["42", "55", "59", "74"]
+somepatients = ["55", "59", "74", "591", "595", "597"]
 #somepatients = ["163", "184", "396", "1047", "17", "42", "43", "55", "59", "74"]
 
 if not path.isdir(outdir):
@@ -452,7 +452,7 @@ for f in files:
             continue
         Ascat_segments = readAscatSegmentationFor(patient, canon)
         writeComparison(Xiaohong_segments, Ascat_segments, patient, sample, gamma, ploidy, accuracy, isegs)
-        if int(sample) < 23341:
+        if int(sample) < 23341 and sample!="19578":
             continue
         copyDataForJamboree(patient, sample, gamma, ploidy)
 
