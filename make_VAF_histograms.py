@@ -18,7 +18,7 @@ from copy import deepcopy
 import numpy
 import math
 import matplotlib
-#matplotlib.use('Agg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 import lucianSNPLibrary as lsl
@@ -93,6 +93,8 @@ numpoints.write("Patient")
 numpoints.write("\tSample")
 numpoints.write("\tAll VAFS")
 numpoints.write("\t1v2 VAFs")
+numpoints.write("\t1v2 VAFs > 0.6")
+numpoints.write("\t1v2 VAFs > 0.8")
 numpoints.write("\n")
 
 files = []
@@ -131,6 +133,8 @@ for f in files:
     numpoints.write("\t" + sample)
     numpoints.write("\t" + str(len(allVAFs)))
     numpoints.write("\t" + str(len(onevtwo_VAFs)))
+    numpoints.write("\t" + str(sum(1 for x in onevtwo_VAFs if x>0.6)))
+    numpoints.write("\t" + str(sum(1 for x in onevtwo_VAFs if x>0.8)))
     numpoints.write("\n")
 
 numpoints.close()
