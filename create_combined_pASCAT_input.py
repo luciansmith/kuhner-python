@@ -6,33 +6,29 @@ Created on Tue Feb 21 14:06:34 2017
 @author: lpsmith
 """
 
+from __future__ import division
 import lucianSNPLibrary as lsl
 from os import walk
 from os import path
 from os import mkdir
 
+
+somepatientsonly = True
+somepatients = ["391"]
+#somepatients = ["551", "59", "954", "222", "88", "639", "611", "391", "422", "575", "619", "672", "728", "915", "1005", "43", "686"]
+
+labels, rev_labels = lsl.getSNPLabelsAll(False)
+avtag = "all"
+dirtag = "_only"
+
 bafdirs = {}
 cndirs = {}
-
-
-use_averaged_SNPs = False
-
-onepatientonly = False
-onepatient = "1047"
-
-if use_averaged_SNPs:
-    labels, rev_labels = lsl.getSNPLabelsAveraged(False)
-    avtag = "avSNPs"
-    dirtag = "_averaged"
-else:
-    labels, rev_labels = lsl.getSNPLabelsAll(False)
-    avtag = "all"
-    dirtag = "_only"
-
 bafdirs["25"] = "BAF_first_filtered_data_25M" + dirtag + "/"
 cndirs["25"] = "CN_filtered_data_25M" + dirtag + "/"
 bafdirs["1"] = "BAF_first_filtered_data_1M" + dirtag + "/"
 cndirs["1"] = "CN_filtered_data_1M" + dirtag + "/"
+bafdirs["Pilot"] = "BAF_first_filtered_data_Pilot/"
+cndirs["Pilot"] = "CN_filtered_data_Pilot/"
 
 
 def readBAFFile(baffilename, sample, avgstraight, baf_data):
@@ -44,11 +40,6 @@ def readBAFFile(baffilename, sample, avgstraight, baf_data):
         if "cnvi" in line:
             continue
         (id, chr, pos, l2r) = line.rstrip().split("\t")
-        if use_averaged_SNPs:
-            if id not in labels:
-                continue
-            #The SNP might have changed locations
-            (chr, pos) = labels[id]
         if chr == "23" or chr=="24":
             continue
         if not chr in baf_data:
@@ -74,7 +65,46 @@ def readBAFFile(baffilename, sample, avgstraight, baf_data):
                 l2r = str((l2r+avgwith)/2)
         baf_data[chr][pos][sample] = l2r
 
-for (only25, only1) in [(False, False), (False, True), (True, False)]:
+def readCNFile(cnfilename, sample, CN_data):
+    cnfile = open(cnfilename, "r")
+    print("Reading", cnfilename)
+    for line in cnfile:
+        if "SNPid" in line:
+            continue
+        if "cnvi" in line:
+            continue
+        (id, chr, pos, l2r) = line.rstrip().split("\t")
+        if chr == "23" or chr=="24":
+            continue
+        chr = int(chr)
+        pos = int(pos)
+        try:
+            float(l2r)
+            if cnfilename == bafdirs["Pilot"] + "391_19578_copynumber_all.txt":
+                l2r = float(l2r) - 0.32260464413499457
+        except:
+            if l2r != "?":
+                print("Non-float value", l2r, "for", id)
+            l2r = "?"
+        if chr == "23" or chr=="24":
+            continue
+        if not chr in CN_data:
+            CN_data[chr] = {}
+        if not pos in CN_data[chr]:
+            CN_data[chr][pos] = {}
+        if sample in CN_data[chr][pos]:
+            #multiple data points for same sample.  Assuming two, and averaging:
+            if l2r == "?":
+                #Don't save the data; leave it as-is.
+                continue
+            if CN_data[chr][pos][sample] == "?":
+                CN_data[chr][pos][sample] = l2r
+            else:
+#                    print("Averaging CN data for", patient, sample, chr, pos)
+                l2r = str((float(l2r) + float(CN_data[chr][pos][sample]))/2)
+        CN_data[chr][pos][sample] = l2r
+
+for (only25, only1) in [(False, False)]:#, (False, True), (True, False)]:
     onlytag = ""
     if (only25):
         onlytag = "_only25M"
@@ -86,7 +116,7 @@ for (only25, only1) in [(False, False), (False, True), (True, False)]:
     if not(path.isdir(outdir)):
         mkdir(outdir)
 
-    dirs = ["1", "25"]
+    dirs = ["1", "25", "Pilot"]
     if (only25):
         dirs = ["25"]
     elif (only1):
@@ -99,6 +129,7 @@ for (only25, only1) in [(False, False), (False, True), (True, False)]:
     patients = {}
     patients["25"] = set()
     patients["1"] = set()
+    patients["Pilot"] = set()
 
     for onedir in dirs:
         CNdir = cndirs[onedir]
@@ -115,14 +146,15 @@ for (only25, only1) in [(False, False), (False, True), (True, False)]:
             patient = split[0]
             sample = split[1]
             patients[onedir].add(patient)
-            if onepatientonly and patient!=onepatient:
+            if somepatientsonly and patient not in somepatients:
                 continue
             if not patient in CNfiles:
                 CNfiles[patient] = {}
             if sample not in CNfiles[patient]:
-                CNfiles[patient][sample] = CNdir + f
+                CNfiles[patient][sample] = [CNdir + f]
             else:
-                CNfiles[patient][sample] = [CNfiles[patient][sample], CNdir + f]
+                print("Found two infiles for", patient, sample)
+                CNfiles[patient][sample].append(CNdir + f)
 
     for onedir in dirs:
         bafdir = bafdirs[onedir]
@@ -138,20 +170,20 @@ for (only25, only1) in [(False, False), (False, True), (True, False)]:
                 continue
             patient = split[0]
             sample = split[1]
-            if onepatientonly and patient!=onepatient:
+            if somepatientsonly and patient not in somepatients:
                 continue
             if not patient in baffiles:
                 baffiles[patient] = {}
-            if sample == "BLD" or sample=="BLD2" or sample=="gastric" or sample=="Blood" or sample.find("N") != -1:
+            if sample == "BLD" or sample=="BLD2" or sample=="gastric" or sample=="Blood":
                 sample = "Blood"
                 if sample not in baffiles[patient]:
                     baffiles[patient][sample] = []
                 baffiles[patient][sample].append(bafdir + f)
             elif sample not in baffiles[patient]:
-                baffiles[patient][sample] = bafdir + f
+                baffiles[patient][sample] = [bafdir + f]
             else:
                 print("Multiple files for", patient, sample)
-                baffiles[patient][sample] = [baffiles[patient][sample], bafdir + f]
+                baffiles[patient][sample].append(bafdir + f)
 
     removedpatients = []
     removedsamples = []
@@ -193,7 +225,7 @@ for (only25, only1) in [(False, False), (False, True), (True, False)]:
             print("Removing", patient, "from baffiles: too few samples (<3).")
             continue
         for sample in baffiles[patient]:
-            if (sample == "gastric" or sample=="BLD" or sample=="BLD2" or sample=="Blood" or sample.find("N") != -1):
+            if (sample == "gastric" or sample=="BLD" or sample=="BLD2" or sample=="Blood"):
                 continue
             if not sample in CNfiles[patient]:
                 print("Removing", patient, ",", sample, "from baffiles: no such sample in CN files.")
@@ -214,7 +246,7 @@ for (only25, only1) in [(False, False), (False, True), (True, False)]:
             del baffiles[patient][sample]
 
     for patient in CNfiles:
-        if onepatientonly and patient != onepatient:
+        if somepatientsonly and patient not in somepatients:
             continue
         CN_data = {}
         samples = []
@@ -223,60 +255,22 @@ for (only25, only1) in [(False, False), (False, True), (True, False)]:
             continue
         print("Processing CN output for", patient)
         for sample in CNfiles[patient]:
-            cnfilename = CNfiles[patient][sample]
-            if (cnfilename.find("N_c") != -1):
-                print("Skipping", cnfilename, ": probably a gastric sample.")
-                continue
+            cnfilenames = CNfiles[patient][sample]
+#            if (cnfilename.find("N_c") != -1):
+#                print("Skipping", cnfilename, ": probably a gastric sample.")
+#                continue
             samples.append(sample)
-            cnfile = open(cnfilename, "r")
-            print("Reading", cnfilename)
-            for line in cnfile:
-                if "SNPid" in line:
-                    continue
-                if "cnvi" in line:
-                    continue
-                (id, chr, pos, l2r) = line.rstrip().split("\t")
-                if chr == "23" or chr=="24":
-                    continue
-                if use_averaged_SNPs:
-                    #The SNP might have changed locations
-                    if id not in labels:
-                        continue
-                    (chr, pos) = labels[id]
-                chr = int(chr)
-                pos = int(pos)
-                try:
-                    float(l2r)
-                except:
-                    if l2r != "?":
-                        print("Non-float value", l2r, "for", id)
-                    l2r = "?"
-                if chr == "23" or chr=="24":
-                    continue
-                if not chr in CN_data:
-                    CN_data[chr] = {}
-                if not pos in CN_data[chr]:
-                    CN_data[chr][pos] = {}
-                if sample in CN_data[chr][pos]:
-                    #multiple data points for same sample.  Assuming two, and averaging:
-                    if l2r == "?":
-                        #Don't save the data; leave it as-is.
-                        continue
-                    if CN_data[chr][pos][sample] == "?":
-                        CN_data[chr][pos][sample] = l2r
-                    else:
-    #                    print("Averaging CN data for", patient, sample, chr, pos)
-                        l2r = str((float(l2r) + float(CN_data[chr][pos][sample]))/2)
-                CN_data[chr][pos][sample] = l2r
+            for cnfilename in cnfilenames:
+                readCNFile(cnfilename, sample, CN_data)
         cnout = open(outdir + patient + "_logR.txt", "w")
         cnout.write("\t\"Chr\"\t\"Position\"")
         for sample in samples:
             cnout.write("\t\"" + patient + "_" + sample + "\"")
         cnout.write("\n")
-        chr_keys = CN_data.keys()
+        chr_keys = list(CN_data.keys())
         chr_keys.sort()
         for chr in chr_keys:
-            pos_keys = CN_data[chr].keys()
+            pos_keys = list(CN_data[chr].keys())
             pos_keys.sort()
             for pos in pos_keys:
                 chrpos = (str(chr), str(pos))
@@ -303,7 +297,7 @@ for (only25, only1) in [(False, False), (False, True), (True, False)]:
         cnout.close()
 
     for patient in baffiles:
-        if onepatientonly and patient != onepatient:
+        if somepatientsonly and patient not in somepatients:
             continue
         baf_data = {}
         samples = []
@@ -318,9 +312,10 @@ for (only25, only1) in [(False, False), (False, True), (True, False)]:
                     print("One Blood sample found", filename)
                     readBAFFile(filename, sample, True, baf_data)
             else:
-                baffilename = baffiles[patient][sample]
+                baffilenames = baffiles[patient][sample]
                 samples.append(sample)
-                readBAFFile(baffilename, sample, False, baf_data)
+                for baffilename in baffilenames:
+                    readBAFFile(baffilename, sample, False, baf_data)
 
 
         bafout = open(outdir + patient + "_BAF.txt", "w")
@@ -331,10 +326,10 @@ for (only25, only1) in [(False, False), (False, True), (True, False)]:
         lineout += "\n"
         bafout.write(lineout)
         bafNout.write(lineout)
-        chr_keys = baf_data.keys()
+        chr_keys = list(baf_data.keys())
         chr_keys.sort()
         for chr in chr_keys:
-            pos_keys = baf_data[chr].keys()
+            pos_keys = list(baf_data[chr].keys())
             pos_keys.sort()
             for pos in pos_keys:
                 chrpos = (str(chr), str(pos))

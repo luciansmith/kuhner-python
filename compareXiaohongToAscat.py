@@ -25,6 +25,7 @@ import lucianSNPLibrary as lsl
 
 #Use this value to set up whether to use the 'rejoined' segments or not
 
+processed_ascat_dir = "noninteger_processed_CNs/"
 gamma_outdir = "gamma_test_output/"
 balanced_dir = "balanced_calls/"
 best_dir = "best_analyses/"
@@ -32,8 +33,9 @@ outdir = "Xiaohong_pASCAT_compare/"
 gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
 
 onlysomepatients = False
-somepatients = ["55", "59", "74", "591", "595", "597"]
-#somepatients = ["163", "184", "396", "1047", "17", "42", "43", "55", "59", "74"]
+#somepatients = ["55", "59", "74", "591", "595", "597"]
+#somepatients = ["403", "512", "568", "852", "572"]
+somepatients = ["1072"]
 
 if not path.isdir(outdir):
     mkdir(outdir)
@@ -232,13 +234,13 @@ def readAllXiaohongSegmentation():
 
 def readAscatSegmentationFor(patient, canon):
     (sample, gamma, ploidy, __) = canon
-    ascfile = open(gamma_outdir + "/pASCAT_input_g" + gamma + "/" + ploidy + "/" + patient + "_fcn_ascat_segments.txt", "r")
+    ascfile = open(processed_ascat_dir + patient + "_" + sample + "_g" + gamma + "_" + ploidy + "_nonint_CNs.txt", "r")
     segments = {}
     for line in ascfile:
-        if "Chr" in line:
+        if "atient" in line:
             continue
-        (__, id, chr, start, end, __, __, __, nA, nB) = line.split()
-        if sample not in id:
+        (id1, id2, chr, start, end, __, __, nA, nB) = line.split()
+        if sample not in id2:
             continue
         if chr not in segments:
             segments[chr] = []
@@ -247,6 +249,7 @@ def readAscatSegmentationFor(patient, canon):
         else:
             nA = int(nA)
             nB = int(nB)
+            nsum = nA + nB
             if nA > nB:
                 temp = nA
                 nA = nB
@@ -260,10 +263,10 @@ def readAscatSegmentationFor(patient, canon):
                 else:
                     call = "Balanced_gain"
             else:
-                if nA==0:
-                    if nB == 1:
+                if nA==0 or nB == 0:
+                    if nsum == 1:
                         call = "Loss"
-                    elif nB == 2:
+                    elif nsum == 2:
                         call = "CNLOH"
                     else:
                         call = "LOH_Gain"
@@ -452,7 +455,7 @@ for f in files:
             continue
         Ascat_segments = readAscatSegmentationFor(patient, canon)
         writeComparison(Xiaohong_segments, Ascat_segments, patient, sample, gamma, ploidy, accuracy, isegs)
-        if int(sample) < 23341 and sample!="19578":
+        if int(sample) < 23341 and sample != "19578":
             continue
         copyDataForJamboree(patient, sample, gamma, ploidy)
 

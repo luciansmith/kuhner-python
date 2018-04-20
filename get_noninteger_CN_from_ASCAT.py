@@ -10,6 +10,7 @@ from __future__ import division
 from os import walk
 from os import path
 from os import mkdir
+from os.path import isfile
 
 import lucianSNPLibrary as lsl
 
@@ -18,7 +19,7 @@ bestdir = "best_analyses/"
 outdir = "nonintegerCNs/"
 
 onlysomepatients = False
-somepatients = ["184"]
+somepatients = ["512"]
 
 firstpatients = ["17", "42", "55", "59", "74", "43", "184", "163", "396", "1047"]
 
@@ -46,7 +47,8 @@ for f in files:
         (sample, gamma, constraint, accuracy) = canon
         if gamma=="None":
             continue
-        
+        if constraint=="eight":
+            print("Found different 'eight' solution for", patient, sample, gamma)
         rawsegs_dir = pASCAT_root + gamma + "/" + constraint + "/" 
         rawsegs_file = patient + "_" + sample + "_raw_segments.txt"
         outname = outdir + patient + "_" + sample + "_g" + gamma + "_" + constraint + "_nonint_CNs.txt"

@@ -24,10 +24,10 @@ import lucianSNPLibrary as lsl
 analysis_dir = "analysis_compare/"
 pASCAT_root = "gamma_test_output/pASCAT_input_g"
 outdir = "best_analyses/"
-gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
+gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500"]#, "3000"]
 
 onlysomepatients = False
-somepatients = ["1072"]
+somepatients = ["568"]
 
 if not(path.isdir(outdir)):
     mkdir(outdir)
@@ -58,6 +58,10 @@ def noResultsFor(patient, sample, gamma, ploidy):
     return not isfile(pASCAT_root + gamma + "/" + ploidy + "/" + patient + "_" + sample + "_raw_segments.txt")
 
 files = []
+
+all_best = {}
+all_close = {}
+
 for (__, __, f) in walk(analysis_dir):
     files += f
 for f in files:
@@ -78,6 +82,7 @@ for f in files:
 #            continue
 #            print("No positives called for", patient, sample, gamma, ploidy)
         if noResultsFor(patient, sample, gamma, ploidy):
+            print("Skipping", patient, sample, gamma, ploidy)
             continue
         if sample not in analysis_summaries:
             analysis_summaries[sample] = {}
@@ -143,12 +148,22 @@ for f in files:
                 best_out.write("\t" + ploidy)
                 best_out.write("\t" + segorlen)
                 best_out.write("\t" + str(bestv[sample][ploidy][segorlen]))
-                best_out.write("\t" + best[sample][ploidy][segorlen][0])
+                this_best = best[sample][ploidy][segorlen][0]
+                if this_best not in all_best:
+                    all_best[this_best] = 0
+                all_best[this_best] += 1
+                if this_best not in all_close:
+                    all_close[this_best] = 0
+                all_close[this_best] += 1
+                best_out.write("\t" + this_best)
                 for gamma in gamma_list:
                     if ploidy not in analysis_summaries[sample] or gamma not in analysis_summaries[sample][ploidy]:
                         continue
                     if bestv[sample][ploidy][segorlen]==0 or analysis_summaries[sample][ploidy][gamma][segorlen]/bestv[sample]["overall"][segorlen] > 0.95:
                         best_out.write("\t" + gamma)
+                    if gamma not in all_close:
+                        all_close[gamma] = 0
+                    all_close[gamma] += 1
                     if bestv[sample][ploidy][segorlen] == 0:
                         gamma_levels[segorlen][gamma].append(1)
                     elif analysis_summaries[sample][ploidy][gamma][segorlen] < 0:
@@ -165,7 +180,7 @@ for f in files:
                 matches = "Best match was zero."
             else:
                 for ploidy in ["diploid", "tetraploid", "eight"]:
-                    for gamma in ["3000", "1000", "400", "250", "100"]:
+                    for gamma in ["1000", "400", "250", "100"]:
                         if ploidy in analysis_summaries[sample] and gamma in analysis_summaries[sample][ploidy]:
                             match = analysis_summaries[sample][ploidy][gamma][segorlen]/bestv[sample]["overall"][segorlen]
                             if match > closestmatch:
@@ -181,6 +196,8 @@ for f in files:
     
     best_out.close()
 
+print("All best:", all_best)
+print("All close:", all_close)
 #for segorlen in gamma_levels:
 #    print("Histograms for", segorlen)
 #    for gamma in gamma_levels[segorlen]:

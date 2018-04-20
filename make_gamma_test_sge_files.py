@@ -13,7 +13,7 @@ from os import mkdir
 from shutil import copytree
 
 gamma_dir = "gamma_template/"
-gamma_out = "gamma_test_eights/"
+gamma_out = "gamma_test_nonans_pilot/"
 if not(path.isdir(gamma_out)):
     mkdir(gamma_out)
 
@@ -25,7 +25,7 @@ eightplus = False
 #somepatients = ["17", "42", "55", "59", "74", "43", "163", "396", "1047"]
 #somepatients = ["184"]
 #somepatients = ["42", "43", "55", "59", "74"]
-somepatients = ["568", "403", "512", "572", "852"]
+somepatients = ["1005", "222", "391", "422", "43", "551", "575", "59", "611", "619", "639", "672", "686", "728", "88", "915", "954"]
 
 infiles = []
 patients = []
@@ -38,8 +38,8 @@ for file in infiles:
 
 #for gamma in [0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 2000, 2500, 3000]:
 #for patient in firstpatients:
-for gamma in [3000, 1000, 400, 250, 100]:
-#for gamma in [3000, 1000, 400, 250, 100, 2000, 200, 600, 800, 150, 300, 350, 450, 500, 700, 900, 1200, 1400, 1600, 2500]:
+#for gamma in [3000, 1000, 400, 250, 100]:
+for gamma in [1000, 400, 250, 100, 2000, 200, 600, 800, 150, 300, 350, 450, 500, 700, 900, 1200, 1400, 1600, 2500]:
 #for gamma in [450]:
     pASCAT_dir = "pASCAT_input_g" + str(gamma) + "/"
 
@@ -54,11 +54,12 @@ for gamma in [3000, 1000, 400, 250, 100]:
     if not(path.isdir(gamma_out + pASCAT_dir + "tetraploid/")):
         mkdir(gamma_out + pASCAT_dir + "tetraploid/")
 
-    if not(path.isdir(gamma_out + pASCAT_dir + "eight/")):
-        mkdir(gamma_out + pASCAT_dir + "eight/")
+    if eightplus:
+        if not(path.isdir(gamma_out + pASCAT_dir + "eight/")):
+            mkdir(gamma_out + pASCAT_dir + "eight/")
 
-    if not(path.isdir(gamma_out + pASCAT_dir + "eight_high/")):
-        mkdir(gamma_out + pASCAT_dir + "eight_high/")
+        if not(path.isdir(gamma_out + pASCAT_dir + "eight_high/")):
+            mkdir(gamma_out + pASCAT_dir + "eight_high/")
 
     if not(path.isdir(gamma_out + pASCAT_dir + "Rout/")):
         mkdir(gamma_out + pASCAT_dir + "Rout/")

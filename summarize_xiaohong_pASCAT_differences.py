@@ -150,7 +150,7 @@ def getAccuracies(patient, samGamPloidy):
     return (xaccuracy, aaccuracy)
 
 def saveSummaries(summaries):
-    sumout = open(xiaocompare_dir + "xiaocompare_summary.tsv", "w")
+    sumout = open(xiaocompare_dir + "summar", "w")
     jsumout = open(xiaocompare_dir + "xiaocompare_jonly_summary.tsv", "w")
     writeHeader(sumout)
     writeHeader(jsumout)
@@ -174,6 +174,7 @@ for f in files:
     if "xiaohong_to_ascat_compare" not in f:
         continue
     (patient, sample, gamma, ploidy) = f.split("_")[0:4]
+    print("Summarizing", patient, sample, gamma, ploidy)
     if onlysomepatients and patient not in somepatients:
         continue
     compare = open(xiaocompare_dir + f, "r")

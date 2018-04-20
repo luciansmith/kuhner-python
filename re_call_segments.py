@@ -10,6 +10,7 @@ from __future__ import division
 from os import walk
 from os import path
 from os import mkdir
+import shutil
 
 import numpy
 import lucianSNPLibrary as lsl
@@ -20,12 +21,16 @@ nonint_dir = "nonintegerCNs/"
 balance_dir = "balanced_calls/"
 
 outdir = "noninteger_processed_CNs/"
+jamboreedir = "jamboree_files/"
 
 onlysomepatients = False
 somepatients = ["55"]
 
 if not path.isdir(outdir):
     mkdir(outdir)
+
+if not path.isdir(jamboreedir + outdir):
+    mkdir(jamboreedir + outdir)
 
 
 def getNonIntegerCalls(f):
@@ -93,6 +98,13 @@ def writeNewNonInts(f, nonints):
             nonint.write("\n")
     nonint.close()
 
+def copyToJamboreeIfWGS(f):
+    (patient, sample, gamma, ploidy) = f.split("_")[0:4]
+    if int(sample) < 23341 and sample != "19578":
+        return
+    shutil.copyfile(outdir + f, jamboreedir + outdir + f)
+    
+
 
 files = []
 for (__, __, f) in walk(nonint_dir):
@@ -108,4 +120,5 @@ for f in files:
     bal_calls = lsl.readBalancedCalls(balance_dir, patient, sample)
     modifyDifficultCalls(nonints, bal_calls)
     writeNewNonInts(f, nonints)
+    copyToJamboreeIfWGS(f)
 

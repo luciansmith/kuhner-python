@@ -11,18 +11,14 @@ from os import path
 from os import mkdir
 
 # read the file that correlates patient data with which omni file the 'canonical' version of that data can be found.
-use_averaged_SNPs = False
 use_canonical = False
 checkonly = False
-onepatientonly = False
-onepatient = "512"
+somepatientsonly = True
+somepatients = ["391","611"]
+#somepatients = ["422", "575", "619", "672", "728", "915", "1005", "43", "686", "611"]
 
-CN_raw_dir = "CN_raw_data/"
-tag = "_1M"
-if use_averaged_SNPs:
-    tag += "_averaged"
-else:
-    tag += "_only"
+CN_raw_dir = "CN_raw_data_Pilot/"
+tag = "_Pilot"
 
 canonical_filename = "CN_raw_data/20170724_sample_omni.txt"
 CN_out_dir = "CN_filtered_data" + tag + "/"
@@ -31,30 +27,18 @@ if not(path.isdir(CN_out_dir)):
     mkdir(CN_out_dir)
 
 # read the probeset file, which correlates name to position.  We dont want zeroes ('False').
-if (use_averaged_SNPs):
-    labels, rev_labels = lsl.getSNPLabelsAveraged(False)
-else:
-    labels, rev_labels = lsl.getSNPLabelsAll(False)
+labels, rev_labels = lsl.getSNPLabelsAll(False)
 
 nan_probes = {}
-if (path.isfile(CN_raw_dir + "nan_probes.txt")):
-    nanfile = open(CN_raw_dir + "nan_probes.txt")
-    for line in nanfile:
-        if line.find("Batch") != -1:
-            continue
-        linevec = line.rstrip().split("\t")
-        sample = linevec[1].split("-")[1]
-        nan_probes[sample] = linevec[2:]
-
-if (path.isfile(CN_raw_dir + "nan_probes2.txt")):
-    nanfile = open(CN_raw_dir + "nan_probes.txt")
-    for line in nanfile:
-        if line.find("Batch") != -1:
-            continue
-        linevec = line.rstrip().split("\t")
-        sample = linevec[1].split("-")[1]
-        nan_probes[sample] = linevec[2:]
-
+for probefile in ["nan_probes.txt", "nan_probes2.txt", "nan_probes3.txt"]:
+    if (path.isfile(CN_raw_dir + probefile)):
+        nanfile = open(CN_raw_dir + probefile)
+        for line in nanfile:
+            if line.find("Batch") != -1:
+                continue
+            linevec = line.rstrip().split("\t")
+            sample = linevec[1].split("-")[1]
+            nan_probes[sample] = linevec[2:]
 
 infile = open(canonical_filename,"r")
 
@@ -95,12 +79,12 @@ for file in filenames:
         if (idbits[0].find("-") != -1):
             idbits = idbits[0].split("-")
         if (len(idbits) < 3):
-            print "idbits not long enough:", id
-            print "Next entry:", SNPline[1]
-            foo()
+            print("idbits not long enough:", id)
+            print("Next entry:", SNPline[1])
+            assert(False)
             continue
         id = idbits[0]
-        if onepatientonly and id != onepatient:
+        if somepatientsonly and id not in somepatients:
             continue
         sample = idbits[1]
 #        if sample != "24007":
@@ -110,15 +94,15 @@ for file in filenames:
                 continue
             refomni = whichdata[id + "_" + sample]
             if (refomni != whichomni):
-                print "The file " + whichomni + " contains data for " + id + "_" + sample + ", but that data should be found in " + refomni + " instead."
+                print("The file " + whichomni + " contains data for " + id + "_" + sample + ", but that data should be found in " + refomni + " instead.")
                 continue
         if (len(SNPnames) != len(SNPline)):
-            print str(len(SNPnames)) + " SNPnames and " + str(len(SNPline)) + " SNPs: unequal numbers in file " + file + ", for id '" + id + "_" + sample + "': skipping."
+            print(str(len(SNPnames)) + " SNPnames and " + str(len(SNPline)) + " SNPs: unequal numbers in file " + file + ", for id '" + id + "_" + sample + "': skipping.")
             for entry in SNPline:
                 if (entry.find(":") == -1):
                     x = float(entry)
                     if len(entry) > 13:
-                        print entry
+                        print(entry)
                         foo()
             continue
 #        if (id != "1060"):
@@ -127,9 +111,9 @@ for file in filenames:
 #            continue
         outnames.write(SNPline[0] + "\n")
         if path.isfile(CN_out_dir + id + "_" + sample + "_copynumber_all.txt"):
-            print "Skipping patient", id, "sample", sample, ": file already exists"
+            print("Skipping patient", id, "sample", sample, ": file already exists")
             continue
-        print "Writing data for patient", id, ", sample", sample
+        print("Writing data for patient", id, ", sample", sample)
         if not checkonly:
             outfile = open(CN_out_dir + id + "_" + sample + "_copynumber_all.txt", "w")
             outfile.write("SNPid\tchr\tpos\tlog2R\n")
@@ -146,7 +130,7 @@ for file in filenames:
                     l2r = float(SNPline[entry])
                 except:
                    if SNPline[entry] != "?":
-                        print "Non-float value", SNPline[entry], "for", SNPnames[entry]
+                        print("Non-float value", SNPline[entry], "for", SNPnames[entry])
                    SNPline[entry] = "?"
                 if sample in nan_probes and SNPnames[entry] in nan_probes[sample]:
                     #The value was actually faked

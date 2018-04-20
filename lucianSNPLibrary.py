@@ -357,6 +357,46 @@ def getSNPLabels2_5M(zeroes):
     infile.close()
     return labels, rev_labels
 
+def getSNPLabels2_5Mv12(zeroes):
+    infilename = "HumanOmni2-5-8-v1-2-A-Gene-Annotation-File.txt"
+    infile = open(infilename,"r")
+    #duplicates = open("duplicates.txt", "w")
+
+    labels = {}
+    rev_labels = {}
+    for line in infile:
+        if line.find("Name") != -1:
+            continue
+        line = line.rstrip().split()
+
+        (id, chr, pos) = line[0:3]
+        if chr=="X":
+            chr = "23"
+        if chr=="Y":
+            chr = "24"
+        try:
+            int(chr)
+        except ValueError:
+            #print("problematic chr: " + chr)
+            continue
+        if (not zeroes):
+            if (pos == "0"):
+                continue
+            if (chr == "0"):
+                continue
+        if (chr, pos) not in rev_labels:
+            rev_labels[(chr, pos)] = id
+        elif "cnvi" in rev_labels[(chr, pos)]:
+            rev_labels[(chr, pos)] = id
+        #else:
+            #print("Two SNPs with the same position:", id, "and", rev_labels[chr, pos], "both map to", chr, ",", pos)
+            #duplicates.write(id + "\t" + rev_labels[chr, pos] + "\t" + chr + "\t" + pos + "\n")
+            #continue
+            #UPDATE:  it appears that Partek uses all SNPs, even if they map to the same location.
+        labels[id] = (chr, pos)
+    infile.close()
+    return labels, rev_labels
+
 def getSNPLabelsAll(zeroes):
     # read the probeset file, which correlates name to position.
     infilename = "probe_set_1_25_all.txt"
@@ -1164,6 +1204,24 @@ def getCanonicalAscatCallsFor(patient):
             lvec = line.split()
             (patient, sample, constraint, compare, accuracy, gamma) = lvec[0:6]
             if compare=="by_length" and constraint != "Xiaohong" and constraint != "overall":
+                if constraint == "eight":
+                    #Check to make sure that the tetraploid solution wasn't identical:
+                    eightploidyfile = "gamma_test_output/pASCAT_input_g" + gamma + "/" + constraint + "/" + patient + "_fcn_ascat_ploidy.txt"
+                    if not isfile(eightploidyfile):
+                        continue
+                    eightploidy = "0"
+                    tetraploidy = "0"
+                    for line in open(eightploidyfile):
+                        if patient + "_" + sample in line:
+                            eightploidy = line.split()[1]
+                    tetraploidyfile = "gamma_test_output/pASCAT_input_g" + gamma + "/tetraploid/" + patient + "_fcn_ascat_ploidy.txt"
+                    if isfile(tetraploidyfile):
+                        for line in open(tetraploidyfile):
+                            if patient + "_" + sample in line:
+                                tetraploidy = line.split()[1]
+                    if eightploidy == "0" or eightploidy == tetraploidy:
+                        #found the same ploidy or no solution
+                        continue
                 ret.add((sample, gamma, constraint, accuracy))
         return ret
         
@@ -1182,7 +1240,17 @@ def readBalancedCalls(balanced_dir, patient, sample):
         balcalls[chr][(int(start), int(end))] = call
     return balcalls
 
-
+def getPatientInfo():
+    patientfile = open("Patient_status.txt", "r")
+    progressions = {}
+    sexes = {}
+    for line in patientfile:
+        if "Patient" in line:
+            continue
+        (patient, progression, sex) = line.split()
+        progressions[patient] = progression
+        sexes[patient] = sex
+    return (progressions, sexes)
 
 
 
