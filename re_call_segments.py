@@ -100,7 +100,7 @@ def writeNewNonInts(f, nonints):
 
 def copyToJamboreeIfWGS(f):
     (patient, sample, gamma, ploidy) = f.split("_")[0:4]
-    if int(sample) < 23341 and sample != "19578":
+    if "N" not in sample and int(sample) < 23341 and sample != "19578":
         return
     shutil.copyfile(outdir + f, jamboreedir + outdir + f)
     

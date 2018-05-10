@@ -150,7 +150,7 @@ def getAccuracies(patient, samGamPloidy):
     return (xaccuracy, aaccuracy)
 
 def saveSummaries(summaries):
-    sumout = open(xiaocompare_dir + "summar", "w")
+    sumout = open(xiaocompare_dir + "xiaocompare_summary.tsv", "w")
     jsumout = open(xiaocompare_dir + "xiaocompare_jonly_summary.tsv", "w")
     writeHeader(sumout)
     writeHeader(jsumout)
@@ -159,7 +159,7 @@ def saveSummaries(summaries):
             (purityval, ploidyval) = getPurityAndPloidyVal(patient, samGamPloidy)
             accuracies = getAccuracies(patient, samGamPloidy)
             writeLine(sumout, summaries[patient], patient, samGamPloidy, ploidyval, purityval, accuracies)
-            if int(samGamPloidy[0]) >= 23341 or samGamPloidy[0] == 19578:
+            if "N" in samGamPloidy[0] or int(samGamPloidy[0]) >= 23341 or samGamPloidy[0] == 19578:
                 writeLine(jsumout, summaries[patient], patient, samGamPloidy, ploidyval, purityval, accuracies)
     sumout.close()
     jsumout.close()

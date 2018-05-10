@@ -13,12 +13,12 @@ from os import mkdir
 # read the file that correlates patient data with which omni file the 'canonical' version of that data can be found.
 use_canonical = False
 checkonly = False
-somepatientsonly = True
+somepatientsonly = False
 somepatients = ["391","611"]
 #somepatients = ["422", "575", "619", "672", "728", "915", "1005", "43", "686", "611"]
 
-CN_raw_dir = "CN_raw_data_Pilot/"
-tag = "_Pilot"
+CN_raw_dir = "CN_raw_data/"
+tag = "_1M_only"
 
 canonical_filename = "CN_raw_data/20170724_sample_omni.txt"
 CN_out_dir = "CN_filtered_data" + tag + "/"

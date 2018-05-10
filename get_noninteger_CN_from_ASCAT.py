@@ -18,6 +18,8 @@ pASCAT_root = "gamma_test_output/pASCAT_input_g"
 bestdir = "best_analyses/"
 outdir = "nonintegerCNs/"
 
+use500 = True
+
 onlysomepatients = False
 somepatients = ["512"]
 
@@ -42,9 +44,12 @@ for f in files:
 #    if patient in firstpatients:
 #        #These need to be re-run, since the SNPs were off.
 #        continue
-    canonical_ascats = lsl.getCanonicalAscatCallsFor(patient)
+    if use500:
+        canonical_ascats = lsl.getSingleGammaCallsFor(patient, "500")
+    else:
+        canonical_ascats = lsl.getCanonicalAscatCallsFor(patient)
     for canon in canonical_ascats:
-        (sample, gamma, constraint, accuracy) = canon
+        (sample, gamma, constraint) = canon
         if gamma=="None":
             continue
         if constraint=="eight":
@@ -62,7 +67,6 @@ for f in files:
             missing.write("\t" + sample)
             missing.write("\t" + gamma)
             missing.write("\t" + constraint)
-            missing.write("\t" + accuracy)
             missing.write("\n")
         
         outfile.close()

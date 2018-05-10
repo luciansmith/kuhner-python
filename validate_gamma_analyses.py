@@ -24,7 +24,7 @@ import lucianSNPLibrary as lsl
 
 #Use this value to set up whether to use the 'rejoined' segments or not
 
-BAF_links = True
+BAF_links = False
 if BAF_links:
     BAF_dir = "gamma_template/"
 else:
@@ -37,16 +37,16 @@ outdir = "analysis_compare/"
 balanced_outdir = "balanced_calls/"
 
 
-subdirs = ["diploid", "tetraploid", "eight"]
+subdirs = ["diploid", "tetraploid"]
 #subdirs = ["diploid"]
 subdirdict = {}
 for subdir in subdirs:
     subdirdict[subdir] = []
 #gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600"]
-#gamma_list = ["50"]
+gamma_list = ["500"]
 #gamma_list = ["Test"]
 #gamma_list = ["100", "500", "1000", "3000"]
-gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
+#gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500"]
 #gamma_list = []
 bafrawdata = {}
 patient_samples = {}
@@ -64,28 +64,10 @@ if not path.isdir(outdir):
 if not path.isdir(balanced_outdir):
     mkdir(balanced_outdir)
 
-#twopatients = [("521", "252")]
-#samples from patient 360:
-onepatientsamples = ["360_21620", "360_18370", "360_18354", "360_18358", "360_21608", "360_21606", "360_21604", "360_21602", "360_18356", "360_21600", "360_24412", "360_18350", "360_18444", "360_18446", "360_18352", "360_18366", "360_21618", "360_21598", "360_18362", "360_21596", "360_21614", "360_21594", "360_21616", "360_21592", "360_21610", "360_21612", "360_24409", "360_24810", "360_24813", "360_18372"]
 ignore_cnvis = True
-mirror_percentages = False
-
-#median for patient 521:  .5154885
-#Reasonable cutoffs for 521: 0.48 and 0.563 (about 750k left each)
-#A more agressive but balanced cutoff:  0.45 and 0.6  (about 215k left each)
-#The best cutoff is no cutoff at all:  0.5 and 0.5
-bafErrorBarLow = 0.5
-bafErrorBarHigh = 0.5
-
-print("Using BAF filtering for comparison from ", str(bafErrorBarLow), "to", str(bafErrorBarHigh))
 
 bafWtLow = 0.4
 bafWtHigh = 0.65
-
-if not(path.isdir(outdir)):
-    mkdir(outdir)
-if not(path.isdir(balanced_outdir)):
-    mkdir(balanced_outdir)
 
 #original cutoff: 0.35 to 0.65, or 0.15 out from 0.5.  The above values account for dye bias.
 
@@ -179,7 +161,9 @@ def readBafSamples(baffile, bafrawdata):
 def getIsegsFromCopynumberFileFor(patient):
     #This function reads the lowest-gamma-value copynumber file it can, reads it, and returns it as 'isegs'.
     isegs = {}
-    glist = ("100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000")
+    #glist = ("100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000")
+    glist = list("1")
+    glist[0] = "500"
     gindex = 0
     gamma = glist[gindex]
 
@@ -190,7 +174,7 @@ def getIsegsFromCopynumberFileFor(patient):
         root_dir = gamma_outdir + "pASCAT_input_g" + gamma + "/"
         isegfilename = root_dir + patient + "_copynumber_segments.txt"
         gindex += 1
-    if gindex >= len(glist):
+    if gindex > len(glist):
         print("Cannot find any copynumber file for patient", patient)
         return {}
     isegfile = open(isegfilename, "r")
@@ -460,17 +444,24 @@ def scoreAnalysis(isegs, osegs, sample, analysis):
                 #segment might be too short: sample not present
                 iseg[4][sample][analysis] = "S" #"Too short?"
                 continue
+            other_matches = False
+            for (m1, m2) in matches:
+                for nonmatch in nonmatches:
+                    if sample in nonmatch and (m1 in nonmatch or m2 in nonmatch):
+                        other_matches = True
+                        break
+                    
             if call == "Unbalanced":
                 if sample_in_matches:
                     iseg[4][sample][analysis] = "TP" #"True positive"
-                elif len(matches) > 0:
+                elif other_matches:
                     iseg[4][sample][analysis] = "FP" #"False positive"
                 else:
                     iseg[4][sample][analysis] = "UP" #"Unvalidatable positive"
             elif call == "Balanced":
                 if sample_in_matches:
                     iseg[4][sample][analysis] = "FN" #"False negative"
-                elif len(matches) > 0:
+                elif other_matches:
                     iseg[4][sample][analysis] = "TN" #"True negative"
                 else:
                     iseg[4][sample][analysis] = "UN" #"Unvalidatable negative"
@@ -498,11 +489,17 @@ def writeBalanceFiles(isegs, patient, all_samples):
                     if sample in nonmatch:
                         sample_in_nonmatches = True
                         break
+                other_matches = False
+                for (m1, m2) in matches:
+                    for nonmatch in nonmatches:
+                        if sample in nonmatch and (m1 in nonmatch or m2 in nonmatch):
+                            other_matches = True
+                            break
                 if sample_in_matches:
                     outfile.write("\tUnbalanced")
                 elif not sample_in_nonmatches:
                     outfile.write("\tShort")
-                elif len(matches)>0:
+                elif other_matches:
                     outfile.write("\tBalanced")
                 else:
                     outfile.write("\tUnknown")

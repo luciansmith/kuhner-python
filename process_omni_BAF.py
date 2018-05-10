@@ -14,8 +14,8 @@ from os import mkdir
 # read the file that correlates patient data with which omni file the 'canonical' version of that data can be found.
 use_canonical = False
 
-baf_dir = "BAF_raw_data_25M/"
-tag = "_25M_only"
+baf_dir = "BAF_raw_data/"
+tag = "_1M_only"
 
 canonical_filename = "CN_raw_data/20170724_sample_omni.txt"
 baf_outdir = "BAF_first_filtered_data" + tag + "/"

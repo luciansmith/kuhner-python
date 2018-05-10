@@ -24,7 +24,8 @@ import lucianSNPLibrary as lsl
 analysis_dir = "analysis_compare/"
 pASCAT_root = "gamma_test_output/pASCAT_input_g"
 outdir = "best_analyses/"
-gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500"]#, "3000"]
+#gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500"]#, "3000"]
+gamma_list = ["500",]
 
 onlysomepatients = False
 somepatients = ["568"]
@@ -57,10 +58,55 @@ def noResultsFor(patient, sample, gamma, ploidy):
 #    print(file)
     return not isfile(pASCAT_root + gamma + "/" + ploidy + "/" + patient + "_" + sample + "_raw_segments.txt")
 
+def getBestPatientGamma(analysis_summaries):
+    gamma_sums = {}
+    for gamma in gamma_list:
+        gamma_sums[gamma] = 0
+        for sample in analysis_summaries:
+            better_gamma = "None"
+            if 'diploid' in analysis_summaries[sample] and gamma in analysis_summaries[sample]['diploid']:
+                better_gamma = analysis_summaries[sample]['diploid'][gamma]['by_length']
+            if 'tetraploid' in analysis_summaries[sample] and gamma in analysis_summaries[sample]['tetraploid']:
+                t_gamma = analysis_summaries[sample]['tetraploid'][gamma]['by_length']
+                if better_gamma=="None" or t_gamma > better_gamma:
+                    better_gamma = t_gamma
+            if better_gamma == "None" or gamma_sums[gamma] == "None":
+                gamma_sums[gamma] = "None"
+            else:
+                gamma_sums[gamma] += better_gamma
+    return gamma_sums
+
+def findAndPrintBestGammas(all_gsums):
+    global_bests = {}
+    for patient in all_gsums:
+        for gamma in all_gsums[patient]:
+            if gamma not in global_bests:
+                global_bests[gamma] = 0
+            if global_bests[gamma] == "None" or all_gsums[patient][gamma] == "None":
+                global_bests[gamma] = "None"
+            else:
+                global_bests[gamma] += all_gsums[patient][gamma]
+    globals_out = open(outdir + "combined_overall.tsv", "w")
+    globals_out.write("Patient")
+    for gamma in gamma_list:
+        globals_out.write("\tg" + gamma)
+    globals_out.write("\n")
+    globals_out.write("overall")
+    for gamma in gamma_list:
+        globals_out.write("\t" + str(global_bests[gamma]))
+    globals_out.write("\n")
+    for patient in all_gsums:
+        globals_out.write(patient)
+        for gamma in gamma_list:
+            globals_out.write("\t" + str(all_gsums[patient][gamma]))
+        globals_out.write("\n")
+
 files = []
 
 all_best = {}
 all_close = {}
+
+all_gsums = {}
 
 for (__, __, f) in walk(analysis_dir):
     files += f
@@ -129,7 +175,8 @@ for f in files:
                             best[sample]["overall"][segorlen] = (gamma, ploidy)
 #                    if analysis_summaries[sample][ploidy][gamma][segorlen] < 0:
 #                        print("Negative analysis level:", patient, sample, ploidy, segorlen, gamma)
-
+    
+    all_gsums[patient] = getBestPatientGamma(analysis_summaries)
 
     best_out = open(outdir + patient + "_best.tsv", "w")
     best_out.write("Patient")
@@ -180,7 +227,7 @@ for f in files:
                 matches = "Best match was zero."
             else:
                 for ploidy in ["diploid", "tetraploid", "eight"]:
-                    for gamma in ["1000", "400", "250", "100"]:
+                    for gamma in gamma_list:
                         if ploidy in analysis_summaries[sample] and gamma in analysis_summaries[sample][ploidy]:
                             match = analysis_summaries[sample][ploidy][gamma][segorlen]/bestv[sample]["overall"][segorlen]
                             if match > closestmatch:
@@ -195,6 +242,8 @@ for f in files:
             catch_out.write("\n")
     
     best_out.close()
+
+findAndPrintBestGammas(all_gsums)
 
 print("All best:", all_best)
 print("All close:", all_close)

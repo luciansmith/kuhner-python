@@ -30,12 +30,13 @@ gamma_outdir = "gamma_test_output/"
 balanced_dir = "balanced_calls/"
 best_dir = "best_analyses/"
 outdir = "Xiaohong_pASCAT_compare/"
-gamma_list = ["0", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000"]
+gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500"]
 
+use500 = True
 onlysomepatients = False
 #somepatients = ["55", "59", "74", "591", "595", "597"]
 #somepatients = ["403", "512", "568", "852", "572"]
-somepatients = ["1072"]
+somepatients = ["1029"]
 
 if not path.isdir(outdir):
     mkdir(outdir)
@@ -43,7 +44,8 @@ if not path.isdir(outdir):
 def getIsegsFromCopynumberFileFor(patient):
     #This function reads the lowest-gamma-value copynumber file it can, reads it, and returns it as 'isegs'.
     isegs = {}
-    glist = ("100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000")
+    #glist = ("100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000")
+    glist = ("500",)
     gindex = 0
     gamma = glist[gindex]
 
@@ -233,7 +235,7 @@ def readAllXiaohongSegmentation():
     return Xiaohong_segments
 
 def readAscatSegmentationFor(patient, canon):
-    (sample, gamma, ploidy, __) = canon
+    (sample, gamma, ploidy) = canon
     ascfile = open(processed_ascat_dir + patient + "_" + sample + "_g" + gamma + "_" + ploidy + "_nonint_CNs.txt", "r")
     segments = {}
     for line in ascfile:
@@ -277,28 +279,30 @@ def readAscatSegmentationFor(patient, canon):
 
 def getCallFor(start, end, seg):
     (tstart, tend, call) = seg
-    overlap = max(0, (min(end, tend) - max(start, tstart))) / (end-start)
+    overlap = max(0, (min(end, tend) - max(start, tstart) + 1)) / (end-start+1)
     return (call, overlap)
 
 def addWtToCalls(calls):
     totcalls = 0
     for call in calls:
         totcalls += call[1]
-    if totcalls < 0.8:
+    if totcalls < 0.98:
         calls.append(("wt?", 1-totcalls))
 
 def addUnknownToCalls(calls):
     totcalls = 0
     for call in calls:
         totcalls += call[1]
-    if totcalls < 0.6:
+    if totcalls < 0.98:
+        #assert(False) #When only using one gamma, ASCAT calls should always overlap perfectly
         calls.append(("Unknown", 1-totcalls))
 
 
-def getSummary(calls, wtNotCalled):
+def getSummary(calls):
     if len(calls)==0:
-        if wtNotCalled:
-            return "wt?"
+        assert(False)
+        #if wtNotCalled:
+        #    return "wt?"
         return "??"
     totcalls = 0
     summary = {}
@@ -308,10 +312,8 @@ def getSummary(calls, wtNotCalled):
         if callname not in summary:
             summary[callname] = 0
         summary[callname] += call[1]
-    if totcalls < 0.8 and wtNotCalled:
-        summary["wt"] = 1-totcalls
     if len(summary.keys()) == 1:
-        return list(summary.keys())[0]
+        return list(summary.keys())[0] #'keys' is an iterator: cast to a list and take the first (and only) entry
     ret = ""
     for sumtype in summary:
         ret += sumtype + "_" + str(round(summary[sumtype], 2)) + "_"
@@ -357,7 +359,7 @@ def getMatchTotal(xcalls, acalls):
         return 1
     return matchtotal
 
-def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, accuracy, isegs):
+def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
     compareout = open(outdir + patient + "_" + sample + "_g" + gamma + "_" + ploidy + "_xiaohong_to_ascat_compare.tsv", "w")
     compareout.write("Patient")
     compareout.write("\tSample")
@@ -388,13 +390,13 @@ def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, accuracy, iseg
                     acalls.append(acall)
             addWtToCalls(xcalls)
             addUnknownToCalls(acalls)
-            xcall = getSummary(xcalls, True)
-            acall = getSummary(acalls, False)
+            xcall = getSummary(xcalls)
+            acall = getSummary(acalls)
             
             x_matches_balanced = getMatches(balanced_calls[sample], xcalls)
             a_matches_balanced = getMatches(balanced_calls[sample], acalls)
             
-            length = end-start
+            length = end-start+1
             a_x_mismatch = int(length - (length*getMatchTotal(xcalls, acalls)))
 
             compareout.write(patient)
@@ -404,7 +406,7 @@ def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, accuracy, iseg
             compareout.write("\t" + str(end))
             compareout.write("\t" + xcall)
             compareout.write("\t" + acall)
-            compareout.write("\t" + str(end-start))
+            compareout.write("\t" + str(length))
             compareout.write("\t" + str(a_x_mismatch))
             compareout.write("\t" + balanced_calls[sample])
             compareout.write("\t" + x_matches_balanced)
@@ -437,7 +439,7 @@ files = []
 for (__, __, f) in walk(best_dir):
     files += f
 for f in files:
-    if "catch" in f:
+    if "catch" in f or "combined" in f:
         continue
     patient = f.split("_")[0]
     if onlysomepatients and patient not in somepatients:
@@ -445,17 +447,19 @@ for f in files:
 #for patient in ["43"]:
     isegs = getIsegsFromCopynumberFileFor(patient)
     readBalancedUnbalancedAndStoreInIsegs(isegs, patient)
-    canonical_ascat = lsl.getCanonicalAscatCallsFor(patient)
-    for canon in canonical_ascat:
+    if use500:
+        canonical_ascats = lsl.getSingleGammaCallsFor(patient, "500")
+    else:
+        canonical_ascats = lsl.getCanonicalAscatCallsFor(patient)
+    for canon in canonical_ascats:
         sample = canon[0]
         gamma = canon[1]
         ploidy = canon[2]
-        accuracy = canon[3]
         if gamma == "None":
             continue
         Ascat_segments = readAscatSegmentationFor(patient, canon)
-        writeComparison(Xiaohong_segments, Ascat_segments, patient, sample, gamma, ploidy, accuracy, isegs)
-        if int(sample) < 23341 and sample != "19578":
+        writeComparison(Xiaohong_segments, Ascat_segments, patient, sample, gamma, ploidy, isegs)
+        if "N" not in sample and int(sample) < 23341 and sample != "19578":
             continue
         copyDataForJamboree(patient, sample, gamma, ploidy)
 

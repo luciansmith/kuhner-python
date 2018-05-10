@@ -15,7 +15,7 @@ from os import mkdir
 
 #Process various input files to create an evidence file
 
-initcall = "initial_calling_evidence.txt"
+initcall = "initial_calling_evidence.tsv"
 flow_summary = "flow_summary.txt"
 call_summary = "Xiaohong_pASCAT_compare/xiaocompare_summary.tsv"
 outfile = "calling_evidence.txt"

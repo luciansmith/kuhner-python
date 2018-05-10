@@ -1222,11 +1222,26 @@ def getCanonicalAscatCallsFor(patient):
                     if eightploidy == "0" or eightploidy == tetraploidy:
                         #found the same ploidy or no solution
                         continue
-                ret.add((sample, gamma, constraint, accuracy))
+                ret.add((sample, gamma, constraint))
         return ret
         
     print("Unknown patient")
     return []
+
+def getSingleGammaCallsFor(patient, gamma):
+    gammadir = "gamma_test_output/pASCAT_input_g" + gamma + "/"
+    ret = set()
+    for ploidy in ["diploid", "tetraploid", "eight"]:
+        ploidyfile = gammadir + ploidy + "/" + patient + "_fcn_ascat_ploidy.txt"
+        if isfile(ploidyfile):
+            for line in open(ploidyfile):
+                if patient not in line:
+                    continue
+                (pat_sam, ploidy_val) = line.split();
+                sample = pat_sam.split("_")[1].replace('"','')
+                if isfile(gammadir + ploidy + "/" + patient + "_" + sample + "_raw_segments.txt"):
+                    ret.add((sample, gamma, ploidy))
+    return ret
 
 def readBalancedCalls(balanced_dir, patient, sample):
     balfile = open(balanced_dir + patient + "_" + sample + "_balanced_calls.tsv", "r")

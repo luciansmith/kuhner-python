@@ -13,14 +13,14 @@ from os import mkdir
 from shutil import copytree
 
 gamma_dir = "gamma_template/"
-gamma_out = "gamma_test_nonans_pilot/"
+gamma_out = "gamma_test/"
 if not(path.isdir(gamma_out)):
     mkdir(gamma_out)
 
 allfile = open(gamma_out + "run_all.bat", "w")
 makelinks = open(gamma_out + "make_links.bat", "w")
 
-onlysomepatients = True
+onlysomepatients = False
 eightplus = False
 #somepatients = ["17", "42", "55", "59", "74", "43", "163", "396", "1047"]
 #somepatients = ["184"]
@@ -73,7 +73,7 @@ for gamma in [1000, 400, 250, 100, 2000, 200, 600, 800, 150, 300, 350, 450, 500,
 #    for patient in patients: #["266", "303", "360"]:
         outfname = "run_" + patient + "_g" + str(gamma) + ".sge"
         outfile = open(gamma_out + pASCAT_dir + outfname, "w")
-        outfile.write("module load modules modules-init modules-gs gmp/latest mpfr/latest mpc/latest gcc/4.9.1 R/latest java_jdk/latest\n")
+        outfile.write("module load modules modules-init modules-gs gmp/5.0.2 mpfr/3.1.0 mpc/0.8.2 gcc/4.9.1 R/latest java_jdk/latest\n")
         outfile.write("cd R/" + gamma_out + pASCAT_dir + ";\n")
         outfile.write("R CMD BATCH '--no-save --no-restore --args " + patient + " " + str(gamma) + "' segment.R Rout/" + patient + "_segout.txt;\n")
         #outfile.write("R CMD BATCH '--no-save --no-restore --args " + patient + " 0' ascat_on_segments.R Rout/" + patient + "_uncon_out.txt;\n")

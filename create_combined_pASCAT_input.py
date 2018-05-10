@@ -13,7 +13,7 @@ from os import path
 from os import mkdir
 
 
-somepatientsonly = True
+somepatientsonly = False
 somepatients = ["391"]
 #somepatients = ["551", "59", "954", "222", "88", "639", "611", "391", "422", "575", "619", "672", "728", "915", "1005", "43", "686"]
 
@@ -188,16 +188,16 @@ for (only25, only1) in [(False, False)]:#, (False, True), (True, False)]:
     removedpatients = []
     removedsamples = []
 
-    if not only25 and not only1:
-        # We're combining the files; only keep patients that have data for both
-        for patient in patients["25"]:
-            if patient not in patients["1"]:
-                print("Removing patient", patient, "from combined analysis: only have samples with 2.5M data")
-                removedpatients.append(patient)
-        for patient in patients["1"]:
-            if patient not in patients["25"]:
-                print("Removing patient", patient, "from combined analysis: only have samples with 1M data")
-                removedpatients.append(patient)
+#    if not only25 and not only1:
+#        # We're combining the files; only keep patients that have data for both
+#        for patient in patients["25"]:
+#            if patient not in patients["1"]:
+#                print("Removing patient", patient, "from combined analysis: only have samples with 2.5M data")
+#                removedpatients.append(patient)
+#        for patient in patients["1"]:
+#            if patient not in patients["25"]:
+#                print("Removing patient", patient, "from combined analysis: only have samples with 1M data")
+#                removedpatients.append(patient)
 
 
     for patient in CNfiles:
