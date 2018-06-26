@@ -19,8 +19,16 @@ from os import mkdir
 
 #import lucianSNPLibrary as lsl
 
-evidence = "calling_evidence.tsv"
-oddsfile = "calling_evidence_odds.tsv"
+use_challenge = True
+
+if use_challenge:
+    evidence = "calling_evidence_challenge_inc.tsv"
+    oddsfile = "calling_evidence_challenge_inc_odds.tsv"
+else:
+    evidence = "calling_evidence.tsv"
+    oddsfile = "calling_evidence_odds.tsv"
+
+
 
 evidence_keys = ["flow", "tom", "VAF", "close_diploid", "close_tetraploid", "better_acc"]
 def calculateBayes(orig, d_h, d_notH):
@@ -81,7 +89,9 @@ for line in f:
     flowa = int(flowa)
     flowb = int(flowb)
     evidence["flow"] = str(flowb-flowa) + "::" + str(flowa)
-    base_odds = flowa/(flowb)
+    base_odds = 0.5
+    if flowb>0:
+        base_odds = flowa/(flowb)
     odds_str["flow"] = flow_ratio
     if (base_odds < 0.5):
         base_odds_skew = (flowa+3)/(flowb+3)
@@ -110,9 +120,10 @@ for line in f:
     elif tom_call =="no":
         ptom_dip = 0.05
         ptom_tet = 0.70
-#    elif tom_call == "gastric":
-#        oddsvec[1] = calculateBayes(oddsvec[1], 1.0, 0.0) #P(tom_gastric|dip, P(tom_no|tet))
     elif tom_call == "?":
+        #Don't do anything
+        assert(True)
+    elif tom_call == "Unknown":
         #Don't do anything
         assert(True)
     else:

@@ -15,7 +15,7 @@ from os import mkdir
 
 import lucianSNPLibrary as lsl
 
-tag = "_g250_diploid/"
+tag = "_g500_better_ploidy/"
 
 tree_input = "joint_segmentation_nodupes" + tag
 beast_output = "BEAST" + tag
@@ -32,11 +32,11 @@ for f in segment_files:
         continue
     patient = f.split("_")[0]
     segfile = open(tree_input + f, "r")
-    samples = segfile.readline().split()[5:]
+    samples = segfile.readline().split()[3:]
     A_out = open(beast_output + patient + "_phased_allA.txt", "w")
     B_out = open(beast_output + patient + "_phased_allB.txt", "w")
-    A_out.write("Chr\tStart\tEnd\tnLogR\tnBAF")
-    B_out.write("Chr\tStart\tEnd\tnLogR\tnBAF")
+    A_out.write("Chr\tStart\tEnd")
+    B_out.write("Chr\tStart\tEnd")
     for sample in samples:
         A_out.write("\t" + sample)
         B_out.write("\t" + sample)
@@ -45,10 +45,10 @@ for f in segment_files:
     assignments = {}
     for line in segfile:
         dataline = line.split()
-        (chr, start, end, nbaf, nCN) = dataline[0:5]
-        A_out.write(chr + "\t" + start + "\t" + end + "\t" + nCN + "\t" + nbaf)
-        B_out.write(chr + "\t" + start + "\t" + end + "\t" + nCN + "\t" + nbaf)
-        for sample_data in dataline[5:]:
+        (chr, start, end) = dataline[0:3]
+        A_out.write(chr + "\t" + start + "\t" + end)
+        B_out.write(chr + "\t" + start + "\t" + end)
+        for sample_data in dataline[3:]:
             (label1, data1, __, label2, data2)  = sample_data.split(":")
             label1 = re.sub('[?]', '', label1)
             label2 = re.sub('[?]', '', label2)

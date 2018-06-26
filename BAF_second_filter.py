@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+q#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
 Created on Wed Dec 21 15:06:47 2016
@@ -12,14 +12,14 @@ from os import mkdir
 from os import path
 import string
 
-tolerance = 0.15
+tolerance = (0.4, 0.65)
 
 onepatientonly = False
 onepatient = "997"
 
-tag = "_1M_only"
+tag = "_25M_only"
 BAF_input = "BAF_first_filtered_data" + tag + "/"
-BAF_output = "BAF_filtered_data" + tag + "_" + str(int(tolerance*100)) + "/"
+BAF_output = "BAF_filtered_data" + tag + "_" + str(int(tolerance[0]*100)) + "_" + str(int(tolerance[1]*100)) + "/"
 if not(path.isdir(BAF_output)):
     mkdir(BAF_output)
 
@@ -32,18 +32,12 @@ for (_, _, f) in walk(BAF_input):
 wt_files = set()
 
 for file in filenames:
-    if (string.find(file, "BLD") != -1):
+    if "BLD" in file or "gastric" in file:
         wt_files.add(file)
         continue
-    if (string.find(file, "BLD2") != -1):
-        wt_files.add(file)
-        continue
-    if (string.find(file, "gastric") != -1):
-        wt_files.add(file)
-        continue
-    if (string.find(file, "N") != -1):
-        wt_files.add(file)
-        continue
+#    if (string.find(file, "N") != -1):
+#        wt_files.add(file)
+#        continue
 
 
 # Patty says that we should keep the 'BLD2' samples and *not* the 'BLD' samples, as the former were run to replaced bad versions of the latter.
@@ -65,27 +59,23 @@ for file in wt_files:
         continue
     BAFfile = open(BAF_input + file,"r")
     wt_data[patient] = set()
-    print "Checking WT BAFs for patient", patient
+    print("Checking WT BAFs for patient", patient)
     for line in BAFfile:
-        if (line.find("BAF") != -1):
+        if "BAF" in line:
             continue
         (id, chr, pos, baf) = line.rstrip().split("\t")
-        if id.find("cnvi") != -1:
+        if "cnvi" in id:
             continue
         try:
             baf = float(baf)
         except:
             #Unknown BAF value; probably '?'
             continue
-        if (baf > 0.5-tolerance) and (baf < 0.5+tolerance):
+        if (baf > tolerance[0]) and (baf < tolerance[1]):
             wt_data[patient].add(id)
 
 for file in filenames:
-    if (file.find("BLD") != -1):
-        continue
-    if (string.find(file, "gastric") != -1):
-        continue
-    if (string.find(file, "N") != -1):
+    if "BLD" in file or "gastric" in file:
         continue
     filebits = file.rstrip().split("_")
     if (len(filebits) != 3):
@@ -95,9 +85,9 @@ for file in filenames:
         continue
     sample = filebits[1]
     if (patient not in wt_data):
-        print "No WT data for patient", patient,": skipping."
+        print("No WT data for patient", patient,": skipping.")
         continue
-    print "Filtering BAF output for patient", patient, "sample", sample, "."
+    print("Filtering BAF output for patient", patient, "sample", sample, ".")
     BAFfile = open(BAF_input + file,"r")
     outfile = open(BAF_output + file, "w")
     outfile.write("SNPid\tchr\tpos\tBAF\n")

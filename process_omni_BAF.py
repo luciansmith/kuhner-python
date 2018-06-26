@@ -14,8 +14,8 @@ from os import mkdir
 # read the file that correlates patient data with which omni file the 'canonical' version of that data can be found.
 use_canonical = False
 
-baf_dir = "BAF_raw_data/"
-tag = "_1M_only"
+baf_dir = "BAF_raw_data_Pilot/"
+tag = "_Pilot_only"
 
 canonical_filename = "CN_raw_data/20170724_sample_omni.txt"
 baf_outdir = "BAF_first_filtered_data" + tag + "/"
@@ -24,7 +24,7 @@ if tag=="_Pilot":
     baf_labelfile = "REI_11321_B01_SOM_WGS_15samples_Partek_23March2016_BAlleleFrequency.Pilot.txt.fmt"
 
 somepatientsonly = False
-somepatients = ["391","611"]
+somepatients = ["572"]
 
 if not(path.isdir(baf_outdir)):
     mkdir(baf_outdir)
@@ -49,6 +49,9 @@ if (use_canonical):
         whichdata[id + "_gastric"] = experiment
         whichdata[id + "_BLD2"] = experiment
     infile.close()
+
+    #Fix for 572 mixup:
+    whichdata["572_BLD"] = "omniMix5"
 
 #filenames = ["omniMix3_BAF.txt"]
 filenames = []
@@ -96,8 +99,12 @@ for file in filenames:
         if somepatientsonly and id not in somepatients:
             continue
         num = idbits[1]
+        #Special-case the bad blood information in omniMix4_BAF:
+        if num=="23210N":
+            continue
         if num not in ["24968N", "24966N", "24971N", "16925N", "24967N", "24970N", "24969N"]:
             isblood = idbits[3]
+            oldnum = num
             if (isblood == "BLD"):
                 num = "BLD"
             elif (isblood == "gastric"):
@@ -110,6 +117,8 @@ for file in filenames:
                 num = "gastric"
             elif (isblood == "GST"):
                 num = "gastric"
+            if oldnum != num:
+                print("Sample", oldnum, "used for", num)
         if id == "844" and num == "21570":
             num = "21640" #Typo in data entry: 21640 is the correct value; there is no 21570.
 #        if id != "991":

@@ -51,10 +51,10 @@ gamma_list = ["500"]
 bafrawdata = {}
 patient_samples = {}
 
-onlysomepatients = False
+onlysomepatients = True
 #somepatients = ["163", "184", "396", "1047", "17", "42", "43", "55", "59", "74"]
-#somepatients = ["17"]
-somepatients = ["568", "403", "512", "572", "852"]
+somepatients = ["572"]
+#somepatients = ["568", "403", "512", "572", "852"]
 onlysomechroms = False
 somechroms = ["9"]
 

@@ -30,6 +30,7 @@ gamma_outdir = "gamma_test_output/"
 balanced_dir = "balanced_calls/"
 best_dir = "best_analyses/"
 outdir = "Xiaohong_pASCAT_compare/"
+jamboree_dir = "jamboree_files/"
 gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500"]
 
 use500 = True
@@ -40,6 +41,8 @@ somepatients = ["1029"]
 
 if not path.isdir(outdir):
     mkdir(outdir)
+if not path.isdir(jamboree_dir):
+    mkdir(jamboree_dir)
 
 def getIsegsFromCopynumberFileFor(patient):
     #This function reads the lowest-gamma-value copynumber file it can, reads it, and returns it as 'isegs'.
@@ -424,13 +427,21 @@ def writeComparison(Xsegs, Asegs, patient, sample, gamma, ploidy, isegs):
         compareout.write("\n")
 
 def copyDataForJamboree(patient, data, gamma, ploidy):
+    pseg_dir = "pASCAT_segmentation/"
+    if not path.isdir(jamboree_dir + pseg_dir):
+        mkdir(jamboree_dir + pseg_dir)
+    if not path.isdir(jamboree_dir + balanced_dir):
+        mkdir(jamboree_dir + balanced_dir)
+    xcompare_dir = "xiaohong_compare/"
+    if not path.isdir(jamboree_dir + xcompare_dir):
+        mkdir(jamboree_dir + xcompare_dir)
     infile = open(gamma_outdir + "pASCAT_input_g" + gamma + "/" + ploidy  + "/" + patient + "_fcn_ascat_segments.txt", "r")
-    outfile = open("jamboree_files/pASCAT_segmentation/" + patient + "_" + sample + "_g" + gamma + "_" + ploidy + "_segments.tsv", "w")
+    outfile = open(jamboree_dir + pseg_dir + patient + "_" + sample + "_g" + gamma + "_" + ploidy + "_segments.tsv", "w")
     for line in infile:
         if "SampleID" in line or patient + "_" + sample in line:
             outfile.write(line)
-    copy(outdir + patient + "_" + sample + "_g" + gamma + "_" + ploidy + "_xiaohong_to_ascat_compare.tsv", "jamboree_files/xiaohong_compare/")
-    copy(balanced_dir + patient + "_" + sample + "_balanced_calls.tsv", "jamboree_files/balanced_calls/")
+    copy(outdir + patient + "_" + sample + "_g" + gamma + "_" + ploidy + "_xiaohong_to_ascat_compare.tsv", jamboree_dir + xcompare_dir)
+    copy(balanced_dir + patient + "_" + sample + "_balanced_calls.tsv", jamboree_dir + balanced_dir)
     
 
 Xiaohong_segments = readAllXiaohongSegmentation()

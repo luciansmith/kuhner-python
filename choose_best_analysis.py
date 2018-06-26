@@ -27,8 +27,8 @@ outdir = "best_analyses/"
 #gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500"]#, "3000"]
 gamma_list = ["500",]
 
-onlysomepatients = False
-somepatients = ["568"]
+onlysomepatients = True
+somepatients = ["572"]
 
 if not(path.isdir(outdir)):
     mkdir(outdir)

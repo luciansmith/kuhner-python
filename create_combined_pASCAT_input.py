@@ -11,10 +11,11 @@ import lucianSNPLibrary as lsl
 from os import walk
 from os import path
 from os import mkdir
+import numpy
 
 
 somepatientsonly = False
-somepatients = ["391"]
+somepatients = ["997"]
 #somepatients = ["551", "59", "954", "222", "88", "639", "611", "391", "422", "575", "619", "672", "728", "915", "1005", "43", "686"]
 
 labels, rev_labels = lsl.getSNPLabelsAll(False)
@@ -30,8 +31,12 @@ cndirs["1"] = "CN_filtered_data_1M" + dirtag + "/"
 bafdirs["Pilot"] = "BAF_first_filtered_data_Pilot/"
 cndirs["Pilot"] = "CN_filtered_data_Pilot/"
 
+#bad_dupes = open("bad_duplicates.txt", "w")
+#bad_dupes.write("Patient\tSample\tChr\tpos\tval1\tval2\n")
 
-def readBAFFile(baffilename, sample, avgstraight, baf_data):
+#blood_diffs = []
+
+def readBAFFile(baffilename, sample, isblood, baf_data):
     baffile = open(baffilename, "r")
     print("Reading", baffilename)
     for line in baffile:
@@ -39,31 +44,20 @@ def readBAFFile(baffilename, sample, avgstraight, baf_data):
             continue
         if "cnvi" in line:
             continue
-        (id, chr, pos, l2r) = line.rstrip().split("\t")
+        (id, chr, pos, bafval) = line.rstrip().split("\t")
         if chr == "23" or chr=="24":
             continue
+        if bafval == "?":
+            continue
+        bafval = float(bafval)
         if not chr in baf_data:
             baf_data[chr] = {}
         pos = int(pos)
         if not pos in baf_data[chr]:
             baf_data[chr][pos] = {}
-        if sample in baf_data[chr][pos]:
-            #multiple data points for same sample.  Assuming two, and averaging:
-            if l2r == "?":
-                #Don't save the data; leave it as-is.
-                continue
-            if baf_data[chr][pos][sample] == "?":
-                baf_data[chr][pos][sample] = l2r
-            else:
-                l2r = float(l2r)
-                avgwith = float(baf_data[chr][pos][sample])
-                #print("Averaging baf data for", patient, sample, chr, pos, l2r, avgwith)
-                if not(avgstraight) and l2r<0.5 and avgwith>0.5:
-                    l2r = 1-l2r
-                elif not(avgstraight) and l2r > 0.5 and avgwith<0.5:
-                    avgwith = 1-avgwith
-                l2r = str((l2r+avgwith)/2)
-        baf_data[chr][pos][sample] = l2r
+        if sample not in baf_data[chr][pos]:
+            baf_data[chr][pos][sample] = []
+        baf_data[chr][pos][sample].append(bafval)
 
 def readCNFile(cnfilename, sample, CN_data):
     cnfile = open(cnfilename, "r")
@@ -76,33 +70,46 @@ def readCNFile(cnfilename, sample, CN_data):
         (id, chr, pos, l2r) = line.rstrip().split("\t")
         if chr == "23" or chr=="24":
             continue
+        if l2r == "?":
+            continue
         chr = int(chr)
         pos = int(pos)
         try:
-            float(l2r)
+            l2r = float(l2r)
             if cnfilename == bafdirs["Pilot"] + "391_19578_copynumber_all.txt":
                 l2r = float(l2r) - 0.32260464413499457
         except:
-            if l2r != "?":
-                print("Non-float value", l2r, "for", id)
-            l2r = "?"
-        if chr == "23" or chr=="24":
+            print("Non-float value", l2r, "for", id)
+            assert(False)
             continue
         if not chr in CN_data:
             CN_data[chr] = {}
         if not pos in CN_data[chr]:
             CN_data[chr][pos] = {}
-        if sample in CN_data[chr][pos]:
-            #multiple data points for same sample.  Assuming two, and averaging:
-            if l2r == "?":
-                #Don't save the data; leave it as-is.
-                continue
-            if CN_data[chr][pos][sample] == "?":
-                CN_data[chr][pos][sample] = l2r
-            else:
-#                    print("Averaging CN data for", patient, sample, chr, pos)
-                l2r = str((float(l2r) + float(CN_data[chr][pos][sample]))/2)
-        CN_data[chr][pos][sample] = l2r
+        if sample not in CN_data[chr][pos]:
+            CN_data[chr][pos][sample] = []
+        CN_data[chr][pos][sample].append(l2r)
+
+def averageData(data, isbaf):
+    for chr in data:
+        for pos in data[chr]:
+            for sample in data[chr][pos]:
+                vec = data[chr][pos][sample]
+                too_different = False
+                if isbaf and len(vec)>1:
+                    for n in range(1,len(vec)):
+                        if (vec[n] > 0.5 and vec[0] < 0.5) or (vec[n] < 0.5 and vec[0] > 0.5):
+                            vec[n] = 1-vec[n]
+                    for n in range(0,len(vec)):
+                        for m in range(n, len(vec)):
+                            if abs(vec[n] - vec[m]) > 0.35:
+                                too_different = True
+                if too_different:
+                    data[chr][pos][sample] = "?"
+                else:
+                    if len(vec)>2:
+                        print(vec)
+                    data[chr][pos][sample] = numpy.average(vec)
 
 for (only25, only1) in [(False, False)]:#, (False, True), (True, False)]:
     onlytag = ""
@@ -262,6 +269,7 @@ for (only25, only1) in [(False, False)]:#, (False, True), (True, False)]:
             samples.append(sample)
             for cnfilename in cnfilenames:
                 readCNFile(cnfilename, sample, CN_data)
+        averageData(CN_data, False)
         cnout = open(outdir + patient + "_logR.txt", "w")
         cnout.write("\t\"Chr\"\t\"Position\"")
         for sample in samples:
@@ -317,7 +325,7 @@ for (only25, only1) in [(False, False)]:#, (False, True), (True, False)]:
                 for baffilename in baffilenames:
                     readBAFFile(baffilename, sample, False, baf_data)
 
-
+        averageData(baf_data, True)
         bafout = open(outdir + patient + "_BAF.txt", "w")
         bafNout = open(outdir + patient + "_Normal_BAF.txt", "w")
         lineout = "\t\"Chr\"\t\"Position\""

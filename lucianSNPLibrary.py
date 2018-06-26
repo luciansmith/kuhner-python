@@ -291,6 +291,8 @@ def getSNPLabels1M(zeroes):
         (id, __, chr, pos) = line.rstrip().split()
         if chr=="X":
             chr = "23"
+        if chr=="XY":
+            chr = "23"
         if chr=="Y":
             chr = "24"
         try:
@@ -317,7 +319,8 @@ def getSNPLabels1M(zeroes):
     return labels, rev_labels
 
 def getSNPLabels2_5M(zeroes):
-    infilename = "CN_raw_data_25M/REI_12051_B01_SOM_WGS_443samples_12Dec2016_Partek_Partek.annotation.txt"
+    #infilename = "CN_raw_data_25M/REI_12051_B01_SOM_WGS_443samples_12Dec2016_Partek_Partek.annotation.txt"
+    infilename = "probe_sets/InfiniumOmni2-5-8v1-3_A1.annotated.txt"
     infile = open(infilename,"r")
     #duplicates = open("duplicates.txt", "w")
 
@@ -329,8 +332,11 @@ def getSNPLabels2_5M(zeroes):
         line = line.rstrip().split()
 
         if (len(line) >= 4):
-            (id, __, chr, pos) = line[0:4]
+            #(id, __, chr, pos) = line[0:4]
+            (id, chr, pos) = line[0:3]
             if chr=="X":
+                chr = "23"
+            if chr=="XY":
                 chr = "23"
             if chr=="Y":
                 chr = "24"
@@ -372,6 +378,8 @@ def getSNPLabels2_5Mv12(zeroes):
         (id, chr, pos) = line[0:3]
         if chr=="X":
             chr = "23"
+        if chr=="XY":
+            chr = "23"
         if chr=="Y":
             chr = "24"
         try:
@@ -405,6 +413,7 @@ def getSNPLabelsAll(zeroes):
 
     labels = {}
     rev_labels = {}
+    discard_duplicates = ["kgp3675773", "rs1443", "kgp11488181", "kgp1946361", "rs33945777", "rs3752426", "kgp468181", "rs1518004", "kgp6538154", "kgp4057395", "rs9258315", "kgp11800323", "kgp4698400", "rs2523832", "kgp6575555", "kgp5212761", "401753", "rs45514397", "kgp5430667", "rs12315", "kgp3529433", "kgp4408472", "rs2070232", "rs1786171", "VG15S12103", "rs9420882", "rs7148", "rs45589133", "rs9332385", "rs45530145", "rs467225", "rs10010325", "rs13306723", "kgp3668772", "kgp17138187"]
     for line in infile:
         line = line.rstrip().split()
         if (len(line) == 3):
@@ -418,6 +427,9 @@ def getSNPLabelsAll(zeroes):
             except ValueError:
                 #print("problematic chr: " + chr)
                 continue
+            if id in discard_duplicates:
+                chr = "0"
+                pos = "0"
             if (not zeroes):
                 if (pos == "0"):
                     continue
@@ -888,7 +900,7 @@ def resegmentLOHes(segvec):
     return retvec
 
 
-def validateSegments(BAFs_by_sample, BAF_averages, validation_output, id, failfile, summaryfile):
+def validateSegments(BAFs_by_sample, validation_output, id, failfile, summaryfile):
     #assumes that any double deletion is already removed.
     output = {}
     samples = list(BAFs_by_sample.keys())
@@ -914,10 +926,10 @@ def validateSegments(BAFs_by_sample, BAF_averages, validation_output, id, failfi
                         continue
                     baf1 = BAFs_by_sample[sample1][segname][pos]
                     baf2 = BAFs_by_sample[sample2][segname][pos]
-                    if 0.4 < baf1 and baf1 < 0.6:
-                        continue
-                    if 0.4 < baf2 and baf2 < 0.6:
-                        continue
+#                    if 0.4 < baf1 and baf1 < 0.6:
+#                        continue
+#                    if 0.4 < baf2 and baf2 < 0.6:
+#                        continue
                     if baf1 < 0.5 and baf2 < 0.5:
                         match += 1
                     elif baf1 > 0.5 and baf2 > 0.5:
@@ -995,89 +1007,6 @@ def validateSegments(BAFs_by_sample, BAF_averages, validation_output, id, failfi
     outfile.close()
     summaryfile.write(id + "\tall\t" + str(summatches) + "\t" + str(sumantimatches) + "\t" + str(sumfails) + "\n")
 
-
-
-def isAllWT(segment):
-    for sample in segment:
-        (intA, intB) = segment[sample][0:2]
-        if (intA != 1 or intB != 1):
-            return False
-    return True
-
-def isAllEven(segment):
-    for sample in segment:
-        (intA, intB) = segment[sample][0:2]
-        if (intA != intB):
-            return False
-    return True
-
-
-def getMatchFrom(currentout, whichmatch, validated_labels, thissample, N, S, intA, intB):
-    thisN = N
-    thisS = S
-    for sample in currentout:
-        if sample=="label":
-            continue
-        if currentout[sample][0][1] == currentout[sample][1][1]:
-            continue
-        #otherwise, it's also uneven, and we need to find out if we match or antimatch
-        nmatch = -1
-        nantimatch = -1
-        for l in range(len(validated_labels)):
-            label = validated_labels[l]
-            if label.find(sample) == -1:
-                continue
-            if label.find(thissample) == -1:
-                continue
-            num = whichmatch[l]
-            if num=="--":
-                num=0
-            else:
-                num = int(num)
-            if label.find("anti-match"):
-                nantimatch = num
-            else:
-                nmatch = num
-        allmatch = nmatch + nantimatch
-        if allmatch > 0:
-            if nmatch/allmatch > 0.9:
-                thisN = currentout[sample][0][0]
-                thisS = currentout[sample][1][0]
-            elif nantimatch/allmatch > 0.9:
-                thisN = currentout[sample][1][0]
-                thisS = currentout[sample][0][0]
-            elif nmatch >= nantimatch:
-                thisN = currentout[sample][0][0] + "?"
-                thisS = currentout[sample][1][0] + "?"
-            else:
-                thisN = currentout[sample][1][0] + "?"
-                thisS = currentout[sample][0][0] + "?"
-        elif allmatch == 0:
-            thisN = thisN + "?"
-            thisS = thisS + "?"
-    return(thisN, thisS)
-
-
-def writeOneSet(chr, oneset, n, joint_out, samples, output, labels, maxBAFs, seg_nCN_SNPs):
-    N = "N" + str(n)
-    S = "S" + str(n)
-    current = len(output)
-    for r in range(len(oneset)):
-        (segpair, row) = oneset[r]
-        output.append({})
-        output[current+r]["label"] = str(chr) + "\t" + str(segpair[0]) + "\t" + str(segpair[1]) + "\t" + str(maxBAFs[segpair]) + "\t" + seg_nCN_SNPs[segpair]
-        for sample in samples:
-            (intA, intB, avgCN, nCN_SNPs, avgBAF, nBAF_SNPs, matches, antimatches, fails, whichmatch) = row[sample]
-            if (intA == intB):
-                output[current+r][sample] = ((N, intA), (S, intB))
-            elif (r>0 and intA == output[current+r-1][sample][0][1] and intB == output[current+r-1][sample][1][1]):
-                thisN = output[current+r-1][sample][0][0]
-                thisS = output[current+r-1][sample][1][0]
-                output[current+r][sample] = ((thisN, intA), (thisS, intB))
-            else:
-                (thisN, thisS) = getMatchFrom(output[current+r], whichmatch, labels, sample, N, S, intA, intB)
-                output[current+r][sample] = ((thisN, intA), (thisS, intB))
-    return n+1
 
 
 #From Mary:
@@ -1227,6 +1156,22 @@ def getCanonicalAscatCallsFor(patient):
         
     print("Unknown patient")
     return []
+
+def getBestPloidyFor(patient, sample):
+    oddsfile = "calling_evidence_challenge_inc_odds.tsv"
+    for line in open(oddsfile, "r"):
+        lvec = line.rstrip().split("\t")
+        if lvec[0] != patient:
+            continue
+        if lvec[1] != sample:
+            continue
+        odds = float(lvec[-1])
+        if odds >= 0.5:
+            return "diploid"
+        return "tetraploid"
+    print("Unknown patient/sample", patient, sample)
+    assert(False)
+    return "diploid"
 
 def getSingleGammaCallsFor(patient, gamma):
     gammadir = "gamma_test_output/pASCAT_input_g" + gamma + "/"
