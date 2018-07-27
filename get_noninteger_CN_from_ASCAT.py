@@ -15,13 +15,13 @@ from os.path import isfile
 import lucianSNPLibrary as lsl
 
 pASCAT_root = "gamma_test_output/pASCAT_input_g"
-bestdir = "best_analyses/"
+patient_dir = pASCAT_root + "500/"
 outdir = "nonintegerCNs/"
 
 use500 = True
 
 onlysomepatients = True
-somepatients = ["572"]
+somepatients = ["772"]
 
 firstpatients = ["17", "42", "55", "59", "74", "43", "184", "163", "396", "1047"]
 
@@ -33,10 +33,10 @@ missing = open(outdir + "missing_samples.tsv", "w")
 (labels, rev_labels) = lsl.getSNPLabelsAll(False)
 
 files = []
-for (__, __, f) in walk(bestdir):
+for (__, __, f) in walk(patient_dir):
     files += f
 for f in files:
-    if "catch" in f:
+    if "_copynumber_segments" not in f:
         continue
     patient = f.split("_")[0]
     if onlysomepatients and patient not in somepatients:

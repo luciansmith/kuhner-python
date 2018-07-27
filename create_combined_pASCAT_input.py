@@ -14,8 +14,8 @@ from os import mkdir
 import numpy
 
 
-somepatientsonly = False
-somepatients = ["997"]
+somepatientsonly = True
+somepatients = ["391", "611"]
 #somepatients = ["551", "59", "954", "222", "88", "639", "611", "391", "422", "575", "619", "672", "728", "915", "1005", "43", "686"]
 
 labels, rev_labels = lsl.getSNPLabelsAll(False)
@@ -28,8 +28,8 @@ bafdirs["25"] = "BAF_first_filtered_data_25M" + dirtag + "/"
 cndirs["25"] = "CN_filtered_data_25M" + dirtag + "/"
 bafdirs["1"] = "BAF_first_filtered_data_1M" + dirtag + "/"
 cndirs["1"] = "CN_filtered_data_1M" + dirtag + "/"
-bafdirs["Pilot"] = "BAF_first_filtered_data_Pilot/"
-cndirs["Pilot"] = "CN_filtered_data_Pilot/"
+bafdirs["Pilot"] = "BAF_first_filtered_data_Pilot_only/"
+cndirs["Pilot"] = "CN_filtered_data_Pilot_only/"
 
 #bad_dupes = open("bad_duplicates.txt", "w")
 #bad_dupes.write("Patient\tSample\tChr\tpos\tval1\tval2\n")
@@ -107,8 +107,8 @@ def averageData(data, isbaf):
                 if too_different:
                     data[chr][pos][sample] = "?"
                 else:
-                    if len(vec)>2:
-                        print(vec)
+                    #if len(vec)>2:
+                    #    print(vec)
                     data[chr][pos][sample] = numpy.average(vec)
 
 for (only25, only1) in [(False, False)]:#, (False, True), (True, False)]:

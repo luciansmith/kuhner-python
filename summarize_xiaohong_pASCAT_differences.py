@@ -28,7 +28,6 @@ somepatients = ["74"]
 
 xiaocompare_dir = "Xiaohong_pASCAT_compare/"
 ascat_dir = "gamma_test_output/"
-best_dir = "best_analyses/"
 
 sameness = ["same", "different"]
 categories = ["Contradicted", "Unknown", "Validated"]
@@ -84,7 +83,11 @@ def writeHeader(sumout):
     sumout.write("\tA accuracy")
     sumout.write("\n")
 
-def writeLine(sumout, psummaries, patient, samGamPloidy, ploidyval, purityval, accuracies):
+def writeLine(sumout, psummaries, patient, samGamPloidy, ploidyval, purityval):
+    xgood = 0
+    xtot = 0
+    agood = 0
+    atot = 0
     sumout.write(patient)
     sumout.write("\t" + samGamPloidy[0])
     sumout.write("\t" + samGamPloidy[1])
@@ -92,17 +95,35 @@ def writeLine(sumout, psummaries, patient, samGamPloidy, ploidyval, purityval, a
     sumout.write("\t" + ploidyval)
     sumout.write("\t" + purityval)
     sumout.write("\t" + str(psummaries[samGamPloidy]["same"]["Validated"]/1000000))
+    xgood += psummaries[samGamPloidy]["same"]["Validated"]
+    agood += psummaries[samGamPloidy]["same"]["Validated"]
+    xtot += psummaries[samGamPloidy]["same"]["Validated"]
+    atot += psummaries[samGamPloidy]["same"]["Validated"]
     sumout.write("\t" + str(psummaries[samGamPloidy]["same"]["Contradicted"]/1000000))
+    xtot += psummaries[samGamPloidy]["same"]["Contradicted"]
+    atot += psummaries[samGamPloidy]["same"]["Contradicted"]
     sumout.write("\t" + str(psummaries[samGamPloidy]["same"]["Unknown"]/1000000))
     total = 0
     for category in psummaries[samGamPloidy]["same"]:
         total += psummaries[samGamPloidy]["same"][category]
     sumout.write("\t" + str(total/1000000))
     sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Validated"]["Validated"]/1000000))
+    xgood += psummaries[samGamPloidy]["different"]["Validated"]["Validated"]
+    agood += psummaries[samGamPloidy]["different"]["Validated"]["Validated"]
+    xtot += psummaries[samGamPloidy]["different"]["Validated"]["Validated"]
+    atot += psummaries[samGamPloidy]["different"]["Validated"]["Validated"]
     sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Contradicted"]["Contradicted"]/1000000))
+    xtot += psummaries[samGamPloidy]["different"]["Contradicted"]["Contradicted"]
+    atot += psummaries[samGamPloidy]["different"]["Contradicted"]["Contradicted"]
     sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Unknown"]/1000000))
     sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Validated"]["Contradicted"]/1000000))
+    xgood += psummaries[samGamPloidy]["different"]["Validated"]["Contradicted"]
+    xtot += psummaries[samGamPloidy]["different"]["Validated"]["Contradicted"]
+    atot += psummaries[samGamPloidy]["different"]["Validated"]["Contradicted"]
     sumout.write("\t" + str(psummaries[samGamPloidy]["different"]["Contradicted"]["Validated"]/1000000))
+    agood += psummaries[samGamPloidy]["different"]["Contradicted"]["Validated"]
+    xtot += psummaries[samGamPloidy]["different"]["Contradicted"]["Validated"]
+    atot += psummaries[samGamPloidy]["different"]["Contradicted"]["Validated"]
     total = 0
     for category in psummaries[samGamPloidy]["different"]:
         if category == "Unknown":
@@ -111,8 +132,14 @@ def writeLine(sumout, psummaries, patient, samGamPloidy, ploidyval, purityval, a
             for cat2 in psummaries[samGamPloidy]["different"][category]:
                 total += psummaries[samGamPloidy]["different"][category][cat2]
     sumout.write("\t" + str(total/1000000))
-    sumout.write("\t" + accuracies[0])
-    sumout.write("\t" + accuracies[1])
+    if (xtot > 0):
+        sumout.write("\t" + str(xgood/xtot))
+    else:
+        sumout.write("\t--")
+    if (atot > 0):
+        sumout.write("\t" + str(agood/atot))
+    else:
+        sumout.write("\t--")
     sumout.write("\n")
 
 def getPurityAndPloidyVal(patient, samGamPloidy):
@@ -131,24 +158,6 @@ def getPurityAndPloidyVal(patient, samGamPloidy):
     ploidyfile.close()
     return (purityval, ploidyval)
 
-def getAccuracies(patient, samGamPloidy):
-    xaccuracy = "??"
-    aaccuracy = "??"
-    (sample, gamma, ploidy) = samGamPloidy
-    bestfile = open(best_dir + patient + "_best.tsv", "r")
-    for line in bestfile:
-        (bpatient, bsample, bconstraint, bcompare, baccuracy, bgamma) = line.split()[0:6]
-        if bsample != sample:
-            continue
-        if bcompare != "by_length":
-            continue
-        if bconstraint == "Xiaohong":
-            xaccuracy = baccuracy
-        elif bconstraint == ploidy:
-            aaccuracy = baccuracy
-    bestfile.close()
-    return (xaccuracy, aaccuracy)
-
 def saveSummaries(summaries):
     sumout = open(xiaocompare_dir + "xiaocompare_summary.tsv", "w")
     jsumout = open(xiaocompare_dir + "xiaocompare_jonly_summary.tsv", "w")
@@ -157,10 +166,9 @@ def saveSummaries(summaries):
     for patient in summaries:
         for samGamPloidy in summaries[patient]:
             (purityval, ploidyval) = getPurityAndPloidyVal(patient, samGamPloidy)
-            accuracies = getAccuracies(patient, samGamPloidy)
-            writeLine(sumout, summaries[patient], patient, samGamPloidy, ploidyval, purityval, accuracies)
+            writeLine(sumout, summaries[patient], patient, samGamPloidy, ploidyval, purityval)
             if "N" in samGamPloidy[0] or int(samGamPloidy[0]) >= 23341 or samGamPloidy[0] == 19578:
-                writeLine(jsumout, summaries[patient], patient, samGamPloidy, ploidyval, purityval, accuracies)
+                writeLine(jsumout, summaries[patient], patient, samGamPloidy, ploidyval, purityval)
     sumout.close()
     jsumout.close()
     copy(xiaocompare_dir + "xiaocompare_jonly_summary.tsv", "jamboree_files/xiaohong_compare/")

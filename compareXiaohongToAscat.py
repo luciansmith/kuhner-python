@@ -28,16 +28,16 @@ import lucianSNPLibrary as lsl
 processed_ascat_dir = "noninteger_processed_CNs/"
 gamma_outdir = "gamma_test_output/"
 balanced_dir = "balanced_calls/"
-best_dir = "best_analyses/"
+patient_dir = gamma_outdir + "pASCAT_input_g500/"
 outdir = "Xiaohong_pASCAT_compare/"
 jamboree_dir = "jamboree_files/"
 gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500"]
 
 use500 = True
-onlysomepatients = False
+onlysomepatients = True
 #somepatients = ["55", "59", "74", "591", "595", "597"]
 #somepatients = ["403", "512", "568", "852", "572"]
-somepatients = ["1029"]
+somepatients = ["772"]
 
 if not path.isdir(outdir):
     mkdir(outdir)
@@ -49,6 +49,8 @@ def getIsegsFromCopynumberFileFor(patient):
     isegs = {}
     #glist = ("100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000")
     glist = ("500",)
+    if patient=="772":
+        glist = ("550",)
     gindex = 0
     gamma = glist[gindex]
 
@@ -447,10 +449,10 @@ def copyDataForJamboree(patient, data, gamma, ploidy):
 Xiaohong_segments = readAllXiaohongSegmentation()
 
 files = []
-for (__, __, f) in walk(best_dir):
+for (__, __, f) in walk(patient_dir):
     files += f
 for f in files:
-    if "catch" in f or "combined" in f:
+    if "copynumber_segments" not in f:
         continue
     patient = f.split("_")[0]
     if onlysomepatients and patient not in somepatients:

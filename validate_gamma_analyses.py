@@ -53,7 +53,8 @@ patient_samples = {}
 
 onlysomepatients = True
 #somepatients = ["163", "184", "396", "1047", "17", "42", "43", "55", "59", "74"]
-somepatients = ["572"]
+#somepatients = ["391", "611"]
+somepatients = ["772"]
 #somepatients = ["568", "403", "512", "572", "852"]
 onlysomechroms = False
 somechroms = ["9"]
@@ -164,6 +165,8 @@ def getIsegsFromCopynumberFileFor(patient):
     #glist = ("100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000")
     glist = list("1")
     glist[0] = "500"
+    if patient=="772":
+        glist[0] = "550"
     gindex = 0
     gamma = glist[gindex]
 
@@ -629,6 +632,8 @@ for f in files:
     all_analyses = ["Xiaohong"]
 
     for gamma in gamma_list:
+        if patient=="772" and gamma=="500":
+            gamma = "550"
         print("Processing results from a gamma of", gamma)
         root_dir = gamma_outdir + "pASCAT_input_g" + gamma + "/"
         ploidies[gamma] = {}

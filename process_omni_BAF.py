@@ -20,7 +20,7 @@ tag = "_Pilot_only"
 canonical_filename = "CN_raw_data/20170724_sample_omni.txt"
 baf_outdir = "BAF_first_filtered_data" + tag + "/"
 baf_labelfile = "REI_12051_B01_SOM_WGS_443samples_12Dec2016_Partek_BAlleleFrequency.1.txt.fmt"
-if tag=="_Pilot":
+if tag=="_Pilot_only":
     baf_labelfile = "REI_11321_B01_SOM_WGS_15samples_Partek_23March2016_BAlleleFrequency.Pilot.txt.fmt"
 
 somepatientsonly = False

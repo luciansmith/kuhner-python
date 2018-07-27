@@ -24,7 +24,7 @@ outdir = "noninteger_processed_CNs/"
 jamboreedir = "jamboree_files/"
 
 onlysomepatients = True
-somepatients = ["572"]
+somepatients = ["772"]
 
 if not path.isdir(outdir):
     mkdir(outdir)

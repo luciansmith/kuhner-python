@@ -27,8 +27,8 @@ outdir = "best_analyses/"
 #gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500"]#, "3000"]
 gamma_list = ["500",]
 
-onlysomepatients = True
-somepatients = ["572"]
+onlysomepatients = False
+somepatients = ["391", "611"]
 
 if not(path.isdir(outdir)):
     mkdir(outdir)
@@ -70,7 +70,7 @@ def getBestPatientGamma(analysis_summaries):
                 t_gamma = analysis_summaries[sample]['tetraploid'][gamma]['by_length']
                 if better_gamma=="None" or t_gamma > better_gamma:
                     better_gamma = t_gamma
-            if better_gamma == "None" or gamma_sums[gamma] == "None":
+            if better_gamma == "None" or gamma_sums[gamma] == "None" or better_gamma == "??":
                 gamma_sums[gamma] = "None"
             else:
                 gamma_sums[gamma] += better_gamma
@@ -166,11 +166,11 @@ for f in files:
                     if segorlen not in best[sample]["overall"]:
                         best[sample]["overall"][segorlen] = ("None", "None")
                         bestv[sample]["overall"][segorlen] = 0
-                    if analysis_summaries[sample][ploidy][gamma][segorlen] > bestv[sample][ploidy][segorlen]:
+                    if analysis_summaries[sample][ploidy][gamma][segorlen] == "??" or analysis_summaries[sample][ploidy][gamma][segorlen] > bestv[sample][ploidy][segorlen]:
                         bestv[sample][ploidy][segorlen] = analysis_summaries[sample][ploidy][gamma][segorlen]
                         best[sample][ploidy][segorlen] = (gamma, ploidy)
                     if ploidy != "Xiaohong":
-                        if analysis_summaries[sample][ploidy][gamma][segorlen] > bestv[sample]["overall"][segorlen]:
+                        if analysis_summaries[sample][ploidy][gamma][segorlen] == "??" or analysis_summaries[sample][ploidy][gamma][segorlen] > bestv[sample]["overall"][segorlen]:
                             bestv[sample]["overall"][segorlen] = analysis_summaries[sample][ploidy][gamma][segorlen]
                             best[sample]["overall"][segorlen] = (gamma, ploidy)
 #                    if analysis_summaries[sample][ploidy][gamma][segorlen] < 0:

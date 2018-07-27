@@ -16,10 +16,6 @@ from os import mkdir
 from os.path import isfile
 from copy import deepcopy
 
-import numpy
-import math
-import matplotlib.pyplot as plt
-
 import lucianSNPLibrary as lsl
 
 #Use this value to set up whether to use the 'rejoined' segments or not
