@@ -900,115 +900,6 @@ def resegmentLOHes(segvec):
     return retvec
 
 
-def validateSegments(BAFs_by_sample, validation_output, id, failfile, summaryfile):
-    #assumes that any double deletion is already removed.
-    output = {}
-    samples = list(BAFs_by_sample.keys())
-    sampairs = set()
-    summatches = 0
-    sumantimatches = 0
-    sumfails = 0
-    samplefails = {}
-    for sample in samples:
-        samplefails[sample] = [0, 0, 0]
-    for n in range(0,len(samples)-1):
-        sample1 = samples[n]
-        for m in range(n+1, len(samples)):
-            sample2 = samples[m]
-            matches = []
-            for segname in BAFs_by_sample[sample1]:
-                if not(segname in BAFs_by_sample[sample2]):
-                    continue
-                match = 0
-                antimatch = 0
-                for pos in BAFs_by_sample[sample1][segname]:
-                    if not(pos in BAFs_by_sample[sample2][segname]):
-                        continue
-                    baf1 = BAFs_by_sample[sample1][segname][pos]
-                    baf2 = BAFs_by_sample[sample2][segname][pos]
-#                    if 0.4 < baf1 and baf1 < 0.6:
-#                        continue
-#                    if 0.4 < baf2 and baf2 < 0.6:
-#                        continue
-                    if baf1 < 0.5 and baf2 < 0.5:
-                        match += 1
-                    elif baf1 > 0.5 and baf2 > 0.5:
-                        match += 1
-                    elif baf1 < 0.5 and baf2 > 0.5:
-                        antimatch += 1
-                    elif baf1 > 0.5 and baf2 < 0.5:
-                        antimatch += 1
-                    #print(baf1, baf2, match, antimatch)
-                matches.append((match, antimatch))
-                nmax = match + antimatch
-                if nmax >= 2:
-                    if match/nmax > 0.9:
-                        samplefails[sample1][0] += 1
-                        samplefails[sample2][0] += 1
-                    elif antimatch/nmax > 0.9:
-                        samplefails[sample1][1] += 1
-                        samplefails[sample2][1] += 1
-                    else:
-                        samplefails[sample1][2] += 1
-                        samplefails[sample2][2] += 1
-                if not(segname in output):
-                    output[segname] = {}
-                output[segname][sample1+"_"+sample2] = (match, antimatch)
-                sampairs.add(sample1 + "_" + sample2)
-    for sample in samples:
-        summaryfile.write(id + "\t" + sample + "\t" + str(samplefails[sample][0]) + "\t" + str(samplefails[sample][1]) + "\t" +  str(samplefails[sample][2])  + "\n")
-    outfile = open(validation_output + id + "_segvalidate.txt", "w")
-    outfile.write("patient\tchr\tstart\tend\tmax_nBAFs\tmatches\tantimatches\tfails")
-    sampairs = sorted(sampairs)
-    for sampair in sampairs:
-        outfile.write("\t" + sampair + " match\t" + sampair + " anti-match")
-    outfile.write("\n")
-    for segname in output:
-        outfile.write(id + "\t" + segname[0] +"\t" + str(segname[1]) +"\t" + str(segname[2]))
-        outline = ""
-        nummatches = 0
-        numantimatches = 0
-        numfails = 0
-        maxBAFs = 0
-        for sampair in sampairs:
-            if sampair in output[segname]:
-                match = output[segname][sampair][0]
-                antimatch = output[segname][sampair][1]
-                outline += "\t" + str(match) + "\t" + str(antimatch)
-                numBAFs = match+antimatch
-                if maxBAFs<numBAFs:
-                    maxBAFs = numBAFs
-                if numBAFs<=1:
-                    continue
-                elif (match/numBAFs) > .9:
-                    #print("Match", match, antimatch, numBAFs, match/numBAFs)
-                    nummatches += 1
-                elif (antimatch/numBAFs) > .9:
-                    numantimatches += 1
-                    #print("Antimatch", match, antimatch, numBAFs, match/numBAFs)
-                else:
-                    numfails += 1
-                    (sample1, sample2) = sampair.split("_")
-                    failfile.write(id + "\t" + segname[0] + "\t" + str(segname[1]) +"\t" + str(segname[2]) + "\t" + sample1)
-                    for pos in BAFs_by_sample[sample1][segname]:
-                        failfile.write("\t" + str(BAFs_by_sample[sample1][segname][pos]))
-                    failfile.write("\n")
-                    failfile.write(id + "\t" + segname[0] + "\t" + str(segname[1]) +"\t" + str(segname[2]) + "\t" + sample2)
-                    for pos in BAFs_by_sample[sample2][segname]:
-                        failfile.write("\t" + str(BAFs_by_sample[sample2][segname][pos]))
-                    failfile.write("\n")
-                    #print("Fail", match, antimatch, numBAFs, match/numBAFs)
-            else:
-                outline += "\t--\t--"
-        outfile.write("\t" + str(maxBAFs) + "\t" + str(nummatches) + "\t" + str(numantimatches) + "\t" + str(numfails) + outline + "\n")
-        summatches += nummatches
-        sumantimatches += numantimatches
-        sumfails += numfails
-    outfile.close()
-    summaryfile.write(id + "\tall\t" + str(summatches) + "\t" + str(sumantimatches) + "\t" + str(sumfails) + "\n")
-
-
-
 #From Mary:
 def readblock(data, keywd):
   # find chromosomes
@@ -1165,7 +1056,13 @@ def getBestPloidyFor(patient, sample):
             continue
         if lvec[1] != sample:
             continue
-        odds = float(lvec[-1])
+        #first check if the hutch made a decision about this sample:
+        if lvec[-1] == "Diploid":
+            return "diploid"
+        if lvec[-1] == "Tetraploid":
+            return "tetraploid"
+        #If not, we use the odds calculation:
+        odds = float(lvec[-2])
         if odds >= 0.5:
             return "diploid"
         return "tetraploid"
