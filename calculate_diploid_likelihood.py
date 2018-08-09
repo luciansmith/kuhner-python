@@ -173,13 +173,13 @@ for line in f:
     # indicated 'this is probably tetraploid'.
     if close_dip == "True":
         pclose_d_dip = 0.007
-        pclose_d_tet = 0.314
+        pclose_d_tet = 0.091
     elif close_dip == "False":
         pclose_d_dip = 0.007
-        pclose_d_tet = 0.314
+        pclose_d_tet = 0.091
     elif close_dip == "Two":
         pclose_d_dip = 0.997
-        pclose_d_tet = 0.270
+        pclose_d_tet = 0.229
     oddsvec[1] = calculateBayes(oddsvec[1], pclose_d_dip, pclose_d_tet) #P(close_dip_T|dip, P(close_dip_T|tet))
     odds_str["close_diploid"] = str(int(100*pclose_d_dip)) + "::" + str(int(100*pclose_d_tet))
 
@@ -202,14 +202,14 @@ for line in f:
         assert(True)
         #This doesn't actually tell you anything (sigh)
     elif better_accuracy == "Tetraploid":
-        pbetter_acc_dip = 0.143
-        pbetter_acc_tet = 0.303
+        pbetter_acc_dip = 0.144
+        pbetter_acc_tet = 0.171
     if better_accuracy == "Diploid only":
         assert(True)
         #To few to assess
     elif better_accuracy == "Tetraploid only":
         pbetter_acc_dip = 0.003
-        pbetter_acc_tet = 0.400
+        pbetter_acc_tet = 0.629
     oddsvec[1] = calculateBayes(oddsvec[1], pbetter_acc_dip, pbetter_acc_tet) #P(dip_better|dip, P(dip_better|tet))
     odds_str["better_acc"] = str(int(100*pbetter_acc_dip)) + "::" + str(int(100*pbetter_acc_tet))
 
@@ -217,10 +217,10 @@ for line in f:
     nygc_tet = 0.5
     if nygc == "Diploid":
         nygc_dip = 0.986
-        nygc_tet = 0.394
+        nygc_tet = 0.286
     elif nygc == "Tetraploid":
         nygc_dip = 0.017
-        nygc_tet = 0.576
+        nygc_tet = 0.727
     oddsvec[1] = calculateBayes(oddsvec[1], nygc_dip, nygc_tet) #P(dip_better|dip, P(dip_better|tet))
     odds_str["nygc"] = str(int(100*nygc_dip)) + "::" + str(int(100*nygc_tet))
 
@@ -228,10 +228,10 @@ for line in f:
     goodness_tet = 0.5
     if goodness == "Diploid":
         goodness_dip = 0.884
-        goodness_tet = 0.324
+        goodness_tet = 0.216
     elif goodness == "Tetraploid":
         goodness_dip = 0.111
-        goodness_tet = 0.257
+        goodness_tet = 0.143
     oddsvec[1] = calculateBayes(oddsvec[1], goodness_dip, goodness_tet) #P(dip_better|dip, P(dip_better|tet))
     odds_str["goodness"] = str(int(100*goodness_dip)) + "::" + str(int(100*goodness_tet))
 

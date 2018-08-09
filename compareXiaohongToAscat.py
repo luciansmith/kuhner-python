@@ -34,7 +34,7 @@ jamboree_dir = "jamboree_files/"
 gamma_list = ["100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500"]
 
 use500 = True
-onlysomepatients = True
+onlysomepatients = False
 #somepatients = ["55", "59", "74", "591", "595", "597"]
 #somepatients = ["403", "512", "568", "852", "572"]
 somepatients = ["772"]

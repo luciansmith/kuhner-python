@@ -19,7 +19,6 @@ initcall = "initial_calling_evidence.tsv"
 finalcall_file = "tom_final_DNA_calls.tsv"
 flow_summary = "flow_summary.txt"
 call_summary = "Xiaohong_pASCAT_compare/xiaocompare_summary.tsv"
-outfile = "calling_evidence.txt"
 goodness_dir = "gamma_test_output/pASCAT_input_g"
 
 include_challenge = True
@@ -247,7 +246,7 @@ def NYGCCloserTo(patient, sample, finaldata, calldata):
             dploidy = calldata[patient][sample]["diploid"][0]
         if "tetraploid" in calldata[patient][sample]:
             tploidy = calldata[patient][sample]["tetraploid"][0]
-    if dploidy=="NA" and NYGCcall > 2.6:
+    if dploidy=="NA" and NYGCcall > 2.5:
         return "Tetraploid"
     if tploidy=="NA" and NYGCcall < 2.8:
         return "Diploid"

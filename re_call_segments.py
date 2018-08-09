@@ -23,7 +23,7 @@ balance_dir = "balanced_calls/"
 outdir = "noninteger_processed_CNs/"
 jamboreedir = "jamboree_files/"
 
-onlysomepatients = True
+onlysomepatients = False
 somepatients = ["772"]
 
 if not path.isdir(outdir):

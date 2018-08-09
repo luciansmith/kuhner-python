@@ -20,7 +20,7 @@ outdir = "nonintegerCNs/"
 
 use500 = True
 
-onlysomepatients = True
+onlysomepatients = False
 somepatients = ["772"]
 
 firstpatients = ["17", "42", "55", "59", "74", "43", "184", "163", "396", "1047"]
