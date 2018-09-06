@@ -20,12 +20,12 @@ if not(path.isdir(gamma_out)):
 allfile = open(gamma_out + "run_all.bat", "w")
 makelinks = open(gamma_out + "make_links.bat", "w")
 
-onlysomepatients = False
+onlysomepatients = True
 eightplus = False
 #somepatients = ["17", "42", "55", "59", "74", "43", "163", "396", "1047"]
-#somepatients = ["184"]
+somepatients = ["194"]
 #somepatients = ["42", "43", "55", "59", "74"]
-somepatients = ["1005", "222", "391", "422", "43", "551", "575", "59", "611", "619", "639", "672", "686", "728", "88", "915", "954"]
+#somepatients = ["1005", "222", "391", "422", "43", "551", "575", "59", "611", "619", "639", "672", "686", "728", "88", "915", "954"]
 
 infiles = []
 patients = []
@@ -40,7 +40,8 @@ for file in infiles:
 #for patient in firstpatients:
 #for gamma in [3000, 1000, 400, 250, 100]:
 #for gamma in [1000, 400, 250, 100, 2000, 200, 600, 800, 150, 300, 350, 450, 500, 700, 900, 1200, 1400, 1600, 2500]:
-for gamma in [500, 450, 400, 350, 300, 250, 550, 600, 650]:
+#for gamma in [500, 450, 400, 350, 300, 250, 550, 600, 650]:
+for gamma in [1100, 1200, 1300, 1400, 1500, 1750, 2000, 2500, 200, 150, 100, 50]:
     pASCAT_dir = "pASCAT_input_g" + str(gamma) + "/"
 
     if not(path.isdir(gamma_out + pASCAT_dir)):

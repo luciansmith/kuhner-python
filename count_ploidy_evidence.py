@@ -30,7 +30,7 @@ def readEvidence():
     for line in fcf:
         if "Patient" in line:
             continue
-        (patient, sample, tomcall, VAFcat, flowratio, close_dip, close_tet, better_acc, acc_diff, NYGC_closer, goodness, finalcall) = line.rstrip().split("\t")
+        (patient, sample, tomcall, VAFcat, flowratio, close_dip, close_tet, better_acc, acc_diff, NYGC_closer, goodness, Xcloser, finalcall) = line.rstrip().split("\t")
         if patient not in evidence:
             evidence[patient] = {}
         evidence[patient][sample] = {}
@@ -41,6 +41,7 @@ def readEvidence():
         evidence[patient][sample]["Better accuracy"] = better_acc
         evidence[patient][sample]["NYGC closer to:"] = NYGC_closer
         evidence[patient][sample]["Goodness diff"] = goodness
+        evidence[patient][sample]["Xiaohong closer"] = Xcloser
         evidence[patient][sample]["final"] = finalcall
     return evidence
 

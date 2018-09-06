@@ -1180,8 +1180,8 @@ def getBestPloidyFor(patient, sample):
     return "diploid"
 
 def getSingleGammaCallsFor(patient, gamma):
-    if patient=="772" and gamma=="500":
-        gamma = "550"
+    if gamma == "500":
+        gamma = getGammaFor(patient)
     gammadir = "gamma_test_output/pASCAT_input_g" + gamma + "/"
     ret = set()
     for ploidy in ["diploid", "tetraploid", "eight"]:
@@ -1220,7 +1220,16 @@ def getPatientInfo():
         sexes[patient] = sex
     return (progressions, sexes)
 
-
+def getGammaFor(patient):
+    if patient=="37":
+        return "450"
+    if patient=="194":
+        return "1000"
+    if patient=="772":
+        return "550"
+    if patient=="891":
+        return "650"
+    return "500"
 
 
 

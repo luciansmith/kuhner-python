@@ -164,9 +164,7 @@ def getIsegsFromCopynumberFileFor(patient):
     isegs = {}
     #glist = ("100", "150", "200", "250", "300", "350", "400", "450", "500", "600", "700", "800", "900", "1000", "1200", "1400", "1600", "2000", "2500", "3000")
     glist = list("1")
-    glist[0] = "500"
-    if patient=="772":
-        glist[0] = "550"
+    glist[0] = lsl.getGammaFor(patient)
     gindex = 0
     gamma = glist[gindex]
 

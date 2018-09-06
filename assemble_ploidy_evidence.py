@@ -55,18 +55,22 @@ def readCallSummary(call):
     for line in open(call, "r"):
         if "Patient" in line:
             continue
-        (patient, sample, gamma, ploidy, ploidyval, purval, __, __, __, __, __, __, __, __, __, __, Xacc, Aacc) = line.split()
+        (patient, sample, gamma, ploidy, ploidyval, purval, __, __, __, __, __, __, __, __, __, AXdiff, Xacc, Aacc) = line.split()
         ploidyval = float(ploidyval)
         purval = float(purval)
         if Aacc == "--":
             Aacc = 0.0
         else:
             Aacc = float(Aacc)
+        if AXdiff == "--":
+            AXdiff = 5000
+        else:
+            AXdiff = float(AXdiff)
         if patient not in calldata:
             calldata[patient] = {}
         if sample not in calldata[patient]:
             calldata[patient][sample] = {}
-        calldata[patient][sample][ploidy] = (ploidyval, purval, Aacc)
+        calldata[patient][sample][ploidy] = (ploidyval, purval, Aacc, AXdiff)
     return calldata
 
 def readWGSEvidence(wgs):
@@ -99,21 +103,15 @@ def readFinalCalls(callfile):
         finalcalls[patient][sample] = (NYGC, simplecall)
     return finalcalls
 
-def readGoodnessData():
+def readGoodnessData(patients):
     goodnesses = {}
-    files = []
-    for (__, __, f) in walk(goodness_dir + "500/diploid/"):
-        files += f
-    for f in files:
-        if "goodness" not in f:
-            continue
-        patient = f.split("_")[0]
+    for patient in patients:
+        gamma = lsl.getGammaFor(patient) + "/"
         for ploidy in ("diploid", "tetraploid"):
-            if not isfile(goodness_dir + "500/" + ploidy + "/" + f):
+            f = goodness_dir + gamma + ploidy + "/" + patient + "_fcn_ascat_goodness.txt"
+            if not isfile(f):
                 continue
-            gfile = open(goodness_dir + "500/" + ploidy + "/" + f)
-            if patient=="772":
-                gfile = open(goodness_dir + "550/" + ploidy + "/" + f)
+            gfile = open(f)
             for line in gfile:
                 if "x" in line:
                     continue
@@ -179,33 +177,47 @@ def getDtMatches(patient, sample, flowdata, calldata):
                     break
     return (dmatch, tmatch)
 
+def getXMatches(patient ,sample, calldata):
+    if patient in calldata and sample in calldata[patient]:
+        if "tetraploid" in calldata[patient][sample]:
+            AXdiff = calldata[patient][sample]["tetraploid"][3]
+            if (AXdiff<450):
+                return "Tetraploid"
+        if "diploid" in calldata[patient][sample]:
+            AXdiff = calldata[patient][sample]["diploid"][3]
+            if (AXdiff<450):
+                return "Diploid"
+    return "Neither"
+
 def getBetterAccuracy(patient, sample, calldata):
     better_accuracy = "Unknown"
     if patient in calldata and sample in calldata[patient]:
+        dacc = -1
+        tacc = -1
         if "diploid" in calldata[patient][sample]:
             dacc = calldata[patient][sample]["diploid"][2]
-            tacc = 0
-            whichtet = "Tetraploid"
-            if "tetraploid" in calldata[patient][sample]:
-                tacc = calldata[patient][sample]["tetraploid"][2]
-            if "eight" in calldata[patient]:
-                whichtet = "Eight"
-                tacc = calldata[patient][sample]["eight"][2]
-            if tacc==0:
-                better_accuracy = "Diploid only"
-            else:
-                if abs(dacc-tacc) < .03:
-                    better_accuracy = "Neither"
-                elif dacc > tacc:
-                    better_accuracy = "Diploid"
-                else:
-                    better_accuracy = whichtet
-        elif "eight" in calldata[patient][sample]:
-            better_accuracy = "Eight only"
-        elif "tetraploid" in calldata[patient][sample]:
+        if "tetraploid" in calldata[patient][sample]:
+            tacc = calldata[patient][sample]["tetraploid"][2]
+        if (dacc==-1 and tacc==-1):
+            better_accuracy = "Neither"
+        elif (dacc==-1):
             better_accuracy = "Tetraploid only"
+        elif (tacc == -1):
+            better_accuracy = "Diploid only"
+        elif abs(dacc-tacc) < .03:
+            better_accuracy = "Neither"
+        elif dacc > tacc:
+            better_accuracy = "Diploid"
+        else:
+            better_accuracy = "Tetraploid"
+    #We had to go back and get a whole different gamma, since there wasn't a tet version, but we wanted one.
     if patient=="772" and sample=="24571":
-        #We had to go back and get a whole different gamma, since there wasn't a tet version, but we wanted one.
+        return "Diploid only"
+    if patient=="37" and sample=="20632":
+        return "Diploid only"
+    if patient=="194" and sample=="19880":
+        return "Diploid only"
+    if patient=="891" and sample=="21286":
         return "Diploid only"
     return better_accuracy
 
@@ -269,6 +281,7 @@ def writeHeaders(outdata):
     outdata.write("\tAccuracy difference")
     outdata.write("\tNYGC closer to:")
     outdata.write("\tGoodness diff:")
+    outdata.write("\tXiaohong closer:")
     outdata.write("\tFinal Call")
     outdata.write("\n")
     
@@ -277,7 +290,7 @@ flowdata = readFlowSummary(flow_summary)
 calldata = readCallSummary(call_summary)
 wgsdata = readWGSEvidence(initcall)
 finaldata = readFinalCalls(finalcall_file)
-goodness_data = readGoodnessData()
+goodness_data = readGoodnessData(calldata.keys())
 outdata = open(outfile, "w")
 writeHeaders(outdata)
 for patient in calldata.keys():
@@ -291,8 +304,9 @@ for patient in calldata.keys():
         accuracy_diff = getAccuracyDiff(patient, sample, calldata)
         nygccloser = NYGCCloserTo(patient, sample, finaldata, calldata)
         goodness = getGoodnessDiff(patient, sample, goodness_data)
+        Xcloser = getXMatches(patient, sample, calldata)
         final_call = getFinalCall(patient, sample, finaldata)
-        writeNewLine(outdata, patient, (sample, tomcall, vafcat, flowratio, dmatch, tmatch, better_accuracy, accuracy_diff, nygccloser, goodness, final_call))
+        writeNewLine(outdata, patient, (sample, tomcall, vafcat, flowratio, dmatch, tmatch, better_accuracy, accuracy_diff, nygccloser, goodness, Xcloser, final_call))
     
 outdata.close()
 
