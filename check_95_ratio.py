@@ -70,9 +70,7 @@ ignore_cnvis = True
 bafWtLow = 0.4
 bafWtHigh = 0.65
 
-keylist = ['100', '1000', '10000', '100000', '1000000', 'large']
 allratios = {}
-levelratios = {}
 
 #original cutoff: 0.35 to 0.65, or 0.15 out from 0.5.  The above values account for dye bias.
 
@@ -118,6 +116,10 @@ def readBafNormal(patient):
 #    lsl.createPrintAndSaveHistogram(allcnvis, "", .01)
     return bafrawdata, bafwt
 
+allbafs = {}
+allbafs["1m"] = []
+allbafs["25m"] = []
+
 def readBafSamples(baffile, bafrawdata):
     labels = []
     all_samples = []
@@ -131,9 +133,6 @@ def readBafSamples(baffile, bafrawdata):
         return
     print("Reading BAF sample data for patient", patient)
     baffile = open(baffile, "r")
-    allbafs = {}
-#    allbafs["cnvi"] = []
-    allbafs = []
     for line in baffile:
         lvec = line.split()
         if line.find("Chr") != -1:
@@ -151,18 +150,18 @@ def readBafSamples(baffile, bafrawdata):
             continue
         for p in range(3,len(lvec)):
             sample = labels[p-1].split('"')[1]
+            if "N" in sample:
+                continue
             try:
                 bafrawdata[chr][pos][sample] = float(lvec[p])
-                if line.find("cnvi") != -1:
-                    continue;
-#                    allbafs["cnvi"].append(float(lvec[p]))
+                if (int(sample)>=23341 or sample=="19578"):
+                    allbafs["25m"].append(float(lvec[p]))
                 else:
-                    bafrawdata[chr][pos][sample] = float(lvec[p])
-                    allbafs.append(float(lvec[p]))
+                    allbafs["1m"].append(float(lvec[p]))
             except:
                 continue
     baffile.close()
-    return allbafs, all_samples
+    #return allbafs, all_samples
 
 def getIsegsFromCopynumberFileFor(patient):
     #This function reads the lowest-gamma-value copynumber file it can, reads it, and returns it as 'isegs'.
@@ -412,24 +411,7 @@ def storeMatchesInIsegs(isegs, bafrawdata):
                     iseg[3].append(segpair)
                 if segpair not in allratios:
                     allratios[segpair] = []
-                    #print(segpair)
                 allratios[segpair].append(ratio)
-                if segpair not in levelratios:
-                    levelratios[segpair] = {}
-                    for key in keylist:
-                        levelratios[segpair][key] = []
-                if pattern[0] < 100:
-                    levelratios[segpair]['100'].append(ratio)
-                elif pattern[0] < 1000:
-                    levelratios[segpair]['1000'].append(ratio)
-                elif pattern[0] < 10000:
-                    levelratios[segpair]['10000'].append(ratio)
-                elif pattern[0] < 100000:
-                    levelratios[segpair]['100000'].append(ratio)
-                elif pattern[0] < 1000000:
-                    levelratios[segpair]['1000000'].append(ratio)
-                else:
-                    levelratios[segpair]['large'].append(ratio)
 
 def scoreAnalysis(isegs, osegs, sample, analysis):
     for chr in isegs:
@@ -645,122 +627,8 @@ for f in files:
     bafrawdata, bafwt = readBafNormal(patient)
     if (len(bafrawdata)==0):
         continue
-    allbafs, all_samples = readBafSamples(patient, bafrawdata)
+    readBafSamples(patient, bafrawdata)
 
-    isegs = getIsegsFromCopynumberFileFor(patient)
-    storeMatchesInIsegs(isegs, bafrawdata)
+lsl.createPrintAndSaveHistogram(allbafs['1m'], "1M BAFs", .01)
+lsl.createPrintAndSaveHistogram(allbafs['25m'], "2.5M BAFs", .01)
 
-    ploidies = {}
-    purities = {}
-    all_analyses = ["Xiaohong"]
-
-    for gamma in gamma_list:
-        if patient=="772" and gamma=="500":
-            gamma = "550"
-        print("Processing results from a gamma of", gamma)
-        root_dir = gamma_outdir + "pASCAT_input_g" + gamma + "/"
-        ploidies[gamma] = {}
-        purities[gamma] = {}
-
-        for subdir in subdirs:
-            ploidyfile = root_dir + subdir + "/" + patient + "_fcn_ascat_ploidy.txt"
-            if not(isfile(ploidyfile)):
-                print("No ploidy for", patient, "gamma", gamma, "for the", subdir, "constrained run: ASCAT failure for this patient.")
-                continue
-            ploidies[gamma][subdir] = readPloidyFile(ploidyfile)
-            purityfile = root_dir + subdir + "/" + patient + "_fcn_ascat_cont.txt"
-            if not(isfile(purityfile)):
-                print("No purity for", patient, "gamma", gamma, "for the", subdir, "constrained run: ASCAT failure for this patient.")
-                continue
-            purities[gamma][subdir] = readPurityFile(purityfile)
-            ascsegfile = root_dir + subdir + "/" + patient + "_fcn_ascat_segments.txt"
-            if not(isfile(ascsegfile)):
-                print("ASCAT seems to have failed for", root_dir, ",",subdir,",",patient,".")
-                continue
-
-            all_analyses.append(gamma+subdir)
-            (osegs, totsca) = readSegmentationFile(ascsegfile, all_samples)
-            for sample in all_samples:
-                scoreAnalysis(isegs, osegs, sample, gamma+subdir)
-
-    print("Running SCA analysis for Xiaohong data for patient", patient)
-    for sample in all_samples:
-        scoreAnalysis(isegs, Xiaohong_segments[patient], sample, "Xiaohong")
-
-    writeSummary(isegs, patient, all_samples, all_analyses)
-    writeBalanceFiles(isegs, patient, all_samples)
-
-unique_ratios = []
-used_samples = []
-for segpair in allratios:
-    if segpair[0] in used_samples:
-        continue
-    if segpair[1] in used_samples:
-        continue
-    used_samples.append(segpair[0])
-    used_samples.append(segpair[1])
-    unique_ratios.extend(allratios[segpair])
-lsl.createPrintAndSaveHistogram(unique_ratios, "unique_ratios_why95_01", .01)
-
-ratiodir = "ratio_outdir/"
-for segpair in allratios:
-    outfile = open(ratiodir + segpair[0] + "_" + segpair[1], "w")
-    for entry in allratios[segpair]:
-        outfile.write(str(entry) + "\n")
-
-oldratios = []
-for segpair in allratios:
-    if ("360" in segpair[0] or "672_" in segpair[0]):
-        oldratios.extend(allratios[segpair])
-lsl.createPrintAndSaveHistogram(oldratios, "oldratios", .01)
-
-v1Mratios = []
-v25Mratios = []
-cross_ratios = []
-v1M_level_ratios = {}
-v25M_level_ratios = {}
-cross_level_ratios = {}
-for key in keylist:
-    v1M_level_ratios[key] = []
-    v25M_level_ratios[key] = []
-    cross_level_ratios[key] = []
-for segpair in allratios:
-    (p1, s1) = segpair[0].split("_")
-    (p2, s2) = segpair[1].split("_")
-    if "N" in s1 or "N" in s2:
-        continue
-    s1 = int(s1)
-    s2 = int(s2)
-#    print(s1, s2)
-    if (s1>=23341 or s1==19578):
-        if s2>=23341 or s2==19578:
-            v25Mratios.extend(allratios[segpair])
-            for key in keylist:
-                v25M_level_ratios[key].extend(levelratios[segpair][key])
-#            print("2.5M:", segpair)
-        else:
-            cross_ratios.extend(allratios[segpair])
-            for key in keylist:
-                cross_level_ratios[key].extend(levelratios[segpair][key])
-#            print("cross:", segpair)
-    else:
-        if(s2<23341 and s2 != 19578):
-            v1Mratios.extend(allratios[segpair])
-            for key in keylist:
-                v1M_level_ratios[key].extend(levelratios[segpair][key])
-#            print("1M:", segpair)
-        else:
-            cross_ratios.extend(allratios[segpair])
-            for key in keylist:
-                cross_level_ratios[key].extend(levelratios[segpair][key])
-#            print("cross:", segpair)
-lsl.createPrintAndSaveHistogram(v1Mratios, ratiodir + "1Mratios", .01)
-for key in keylist:
-    lsl.createPrintAndSaveHistogram(v1M_level_ratios[key], ratiodir + "1M_level_ratios_" + key, .01)
-lsl.createPrintAndSaveHistogram(v25Mratios, ratiodir + "25Mratios", .01)
-for key in keylist:
-    lsl.createPrintAndSaveHistogram(v25M_level_ratios[key], ratiodir + "25M_level_ratios_" + key, .01)
-lsl.createPrintAndSaveHistogram(cross_ratios, ratiodir + "cross_ratios", .01)
-for key in keylist:
-    lsl.createPrintAndSaveHistogram(cross_level_ratios[key], ratiodir + "cross_level_ratios_" + key, .01)
-    

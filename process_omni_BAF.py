@@ -14,8 +14,8 @@ from os import mkdir
 # read the file that correlates patient data with which omni file the 'canonical' version of that data can be found.
 use_canonical = False
 
-baf_dir = "BAF_raw_data_Pilot/"
-tag = "_Pilot_only"
+baf_dir = "BAF_raw_data/"
+tag = "_BAD_BLOOD"
 
 canonical_filename = "CN_raw_data/20170724_sample_omni.txt"
 baf_outdir = "BAF_first_filtered_data" + tag + "/"
@@ -23,8 +23,10 @@ baf_labelfile = "REI_12051_B01_SOM_WGS_443samples_12Dec2016_Partek_BAlleleFreque
 if tag=="_Pilot_only":
     baf_labelfile = "REI_11321_B01_SOM_WGS_15samples_Partek_23March2016_BAlleleFrequency.Pilot.txt.fmt"
 
-somepatientsonly = False
+somepatientsonly = True
 somepatients = ["572"]
+
+BAD_BLOOD = True
 
 if not(path.isdir(baf_outdir)):
     mkdir(baf_outdir)
@@ -100,8 +102,12 @@ for file in filenames:
             continue
         num = idbits[1]
         #Special-case the bad blood information in omniMix4_BAF:
-        if num=="23210N":
-            continue
+        if BAD_BLOOD:
+            if num=="23220N":
+                continue
+        else:
+            if num=="23210N":
+                continue
         if num not in ["24968N", "24966N", "24971N", "16925N", "24967N", "24970N", "24969N"]:
             isblood = idbits[3]
             oldnum = num

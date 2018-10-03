@@ -22,8 +22,8 @@ makelinks = open(gamma_out + "make_links.bat", "w")
 
 onlysomepatients = True
 eightplus = False
-#somepatients = ["17", "42", "55", "59", "74", "43", "163", "396", "1047"]
-somepatients = ["194"]
+somepatients = ["141", "954", "163", "512"]
+#somepatients = ["194"]
 #somepatients = ["42", "43", "55", "59", "74"]
 #somepatients = ["1005", "222", "391", "422", "43", "551", "575", "59", "611", "619", "639", "672", "686", "728", "88", "915", "954"]
 
@@ -40,8 +40,7 @@ for file in infiles:
 #for patient in firstpatients:
 #for gamma in [3000, 1000, 400, 250, 100]:
 #for gamma in [1000, 400, 250, 100, 2000, 200, 600, 800, 150, 300, 350, 450, 500, 700, 900, 1200, 1400, 1600, 2500]:
-#for gamma in [500, 450, 400, 350, 300, 250, 550, 600, 650]:
-for gamma in [1100, 1200, 1300, 1400, 1500, 1750, 2000, 2500, 200, 150, 100, 50]:
+for gamma in [450, 400, 350, 300, 250, 550, 600, 650, 1100, 1200, 1300, 1400, 1500, 1750, 2000, 2500, 200, 150, 100, 50]:
     pASCAT_dir = "pASCAT_input_g" + str(gamma) + "/"
 
     if not(path.isdir(gamma_out + pASCAT_dir)):
@@ -74,7 +73,7 @@ for gamma in [1100, 1200, 1300, 1400, 1500, 1750, 2000, 2500, 200, 150, 100, 50]
 #    for patient in patients: #["266", "303", "360"]:
         outfname = "run_" + patient + "_g" + str(gamma) + ".sge"
         outfile = open(gamma_out + pASCAT_dir + outfname, "w")
-        outfile.write("module load modules modules-init modules-gs gmp/5.0.2 mpfr/3.1.0 mpc/0.8.2 gcc/4.9.1 R/latest java_jdk/latest\n")
+        outfile.write("module load modules modules-init modules-gs gcc/latest R/latest java_jdk/latest\n")
         outfile.write("cd R/" + gamma_out + pASCAT_dir + ";\n")
         outfile.write("R CMD BATCH '--no-save --no-restore --args " + patient + " " + str(gamma) + "' segment.R Rout/" + patient + "_segout.txt;\n")
         #outfile.write("R CMD BATCH '--no-save --no-restore --args " + patient + " 0' ascat_on_segments.R Rout/" + patient + "_uncon_out.txt;\n")

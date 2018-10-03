@@ -6,29 +6,33 @@ Created on Wed Mar  7 16:35:09 2018
 """
 flowout = "flow_summary.txt"
 
-flowfile = open("flow_raw_data.txt", "r")
+#flowfile = open("flow_raw_data.txt", "r")
+flowfile = open("ChallengeFlowLucian_09202018_deidentified.txt", "r")
 
 flowdata = {}
 
 for line in flowfile:
-    if "Patient" in line:
+    if "RandomID" in line:
         continue
-    lvec = line.split()
-    (patient, age, level, id, fourN) = lvec[0:5]
+    lvec = line.split('\t')
+    (patient, age, flownum, sampnum, fourN) = lvec[0:5]
     if patient not in flowdata:
         flowdata[patient] =  [0, 0, set()]
     flowdata[patient][0] += 1
     aneuploidFlow = False
+    if (fourN==""):
+        fourN = 0
     fourN = float(fourN)
     if fourN > 6:
         aneuploidFlow = True
         flowdata[patient][2].add(4.0)
-    if len(lvec) > 5:
+    (a1p, perca1, a2p, perca2) = lvec[5:9]
+    if a1p != "":
         aneuploidFlow = True
-        flowdata[patient][2].add(float(lvec[5]))
-    if len(lvec) > 7:
+        flowdata[patient][2].add(float(a1p))
+    if a2p != "":
         aneuploidFlow = True
-        flowdata[patient][2].add(float(lvec[7]))
+        flowdata[patient][2].add(float(a2p))
     if aneuploidFlow:
         flowdata[patient][1] += 1
 

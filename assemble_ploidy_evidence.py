@@ -13,6 +13,8 @@ from os import readlink
 from os.path import isfile
 from os import mkdir
 
+import lucianSNPLibrary as lsl
+
 #Process various input files to create an evidence file
 
 initcall = "initial_calling_evidence.tsv"
@@ -41,13 +43,13 @@ def readFlowSummary(flow):
         if "Patient" in line:
             continue
         lvec = line.split()
-        (progression, patient, ratio) = lvec[0:3]
-        aneuploid_strs = lvec[3:len(lvec)]
+        (patient, ratio) = lvec[0:2]
+        aneuploid_strs = lvec[2:len(lvec)]
         aneuploids = set()
         for aneuploid in aneuploid_strs:
             aneuploids.add(float(aneuploid))
         ratio = ratio.replace(':','::')
-        flowdata[patient] = (ratio, progression, aneuploids)
+        flowdata[patient] = (ratio, aneuploids)
     return flowdata
 
 def readCallSummary(call):
@@ -151,7 +153,7 @@ def getDtMatches(patient, sample, flowdata, calldata):
     if patient in flowdata and patient in calldata:
         dmatch = "None"
         tmatch = "None"
-        flowlist = flowdata[patient][2]
+        flowlist = flowdata[patient][1]
         assert(sample in calldata[patient])
         if "diploid" in calldata[patient][sample]:
             dploidy = calldata[patient][sample]["diploid"][0]

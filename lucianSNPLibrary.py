@@ -1221,14 +1221,18 @@ def getPatientInfo():
     return (progressions, sexes)
 
 def getGammaFor(patient):
-    if patient=="37":
-        return "450"
-    if patient=="194":
-        return "1000"
+    #From WGS
     if patient=="772":
         return "550"
-    if patient=="891":
-        return "650"
+    #Can't get a tetraploid solution for this for any gamma:
+#    if patient=="194":
+#        return "1000"
+
+    #Used to be on this list until we got updated flow data
+#    if patient=="37":
+#        return "450"
+#    if patient=="891":
+#        return "650"
     return "500"
 
 

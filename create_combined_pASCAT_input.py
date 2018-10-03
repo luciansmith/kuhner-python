@@ -15,18 +15,18 @@ import numpy
 
 
 somepatientsonly = True
-somepatients = ["391", "611"]
+somepatients = ["572"]
 #somepatients = ["551", "59", "954", "222", "88", "639", "611", "391", "422", "575", "619", "672", "728", "915", "1005", "43", "686"]
 
 labels, rev_labels = lsl.getSNPLabelsAll(False)
-avtag = "all"
+avtag = "BAD_BLOOD"
 dirtag = "_only"
 
 bafdirs = {}
 cndirs = {}
 bafdirs["25"] = "BAF_first_filtered_data_25M" + dirtag + "/"
 cndirs["25"] = "CN_filtered_data_25M" + dirtag + "/"
-bafdirs["1"] = "BAF_first_filtered_data_1M" + dirtag + "/"
+bafdirs["1"] = "BAF_first_filtered_data_BAD_BLOOD/"
 cndirs["1"] = "CN_filtered_data_1M" + dirtag + "/"
 bafdirs["Pilot"] = "BAF_first_filtered_data_Pilot_only/"
 cndirs["Pilot"] = "CN_filtered_data_Pilot_only/"
@@ -96,20 +96,20 @@ def averageData(data, isbaf):
             for sample in data[chr][pos]:
                 vec = data[chr][pos][sample]
                 too_different = False
-                if isbaf and len(vec)>1:
-                    for n in range(1,len(vec)):
-                        if (vec[n] > 0.5 and vec[0] < 0.5) or (vec[n] < 0.5 and vec[0] > 0.5):
-                            vec[n] = 1-vec[n]
-                    for n in range(0,len(vec)):
-                        for m in range(n, len(vec)):
-                            if abs(vec[n] - vec[m]) > 0.35:
-                                too_different = True
-                if too_different:
-                    data[chr][pos][sample] = "?"
-                else:
-                    #if len(vec)>2:
-                    #    print(vec)
-                    data[chr][pos][sample] = numpy.average(vec)
+#                if isbaf and len(vec)>1:
+#                    for n in range(1,len(vec)):
+#                        if (vec[n] > 0.5 and vec[0] < 0.5) or (vec[n] < 0.5 and vec[0] > 0.5):
+#                            vec[n] = 1-vec[n]
+#                    for n in range(0,len(vec)):
+#                        for m in range(n, len(vec)):
+#                            if abs(vec[n] - vec[m]) > 0.35:
+#                                too_different = True
+#                if too_different:
+#                    data[chr][pos][sample] = "?"
+#                else:
+                #if len(vec)>2:
+                #    print(vec)
+                data[chr][pos][sample] = numpy.average(vec)
 
 for (only25, only1) in [(False, False)]:#, (False, True), (True, False)]:
     onlytag = ""
