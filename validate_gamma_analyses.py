@@ -100,7 +100,9 @@ segments_66 = {}
 allratios = {}
 levelratios = {}
 
-def is1MSample(sample):
+def is1MSample(id):
+    (patient, sample) = id.split("_")
+    sample = int(sample)
     return (sample<23341 and not(sample==19578))
 
 
@@ -115,7 +117,7 @@ def readPosMedians():
             (chr, pos, median) = line.rstrip().split('\t')
             if chr not in medians[arraytype]:
                 medians[arraytype][chr] = {}
-            medians[arraytype][chr][pos] = float(median)
+            medians[arraytype][chr][int(pos)] = float(median)
     return medians
 
 
@@ -452,15 +454,12 @@ def storeMatchesInIsegs(isegs, bafrawdata, all_samples, medians, bafwt):
                                 if "N" in s1 or "N" in s2:
                                     median = 0.5
                                 else:
-                                    s1n = int(s1)
-                                    s2n = int(s2)
-                                    if is1MSample(s1n) and is1MSample(s2n):
+                                    if is1MSample(s1) and is1MSample(s2):
                                         median = medians["1M"][chr][pos]
-                                    elif not(is1MSample(s1n)) and not(is1MSample(s2n)):
+                                    elif not(is1MSample(s1)) and not(is1MSample(s2)):
                                         median = medians["25M"][chr][pos]
                                     else:
                                         median = 0.5
-                                median = medians[chr][pos]
                             if (val1 > median and val2 > median) or (val1 < median and val2 < median):
                                 patterns[segpair][1] += 1
                             patterns[segpair][0] += 1
