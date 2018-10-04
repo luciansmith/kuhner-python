@@ -35,6 +35,10 @@ Xdir_1M = "CN_Xiaohong_segmentation/"
 gamma_outdir = "gamma_test_output/"
 outdir = "analysis_compare/"
 balanced_outdir = "balanced_calls/"
+ratiodir = "ratio_outdir/"
+
+keylist = []
+#keylist = ['100', '1000', '10000', '100000', '1000000', 'large']
 
 
 subdirs = ["diploid", "tetraploid"]
@@ -51,7 +55,7 @@ gamma_list = ["500"]
 bafrawdata = {}
 patient_samples = {}
 
-onlysomepatients = False
+onlysomepatients = True
 #somepatients = ["163", "184", "396", "1047", "17", "42", "43", "55", "59", "74"]
 #somepatients = ["391", "611"]
 somepatients = ["772"]
@@ -59,18 +63,37 @@ somepatients = ["772"]
 onlysomechroms = False
 somechroms = ["9"]
 
+ignore_cnvis = True
+use_restrictive_wt_calls = False
+use_only_common_snps = False
+use_median_from_wt = False
+use_orig_wt = True
+
+
+bafWtLow = 0.4
+bafWtHigh = 0.65
+
+if(use_restrictive_wt_calls):
+    bafWtLow = 0.45
+    bafWtHigh = 0.55
+    ratiodir = "restrictive_" + ratiodir
+    
+    
+if (use_only_common_snps):
+    ratiodir = "common_" + ratiodir
+
 if not path.isdir(outdir):
     mkdir(outdir)
 
 if not path.isdir(balanced_outdir):
     mkdir(balanced_outdir)
 
-ignore_cnvis = True
+if not path.isdir(ratiodir):
+    mkdir(ratiodir)
+    
+segments_88 = {}
+segments_66 = {}
 
-bafWtLow = 0.4
-bafWtHigh = 0.65
-
-keylist = ['100', '1000', '10000', '100000', '1000000', 'large']
 allratios = {}
 levelratios = {}
 
@@ -79,6 +102,7 @@ levelratios = {}
 def readBafNormal(patient):
     bafrawdata = {}
     bafwt = {}
+    calcmedians = []
 #    allcnvis = []
     if BAF_links:
         bafnormal = readlink(BAF_dir + patient + "_Normal_BAF.txt")
@@ -103,6 +127,7 @@ def readBafNormal(patient):
 #            allcnvis.append(value)
         if (value < bafWtLow or value > bafWtHigh):
             continue
+        calcmedians.append(value)
         chr = lvec[1].split('"')[1]
         pos = int(lvec[2])
         if onlysomechroms and chr not in somechroms:
@@ -116,7 +141,7 @@ def readBafNormal(patient):
     bafnormal.close()
 #    print("All normal CNVI bafs:")
 #    lsl.createPrintAndSaveHistogram(allcnvis, "", .01)
-    return bafrawdata, bafwt
+    return bafrawdata, bafwt, numpy.median(calcmedians)
 
 def readBafSamples(baffile, bafrawdata):
     labels = []
@@ -376,7 +401,10 @@ def readAllXiaohongSegmentation():
             readXiaohongCopynumFile(Xdir_1M + f, Xiaohong_segments, totsca)
     return Xiaohong_segments, totsca
 
-def storeMatchesInIsegs(isegs, bafrawdata):
+def storeMatchesInIsegs(isegs, bafrawdata, all_samples, median, bafwt):
+    if not(use_median_from_wt):
+        median = 0.5
+    print("Using a median of", median)
     for chr in isegs:
         if onlysomechroms and chr not in somechroms:
             continue
@@ -384,8 +412,12 @@ def storeMatchesInIsegs(isegs, bafrawdata):
             patterns = {}
             for pos in bafrawdata[chr]:
                 if pos >= iseg[0] and pos <= iseg[1]:
+                    if use_orig_wt:
+                        median = bafwt[chr][pos]
                     rdsamples = list(bafrawdata[chr][pos].keys())
                     rdsamples.sort()
+                    if (use_only_common_snps and (len(rdsamples) < len(all_samples))):
+                        continue
                     for sample1 in range(0, len(rdsamples)-1):
                         for sample2 in range(sample1+1, len(rdsamples)):
                             s1 = rdsamples[sample1]
@@ -398,7 +430,7 @@ def storeMatchesInIsegs(isegs, bafrawdata):
                             segpair = (s1, s2)
                             if segpair not in patterns:
                                 patterns[segpair] = [0, 0]
-                            if (val1 > 0.5 and val2 > 0.5) or (val1 < 0.5 and val2 < 0.5):
+                            if (val1 > median and val2 > median) or (val1 < median and val2 < median):
                                 patterns[segpair][1] += 1
                             patterns[segpair][0] += 1
             for segpair in patterns:
@@ -416,20 +448,52 @@ def storeMatchesInIsegs(isegs, bafrawdata):
                 allratios[segpair].append(ratio)
                 if segpair not in levelratios:
                     levelratios[segpair] = {}
-                    for key in keylist:
-                        levelratios[segpair][key] = []
-                if pattern[0] < 100:
-                    levelratios[segpair]['100'].append(ratio)
-                elif pattern[0] < 1000:
-                    levelratios[segpair]['1000'].append(ratio)
-                elif pattern[0] < 10000:
-                    levelratios[segpair]['10000'].append(ratio)
-                elif pattern[0] < 100000:
-                    levelratios[segpair]['100000'].append(ratio)
-                elif pattern[0] < 1000000:
-                    levelratios[segpair]['1000000'].append(ratio)
-                else:
-                    levelratios[segpair]['large'].append(ratio)
+#                    for key in keylist:
+#                        levelratios[segpair][key] = []
+                if ratio > 0.86 and ratio < 0.90:
+                    oneseg = (iseg[0], iseg[1])
+                    for pos in bafrawdata[chr]:
+                        if pos >= iseg[0] and pos <= iseg[1]:
+                            try:
+                                val1 = bafrawdata[chr][pos][segpair[0]]
+                                val2 = bafrawdata[chr][pos][segpair[1]]
+                            except:
+                                continue
+                            if segpair not in segments_88:
+                                segments_88[segpair] = {}
+                            if oneseg not in segments_88[segpair]:
+                                segments_88[segpair][oneseg] = [[], []]
+                            segments_88[segpair][oneseg][0].append(val1)
+                            segments_88[segpair][oneseg][1].append(val2)
+
+                if ratio > 0.64 and ratio < 0.68:
+                    oneseg = (iseg[0], iseg[1])
+                    for pos in bafrawdata[chr]:
+                        if pos >= iseg[0] and pos <= iseg[1]:
+                            try:
+                                val1 = bafrawdata[chr][pos][segpair[0]]
+                                val2 = bafrawdata[chr][pos][segpair[1]]
+                            except:
+                                continue
+                            if segpair not in segments_66:
+                                segments_66[segpair] = {}
+                            if oneseg not in segments_66[segpair]:
+                                segments_66[segpair][oneseg] = [[], []]
+                            segments_66[segpair][oneseg][0].append(val1)
+                            segments_66[segpair][oneseg][1].append(val2)
+
+#                if pattern[0] < 100:
+#                    levelratios[segpair]['100'].append(ratio)
+#                elif pattern[0] < 1000:
+#                    levelratios[segpair]['1000'].append(ratio)
+#                elif pattern[0] < 10000:
+#                    levelratios[segpair]['10000'].append(ratio)
+#                elif pattern[0] < 100000:
+#                    levelratios[segpair]['100000'].append(ratio)
+#                elif pattern[0] < 1000000:
+#                    levelratios[segpair]['1000000'].append(ratio)
+#                else:
+#                    levelratios[segpair]['large'].append(ratio)
 
 def scoreAnalysis(isegs, osegs, sample, analysis):
     for chr in isegs:
@@ -642,13 +706,13 @@ for f in files:
     if (onlysomepatients and patient not in somepatients):
         continue
 
-    bafrawdata, bafwt = readBafNormal(patient)
+    bafrawdata, bafwt, median = readBafNormal(patient)
     if (len(bafrawdata)==0):
         continue
     allbafs, all_samples = readBafSamples(patient, bafrawdata)
 
     isegs = getIsegsFromCopynumberFileFor(patient)
-    storeMatchesInIsegs(isegs, bafrawdata)
+    storeMatchesInIsegs(isegs, bafrawdata, all_samples, median, bafwt)
 
     ploidies = {}
     purities = {}
@@ -700,9 +764,8 @@ for segpair in allratios:
     used_samples.append(segpair[0])
     used_samples.append(segpair[1])
     unique_ratios.extend(allratios[segpair])
-lsl.createPrintAndSaveHistogram(unique_ratios, "unique_ratios_why95_01", .01)
+lsl.createPrintAndSaveHistogram(unique_ratios, ratiodir + "unique_ratios_why95_01", .01)
 
-ratiodir = "ratio_outdir/"
 for segpair in allratios:
     outfile = open(ratiodir + segpair[0] + "_" + segpair[1], "w")
     for entry in allratios[segpair]:
@@ -712,7 +775,7 @@ oldratios = []
 for segpair in allratios:
     if ("360" in segpair[0] or "672_" in segpair[0]):
         oldratios.extend(allratios[segpair])
-lsl.createPrintAndSaveHistogram(oldratios, "oldratios", .01)
+lsl.createPrintAndSaveHistogram(oldratios, ratiodir + "oldratios", .01)
 
 v1Mratios = []
 v25Mratios = []
@@ -763,4 +826,40 @@ for key in keylist:
 lsl.createPrintAndSaveHistogram(cross_ratios, ratiodir + "cross_ratios", .01)
 for key in keylist:
     lsl.createPrintAndSaveHistogram(cross_level_ratios[key], ratiodir + "cross_level_ratios_" + key, .01)
+    
+file_88 = open(ratiodir + "segments_88_" + patient + ".txt", "w")
+file_88.write("Sample")
+file_88.write("\tStart")
+file_88.write("\tEnd")
+file_88.write("\tBAFs")
+file_88.write("\n")
+for segpair in segments_88:
+    for oneseg in segments_88[segpair]:
+        for which in (0,1):
+            file_88.write(segpair[which])
+            file_88.write("\t" + str(oneseg[0]))
+            file_88.write("\t" + str(oneseg[1]))
+            for val in segments_88[segpair][oneseg][which]:
+                file_88.write("\t" + str(val))
+            file_88.write("\n")
+        file_88.write("\n")
+file_88.close()
+    
+file_66 = open(ratiodir + "segments_66_" + patient + ".txt", "w")
+file_66.write("Sample")
+file_66.write("\tStart")
+file_66.write("\tEnd")
+file_66.write("\tBAFs")
+file_66.write("\n")
+for segpair in segments_66:
+    for oneseg in segments_66[segpair]:
+        for which in (0,1):
+            file_66.write(segpair[which])
+            file_66.write("\t" + str(oneseg[0]))
+            file_66.write("\t" + str(oneseg[1]))
+            for val in segments_66[segpair][oneseg][which]:
+                file_66.write("\t" + str(val))
+            file_66.write("\n")
+        file_66.write("\n")
+file_66.close()
     
