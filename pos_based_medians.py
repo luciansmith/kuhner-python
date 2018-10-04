@@ -42,24 +42,24 @@ for arraytype in BAF_dirs:
     for f in files:
         if "BAF.txt" not in f:
             continue
-    mlist = medians[arraytype]
-    for line in open(bafdir + f, "r"):
-        if "SNPid" in line:
-            continue
-        (id, chr, pos, baf) = line.rstrip().split()
-        try:
-            baf = float(baf)
-            pos = int(pos)
-            chr = int(chr)
-        except:
-            continue
-        if (baf<0.4 or baf>.65):
-            continue
-        if chr not in mlist:
-            mlist[chr] = {}
-        if pos not in mlist[chr]:
-            mlist[chr][pos] = []
-        mlist[chr][pos].append(baf)
+        mlist = medians[arraytype]
+        for line in open(bafdir + f, "r"):
+            if "SNPid" in line:
+                continue
+            (id, chr, pos, baf) = line.rstrip().split()
+            try:
+                baf = float(baf)
+                pos = int(pos)
+                chr = int(chr)
+            except:
+                continue
+            if (baf<0.4 or baf>.65):
+                continue
+            if chr not in mlist:
+                mlist[chr] = {}
+            if pos not in mlist[chr]:
+                mlist[chr][pos] = []
+            mlist[chr][pos].append(baf)
     
     mfile = open("medians_" + arraytype + ".tsv", "w")
     mfile.write("Chr\tpos\tmedian BAF\n")
