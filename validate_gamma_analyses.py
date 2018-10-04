@@ -67,7 +67,10 @@ ignore_cnvis = True
 use_restrictive_wt_calls = False
 use_only_common_snps = False
 use_median_from_wt = False
-use_orig_wt = True
+use_orig_wt = False
+use_pos_medians = True
+
+medians = {}
 
 
 bafWtLow = 0.4
@@ -97,7 +100,24 @@ segments_66 = {}
 allratios = {}
 levelratios = {}
 
+def is1MSample(sample):
+    return (sample<23341 and not(sample==19578))
+
+
 #original cutoff: 0.35 to 0.65, or 0.15 out from 0.5.  The above values account for dye bias.
+def readPosMedians():
+    medians = {}
+    for arraytype in ("1M", "25M"):
+        medians[arraytype] = {}
+        for line in open("medians_" + arraytype + ".tsv"):
+            if "Chr" in line:
+                continue
+            (chr, pos, median) = line.rstrip().split('\t')
+            if chr not in medians[arraytype]:
+                medians[arraytype][chr] = {}
+            medians[arraytype][chr][pos] = float(median)
+    return medians
+
 
 def readBafNormal(patient):
     bafrawdata = {}
@@ -401,10 +421,8 @@ def readAllXiaohongSegmentation():
             readXiaohongCopynumFile(Xdir_1M + f, Xiaohong_segments, totsca)
     return Xiaohong_segments, totsca
 
-def storeMatchesInIsegs(isegs, bafrawdata, all_samples, median, bafwt):
-    if not(use_median_from_wt):
-        median = 0.5
-    print("Using a median of", median)
+def storeMatchesInIsegs(isegs, bafrawdata, all_samples, medians, bafwt):
+    #print("Using a median of", median)
     for chr in isegs:
         if onlysomechroms and chr not in somechroms:
             continue
@@ -430,6 +448,19 @@ def storeMatchesInIsegs(isegs, bafrawdata, all_samples, median, bafwt):
                             segpair = (s1, s2)
                             if segpair not in patterns:
                                 patterns[segpair] = [0, 0]
+                            if (use_pos_medians):
+                                if "N" in s1 or "N" in s2:
+                                    median = 0.5
+                                else:
+                                    s1n = int(s1)
+                                    s2n = int(s2)
+                                    if is1MSample(s1n) and is1MSample(s2n):
+                                        median = medians["1M"][chr][pos]
+                                    elif not(is1MSample(s1n)) and not(is1MSample(s2n)):
+                                        median = medians["25M"][chr][pos]
+                                    else:
+                                        median = 0.5
+                                median = medians[chr][pos]
                             if (val1 > median and val2 > median) or (val1 < median and val2 < median):
                                 patterns[segpair][1] += 1
                             patterns[segpair][0] += 1
@@ -696,6 +727,9 @@ def writeSummary(isegs, patient, all_samples, all_analyses):
 
 (Xiaohong_segments, X_totsca) = readAllXiaohongSegmentation()
 
+if (use_pos_medians):
+    medians = readPosMedians()
+
 files = []
 for (__, __, f) in walk(BAF_dir):
     files += f
@@ -705,8 +739,11 @@ for f in files:
     patient = f.split("_")[0]
     if (onlysomepatients and patient not in somepatients):
         continue
+    
 
     bafrawdata, bafwt, median = readBafNormal(patient)
+    if (use_pos_medians):
+        median = medians
     if (len(bafrawdata)==0):
         continue
     allbafs, all_samples = readBafSamples(patient, bafrawdata)
