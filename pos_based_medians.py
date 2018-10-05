@@ -31,51 +31,54 @@ BAF_dirs["25M"] = "BAF_first_filtered_data_25M_only/"
 
 for arraytype in BAF_dirs:
     bafdir = BAF_dirs[arraytype]
-    mlist = {}
     files = []
     for (__, __, f) in walk(bafdir):
         files += f
-    for f in files:
-        print("Reading file", f)
-        if "BAF.txt" not in f:
-            continue
-        for line in open(bafdir + f, "r"):
-            if "SNPid" in line:
-                continue
-            (id, chr, pos, baf) = line.rstrip().split()
-#            if pos=="565490":
-#                print(line)
-            try:
-                baf = float(baf)
-                pos = int(pos)
-                chr = int(chr)
-            except:
-                continue
-            if (baf<0.4 or baf>.65):
-                continue
-            if chr not in mlist:
-                mlist[chr] = {}
-            if pos not in mlist[chr]:
-                mlist[chr][pos] = []
-            mlist[chr][pos].append(baf)
-#            if pos==565490:
-#                print("We added it!")
-#                print(mlist[1][565490])
-    
     mfile = open("medians_" + arraytype + ".tsv", "w")
     mfile.write("Chr\tpos\tmedian BAF\n")
-    
-    mlistkeys = list(mlist.keys())
-    mlistkeys.sort();
-    for chr in mlistkeys:
-        print("processing chromosome", str(chr))
-        poskeys = list(mlist[chr].keys())
-        poskeys.sort()
-        for pos in poskeys:
-#            if pos==565490:
-#                print("And here it is!")
-            mfile.write(str(chr))
-            mfile.write("\t" + str(pos))
-            mfile.write("\t" + str(numpy.median(mlist[chr][pos])))
-            mfile.write("\n")
+
+    for chnum in range(1,25):
+        mlist = {}
+        for f in files:
+            print("Reading file", f)
+            if "BAF.txt" not in f:
+                continue
+            for line in open(bafdir + f, "r"):
+                if "SNPid" in line:
+                    continue
+                (id, chr, pos, baf) = line.rstrip().split()
+    #            if pos=="565490":
+    #                print(line)
+                try:
+                    baf = float(baf)
+                    pos = int(pos)
+                    chr = int(chr)
+                except:
+                    continue
+                if not(chr==chnum):
+                    continue
+                if (baf<0.4 or baf>.65):
+                    continue
+                if chr not in mlist:
+                    mlist[chr] = {}
+                if pos not in mlist[chr]:
+                    mlist[chr][pos] = []
+                mlist[chr][pos].append(baf)
+    #            if pos==565490:
+    #                print("We added it!")
+    #                print(mlist[1][565490])
+        
+        mlistkeys = list(mlist.keys())
+        mlistkeys.sort();
+        for chr in mlistkeys:
+            print("processing chromosome", str(chr))
+            poskeys = list(mlist[chr].keys())
+            poskeys.sort()
+            for pos in poskeys:
+    #            if pos==565490:
+    #                print("And here it is!")
+                mfile.write(str(chr))
+                mfile.write("\t" + str(pos))
+                mfile.write("\t" + str(numpy.median(mlist[chr][pos])))
+                mfile.write("\n")
     mfile.close()
