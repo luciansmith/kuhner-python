@@ -29,20 +29,16 @@ BAF_dirs["1M"] = "BAF_first_filtered_data_1M_only/"
 BAF_dirs["25M"] = "BAF_first_filtered_data_25M_only/"
 
 
-medians = {}
-medians["1M"] = {}
-medians["25M"] = {}
-
-
 for arraytype in BAF_dirs:
     bafdir = BAF_dirs[arraytype]
     files = []
     for (__, __, f) in walk(bafdir):
         files += f
     for f in files:
+        print("Reading file", f)
         if "BAF.txt" not in f:
             continue
-        mlist = medians[arraytype]
+        mlist = {}
         for line in open(bafdir + f, "r"):
             if "SNPid" in line:
                 continue
@@ -67,6 +63,7 @@ for arraytype in BAF_dirs:
     mlistkeys = list(mlist.keys())
     mlistkeys.sort();
     for chr in mlistkeys:
+        print("processing chromosome", str(chr))
         poskeys = list(mlist[chr].keys())
         poskeys.sort()
         for pos in poskeys:
