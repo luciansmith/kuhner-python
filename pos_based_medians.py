@@ -31,6 +31,7 @@ BAF_dirs["25M"] = "BAF_first_filtered_data_25M_only/"
 
 for arraytype in BAF_dirs:
     bafdir = BAF_dirs[arraytype]
+    mlist = {}
     files = []
     for (__, __, f) in walk(bafdir):
         files += f
@@ -38,11 +39,12 @@ for arraytype in BAF_dirs:
         print("Reading file", f)
         if "BAF.txt" not in f:
             continue
-        mlist = {}
         for line in open(bafdir + f, "r"):
             if "SNPid" in line:
                 continue
             (id, chr, pos, baf) = line.rstrip().split()
+#            if pos=="565490":
+#                print(line)
             try:
                 baf = float(baf)
                 pos = int(pos)
@@ -56,6 +58,9 @@ for arraytype in BAF_dirs:
             if pos not in mlist[chr]:
                 mlist[chr][pos] = []
             mlist[chr][pos].append(baf)
+#            if pos==565490:
+#                print("We added it!")
+#                print(mlist[1][565490])
     
     mfile = open("medians_" + arraytype + ".tsv", "w")
     mfile.write("Chr\tpos\tmedian BAF\n")
@@ -67,6 +72,8 @@ for arraytype in BAF_dirs:
         poskeys = list(mlist[chr].keys())
         poskeys.sort()
         for pos in poskeys:
+#            if pos==565490:
+#                print("And here it is!")
             mfile.write(str(chr))
             mfile.write("\t" + str(pos))
             mfile.write("\t" + str(numpy.median(mlist[chr][pos])))
