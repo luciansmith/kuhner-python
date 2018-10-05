@@ -38,6 +38,7 @@ for arraytype in BAF_dirs:
     mfile.write("Chr\tpos\tmedian BAF\n")
 
     for chnum in range(1,25):
+        chstr = "\t" + str(chnum) + "\t"
         mlist = {}
         for f in files:
             print("Reading file", f)
@@ -45,6 +46,8 @@ for arraytype in BAF_dirs:
                 continue
             for line in open(bafdir + f, "r"):
                 if "SNPid" in line:
+                    continue
+                if chstr not in line:
                     continue
                 (id, chr, pos, baf) = line.rstrip().split()
     #            if pos=="565490":
@@ -54,8 +57,6 @@ for arraytype in BAF_dirs:
                     pos = int(pos)
                     chr = int(chr)
                 except:
-                    continue
-                if not(chr==chnum):
                     continue
                 if (baf<0.4 or baf>.65):
                     continue
