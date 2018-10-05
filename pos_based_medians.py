@@ -45,13 +45,14 @@ for arraytype in BAF_dirs:
             if "BAF.txt" not in f:
                 continue
             for line in open(bafdir + f, "r"):
-                if "SNPid" in line:
-                    continue
+#                if "SNPid" in line:
+#                    continue
                 if chstr not in line:
                     continue
                 (id, chr, pos, baf) = line.rstrip().split()
     #            if pos=="565490":
     #                print(line)
+                #assert(str(chr) ==str(chnum))
                 try:
                     baf = float(baf)
                     pos = int(pos)
@@ -60,26 +61,21 @@ for arraytype in BAF_dirs:
                     continue
                 if (baf<0.4 or baf>.65):
                     continue
-                if chr not in mlist:
-                    mlist[chr] = {}
-                if pos not in mlist[chr]:
-                    mlist[chr][pos] = []
-                mlist[chr][pos].append(baf)
+                if pos not in mlist:
+                    mlist[pos] = []
+                mlist[pos].append(baf)
     #            if pos==565490:
     #                print("We added it!")
     #                print(mlist[1][565490])
         
-        mlistkeys = list(mlist.keys())
-        mlistkeys.sort();
-        for chr in mlistkeys:
-            print("processing chromosome", str(chr))
-            poskeys = list(mlist[chr].keys())
-            poskeys.sort()
-            for pos in poskeys:
-    #            if pos==565490:
-    #                print("And here it is!")
-                mfile.write(str(chr))
-                mfile.write("\t" + str(pos))
-                mfile.write("\t" + str(numpy.median(mlist[chr][pos])))
-                mfile.write("\n")
+        print("processing chromosome", str(chr))
+        poskeys = list(mlist.keys())
+        poskeys.sort()
+        for pos in poskeys:
+#            if pos==565490:
+#                print("And here it is!")
+            mfile.write(str(chr))
+            mfile.write("\t" + str(pos))
+            mfile.write("\t" + str(numpy.median(mlist[pos])))
+            mfile.write("\n")
     mfile.close()
