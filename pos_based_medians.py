@@ -58,6 +58,8 @@ for arraytype in BAF_dirs:
                     pos = int(pos)
                     chr = int(chr)
                 except:
+                    if "?" not in line:
+                        print("Unable to translate" + line)
                     continue
                 if (baf<0.4 or baf>.65):
                     continue
