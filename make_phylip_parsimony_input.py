@@ -23,7 +23,7 @@ import lucianSNPLibrary as lsl
 mutation_file = "snv_plus_indels.20180919.csv"
 ploidy_file = "calling_evidence_odds.tsv"
 outdir = "phylip_input/"
-samplefile = "20181019_SampleCodeLucianTrees.txt"
+samplefile = "20181019_SampleCodeLucianTrees.tsv"
 
 def sampleToCode():
     sampleCodeMap = {}
@@ -35,6 +35,7 @@ def sampleToCode():
         sample = lvec[1]
         scode = lvec[8]
         sampleCodeMap[sample] = scode
+    s2c.close()
     return sampleCodeMap
 
 
@@ -102,6 +103,9 @@ for patient in patients:
     outstrings = {}
     for snum in range(0,len(samples)):
         outstrings[snum] = sampleCodeMap[samples[snum]] + " "
+        if (len(outstrings[snum])) > 10:
+            outstrings[snum] = outstrings[snum][0:10]
+    
     outstrings[snum+1] = "blood     "
     stringnum = 10
     for chr in allsamples:
@@ -116,7 +120,8 @@ for patient in patients:
                 stringnum += 1
     for snum in range(0,len(samples)+1):
         outfile.write(outstrings[snum])
-        outfile.write("\n")
+        if not(outstrings[snum][-1] == '\n'):
+            outfile.write("\n")
     outfile.close()
 
     infile= open(outdir + patient + "_infile.txt", "w")

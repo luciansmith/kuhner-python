@@ -13,7 +13,12 @@ import numpy
 from ete3 import Tree
 
 phylipdir  = "phylip_input/"
-
+summaryfile = open(phylipdir + "tree_types.txt", "w")
+summaryfile.write("Patient")
+summaryfile.write("\tT1")
+summaryfile.write("\tT2")
+summaryfile.write("\tType")
+summaryfile.write("\n")
 
 filenames = []
 for (_, _, f) in walk(phylipdir):
@@ -103,4 +108,10 @@ for f in filenames:
                             else:
                                 treetype = "incoherent, T1 out"
                 break
-    print(treetype)
+    summaryfile.write(patient)
+    summaryfile.write("\t" + str(agelist[0]))
+    summaryfile.write("\t" + str(agelist[1]))
+    summaryfile.write("\t" + treetype)
+    summaryfile.write("\n")
+    
+summaryfile.close();
