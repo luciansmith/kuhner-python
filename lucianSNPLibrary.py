@@ -1170,6 +1170,11 @@ def getBestPloidyFor(patient, sample):
             return "diploid"
         if lvec[-1] == "Tetraploid":
             return "tetraploid"
+        #if there was only one solution, we go with that solution.
+        if "Diploid only" in line:
+            return "diploid"
+        if "Tetraploid only" in line:
+            return "tetraploid"
         #If not, we use the odds calculation:
         odds = float(lvec[-2])
         if odds >= 0.5:

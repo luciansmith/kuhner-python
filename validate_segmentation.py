@@ -25,6 +25,11 @@ tag = "_g500_better_ploidy/"
 BAF_input = ["BAF_filtered_data_25M_only_40_65/", "BAF_filtered_data_1M_only_40_65/", "BAF_filtered_data_Pilot_40_65/"]
 validation_output = "segmentation_validation" + tag
 
+
+somepatientsonly = True
+#somepatients = ["141", "163", "194", "512", "954"]
+somepatients = ["891"]
+
 use_nonints = True
 
 if use_nonints:
@@ -163,8 +168,8 @@ for CNfile in CNlist:
             continue
     else:
         (patient, sample, __) = CNfile.split("_")
-#    if patient != "71":
-#        continue
+    if somepatientsonly and patient not in somepatients:
+        continue
     BAFname = patient + "_" + sample + "_BAF.txt"
     BAFname = BAFname.replace('b', '')
     if not(BAFname in BAFlist):
@@ -199,8 +204,8 @@ failfile.write("patient\tchr\tstart\tend\tsample\tBAFs-.5\n")
 summaryfile.write("patient\tsample\tmatches\tantimatches\tfails\n")
 
 for patient in segments:
-#    if patient != "71":
-#        continue
+    if somepatientsonly and patient not in somepatients:
+        continue
     BAFs_by_sample = {}
     for sample in segments[patient]:
         #if sample != "18992":

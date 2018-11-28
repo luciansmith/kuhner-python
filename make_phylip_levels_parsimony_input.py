@@ -20,46 +20,37 @@ import csv
 
 import lucianSNPLibrary as lsl
 
-highVAF = False
-lowVAF = True
-
-tag = ""
-if highVAF:
-    tag = "_highVAF"
-if lowVAF:
-    tag = "_lowVAF"
-
 mutation_file = "snv_plus_indels.twoPlus.20181030.csv"
 ploidy_file = "calling_evidence_odds.tsv"
-outdir = "phylip_input" + tag + "/"
+outdir = "phylip_input_levels/"
 samplefile = "20181031_SampleCodeLucianTrees_agesDiffRounding_withPilot.txt"
 
 if not path.isdir(outdir):
     mkdir(outdir)
 
-
 def sampleToCode():
     sampleCodeMap = {}
-    s2c = open(samplefile, "r")
+    s2c = open(outdir + samplefile, "r")
     levels = {}
     for line in s2c:
         if "Patient" in line:
             continue
         (patient, sample, __, age, level, __, stype, lcode, __, prog, gej, os) = line.rstrip().split('\t')
-        if stype=="T1" or stype=="T2" or stype=="Index":
-            level = int(level)
-            gej = int(gej)
-            dist = gej-level
-            
-            if patient not in levels:
-                levels[patient] = []
-            levels[patient].append(dist)
+        if (lcode == "G"):
+            continue
+        level = int(level)
+        gej = int(gej)
+        dist = gej-level
+        
+        if patient not in levels:
+            levels[patient] = []
+        levels[patient].append(dist)
     s2c.close()
     
     for patient in levels:
         levels[patient].sort()
         
-    s2c = open(samplefile, "r")
+    s2c = open(outdir + samplefile, "r")
     for line in s2c:
         if "Patient" in line:
             continue
@@ -71,14 +62,11 @@ def sampleToCode():
         level = int(level)
         gej = int(gej)
         dist = gej-level
-        lcode = "S" #'stomach'
-        if dist - levels[patient][0] > levels[patient][-1] - dist:
+        lcode = "M" #'middle'
+        if dist  <= levels[patient][1]:
+            lcode = "S" #'stomach'
+        elif dist  >= levels[patient][-2]:
             lcode = "T" #'teeth'
-        if dist - levels[patient][0] == levels[patient][-1] - dist:
-            print("Equal distances:", dist, levels[patient])
-            assert(len(levels[patient]) == 4)
-            if dist==levels[patient][2]:
-                lcode = "T"
         print(patient, ":", lcode, str(dist), str(levels[patient]))
         scode = sample + "_" + lcode + age
         
@@ -102,14 +90,6 @@ with open(mutation_file, 'r') as csvfile:
         if "DNANum" in lvec[0]:
             continue
         (sample, __, __, chr, pos, ref, alt, is_snv, is_2p) = lvec[0:9]
-        refcnt = int(lvec[47])
-        mutcnt = int(lvec[48])
-        VAF = mutcnt/(refcnt+mutcnt)
-        #print(VAF)
-        if highVAF and VAF < 0.25:
-            continue
-        if lowVAF and VAF >= 0.25:
-            continue
         if (is_snv=="f"):
             continue
         if (is_2p=="f"):

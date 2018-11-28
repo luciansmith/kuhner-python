@@ -20,6 +20,9 @@ tag = "_g500_better_ploidy/"
 tree_input = "joint_segmentation_nodupes" + tag
 beast_output = "BEAST" + tag
 
+somepatientsonly = True
+somepatients = ["396"]
+
 if not(path.isdir(beast_output + "/")):
     mkdir(beast_output + "/")
 
@@ -31,6 +34,8 @@ for f in segment_files:
     if f.find("characters") == -1:
         continue
     patient = f.split("_")[0]
+    if somepatientsonly and patient not in somepatients:
+        continue
     segfile = open(tree_input + f, "r")
     samples = segfile.readline().split()[3:]
     A_out = open(beast_output + patient + "_phased_allA.txt", "w")
