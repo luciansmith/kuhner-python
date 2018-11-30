@@ -138,6 +138,46 @@ def writeVAFs(mutations, samplePatientMap):
                             patientVAFs.write(outstr + "\n")
             patientVAFs.close()
 
+def writeAllSampleVAFs(mutations, samplePatientMap):
+    for patient in mutations:
+        patientVAFs = open(outdir + patient + "_allsamples_VAFs.tsv", "w")
+        patientVAFs.write("Patient")
+        patientVAFs.write("\tchr")
+        patientVAFs.write("\tpos")
+        patientVAFs.write("\talt")
+        for sample in samplePatientMap[patient]:
+            patientVAFs.write("\t" + sample)
+        for sample in samplePatientMap[patient]:
+            patientVAFs.write("\t" + sample + "_present?")
+        patientVAFs.write("\n")
+        for chr in mutations[patient]:
+            posvec = list(mutations[patient][chr])
+            posvec.sort()
+            for pos in posvec:
+                for alt in mutations[patient][chr][pos]:
+                    outstr = patient
+                    outstr += ("\t" + chr)
+                    outstr += ("\t" + str(pos))
+                    outstr += ("\t" + alt)
+                    wroteVAF = False
+                    for sample in samplePatientMap[patient]:
+                        for (msamp, mVAF) in mutations[patient][chr][pos][alt]:
+                            if msamp==sample:
+                                outstr += ("\t" + str(mVAF))
+                                wroteVAF = True
+                        if not wroteVAF:
+                                outstr += ("\t0.0")
+                        wroteVAF = False
+                    for sample in samplePatientMap[patient]:
+                        for (msamp, mVAF) in mutations[patient][chr][pos][alt]:
+                            if msamp==sample:
+                                outstr += ("\tTrue")
+                                wroteVAF = True
+                        if not wroteVAF:
+                                outstr += ("\tFalse")
+                        wroteVAF = False
+                    patientVAFs.write(outstr + "\n")
+    patientVAFs.close()
 
 
 mutations = {}
@@ -170,7 +210,8 @@ with open(mutation_file, 'r') as csvfile:
             mutations[patient][chr][pos][alt] = []
         mutations[patient][chr][pos][alt].append((sample, VAF))
 
-writeVAFs(mutations, samplePatientMap)
+#writeVAFs(mutations, samplePatientMap)
+writeAllSampleVAFs(mutations, samplePatientMap)
 
 for patient in mutations:
     groups = {}
