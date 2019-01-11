@@ -36,17 +36,17 @@ for score in overall_scores_nmod:
   if float(score)/nreps > cutoff2:
     npval2 += 1
 
-print "Results for p<",1-cutoff
-print "Overall:",opval
-print "Modifier:",mpval
-print "Non-modifier:",npval
+print("Results for p<",1-cutoff)
+print("Overall:",opval)
+print("Modifier:",mpval)
+print("Non-modifier:",npval)
 
-print "Results for p<",1-cutoff2
-print "Overall:",opval2
-print "Modifier:",mpval2
-print "Non-modifier:",npval2
+print("Results for p<",1-cutoff2)
+print("Overall:",opval2)
+print("Modifier:",mpval2)
+print("Non-modifier:",npval2)
 
-print "Arm results:  arm, p<",1-cutoff,", p<",1-cutoff2
+print("Arm results:  arm, p<",1-cutoff,", p<",1-cutoff2)
 for arm in arm_scores:
   opval = 0
   opval2 = 0
@@ -55,7 +55,7 @@ for arm in arm_scores:
       opval += 1
     if float(score)/nreps > cutoff2:
       opval2 += 1
-  print arm, float(opval)/numsamples, float(opval2)/numsamples
+  print(arm, float(opval)/numsamples, float(opval2)/numsamples)
 
 #import matplotlib.pyplot as plt
 #

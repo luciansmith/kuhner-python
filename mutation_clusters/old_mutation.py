@@ -141,7 +141,7 @@ for mut1,mut2 in mutpairs:
   for read in reads1:
     count += 1
     if read.mapping_quality < 25:
-      # print "poor mapping quality"
+      # print("poor mapping quality")
       continue     # throw out poor reads
     aligned_pairs = read.get_aligned_pairs(matches_only=True)
     found1 = False
@@ -156,16 +156,16 @@ for mut1,mut2 in mutpairs:
         base2 = read.query_sequence[mypair[0]]
         pair2 = mypair
     if not (found1 and found2):  
-      # print "does not contain mutations"
+      # print("does not contain mutations")
       continue     # one of the positions is missing
 
     if read.query_name in scored_names:  
-     #  print "rejected due to overlap"
+     #  print("rejected due to overlap")
 # check that scored_names are in fact overlapping...
       oread = scored_reads[read.query_name]
       if (read.is_read1 and oread.is_read2) or (read.is_read2 and oread.is_read1):
         if nooverlap(read,oread):
-          print "found no overlap!"
+          print("found no overlap!")
       continue   # we already scored this read-pair
     scored_names.append(read.query_name)
     scored_reads[read.query_name] = read
@@ -178,28 +178,28 @@ for mut1,mut2 in mutpairs:
     if base1 == alt1 and base2 == ref2:  myresult[2] += 1
     if base1 == alt1 and base2 == alt2:  myresult[3] += 1
     myresult[4] += 1
-    # print "scored"
+    # print("scored")
      
   if myresult[4] == 0:
     noreadspairs += 1
-    print chr1,pos1,pos2,myresult
+    print(chr1,pos1,pos2,myresult)
     continue
 
   if myresult[4] - 5 >= sum(myresult[0:4]):
-    # print "Found 5+ non-ref/alt bases:",myresult
-    # print "At mutation pair",mut1,mut2
+    # print("Found 5+ non-ref/alt bases:",myresult)
+    # print("At mutation pair",mut1,mut2)
     anomalypairs += 1
-    print chr1,pos1,pos2,myresult
+    print(chr1,pos1,pos2,myresult
     continue
 
-  print chr1,pos1,pos2,myresult
+  print(chr1,pos1,pos2,myresult
   pairresults.append(myresult)
 
-# print "Number of reads",count
+# print("Number of reads",count
 
 # Note that we do not test for how many non-ref/non-alt bases we saw!
 
-#print pairresults
+#print(pairresults
 
 # summarize the results
 
@@ -265,13 +265,13 @@ for result in pairresults:
     nested += 1
     continue
 
-  print "found unclassifiable mutpair:",result
+  print("found unclassifiable mutpair:",result
 
-print "Total pairs",len(mutpairs)
-print "cis",cis,"trans",trans,"nested",nested
-print "toosmall",toosmall,"wt",wt,"missed",missed,"fourgamete",fourgamete
-print "noreads",noreadspairs,"anomaly",anomalypairs
+print("Total pairs",len(mutpairs)
+print("cis",cis,"trans",trans,"nested",nested
+print("toosmall",toosmall,"wt",wt,"missed",missed,"fourgamete",fourgamete
+print("noreads",noreadspairs,"anomaly",anomalypairs
 total = cis + trans + nested + toosmall + wt + missed + fourgamete
 total += noreadspairs + anomalypairs
 if total != len(mutpairs):
-  print "WARNING:  not all pairs accounted for!"
+  print("WARNING:  not all pairs accounted for!"

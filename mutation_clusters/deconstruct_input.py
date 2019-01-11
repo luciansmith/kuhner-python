@@ -60,9 +60,9 @@ for file in infiles:
   pid,sid = file.split("-")[0:2]
   id = pid + "_" + sid
   if id.endswith("N"):
-    print "\tSkipping a presumed normal sample:",id
+    print("\tSkipping a presumed normal sample:",id)
     continue
-  print "Processing",id
+  print("Processing",id)
 
   # initialize storage for trinucs
   scores = {}

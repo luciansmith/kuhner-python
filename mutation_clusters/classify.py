@@ -130,7 +130,7 @@ def summarize(pairlist):
       results["nested"] += 1
       continue
 
-    print "found anomaly:",tally
+    print("found anomaly:",tally)
     assert False
 
   return results
@@ -141,7 +141,7 @@ def summarize(pairlist):
 
 import sys
 if len(sys.argv) != 2:
-  print "USAGE:  classify.py *-results.txt"
+  print("USAGE:  classify.py *-results.txt")
   exit()
 
 resultfile = sys.argv[1]
@@ -238,7 +238,7 @@ total = 0
 for categ in results.keys():
   total += results[categ]
 if total != len(data):
-  print "WARNING:  not all pairs accounted for in total pairs!"
+  print("WARNING:  not all pairs accounted for in total pairs!")
 
 
 # report on peaks

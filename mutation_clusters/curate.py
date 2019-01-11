@@ -27,13 +27,13 @@ for target in targets:
   found = False
   for bam in bamnames:
     if fullname in bam:
-#      print "Found a match for",fullname
-#      print bam
+#      print("Found a match for",fullname)
+#      print(bam)
       bam = bam + "\n"
       buckettargets.write(bam)
       found = True
       break
   if not found:
-    print "************ No match for",fullname
+    print("************ No match for",fullname)
 
 buckettargets.close()

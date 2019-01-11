@@ -115,7 +115,7 @@ import sys
 import os
 
 if len(sys.argv) != 2:
-  print "USAGE:  classify.py root_resultsdir"
+  print("USAGE:  classify.py root_resultsdir")
   exit()
 
 resultshere = sys.argv[1]
@@ -135,7 +135,7 @@ for rt,ds,fs in os.walk(resultshere):
             resultfiles.append(wdir+"/"+file)
             pidsused.append(pid)
 
-print "found",len(resultfiles),"patients"
+print("found",len(resultfiles),"patients")
 
 allresults = {}
 for resultfile in resultfiles:
@@ -183,7 +183,7 @@ for resultfile in resultfiles:
       allresults[key] = results[key]
 
 for key in allresults:
-  print key, len(allresults[key])
+  print(key, len(allresults[key]))
 
 import matplotlib.pyplot as plt
 

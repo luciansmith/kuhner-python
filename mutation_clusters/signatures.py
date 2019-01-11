@@ -55,7 +55,7 @@ figdir = "mutsigs/"
 for file in infiles:
   pid,sid = file.split("-")[0:2]
   id = pid + "_" + sid
-  print "Processing",id
+  print("Processing",id)
 
   # initialize storage for trinucs
   scores = {}

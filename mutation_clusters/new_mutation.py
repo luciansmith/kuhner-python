@@ -138,7 +138,7 @@ def summarize(pairlist):
       results["nested"] += 1
       continue
 
-    print "found anomaly:",tally
+    print("found anomaly:",tally)
     assert False
 
   return results,anomindexes
@@ -217,7 +217,7 @@ pairresults_same = []
 for mut1,mut2 in mutpairs:
   # mut1 = ['21', 16264255, 'C', 'T', 0.15492957746478872]
   # mut2 = ['21', 16264256, 'G', 'A', 0.09859154929577464]
-  # print "trying a mut-pair"
+  # print("trying a mut-pair")
   chr1,pos1,ref1,alt1,vaf1 = mut1
   chr2,pos2,ref2,alt2,vaf2 = mut2
 
@@ -235,16 +235,16 @@ for mut1,mut2 in mutpairs:
 
   # pull reads for mutation position 1 into a list
   reads1 = list(samfile.fetch(chr1,pos1,pos1+1))
-  # print "Number of reads",len(reads1)
+  # print("Number of reads",len(reads1))
   reads2 = list(samfile.fetch(chr2,pos2,pos2+1))
 
   already_scored = []
   for read1 in reads1:
     if read1.mapping_quality < min_quality:  
-      #print "poor mapping quality"
+      #print("poor mapping quality")
       continue    # a bad read
     if read1.query_name in already_scored:  # this read-pair has already been scored
-      #print "rejected due to overlap"
+      #print("rejected due to overlap")
       continue
     # find out which, if any, mutation positions are present
     aligned_pairs = read1.get_aligned_pairs(matches_only=True)
@@ -260,7 +260,7 @@ for mut1,mut2 in mutpairs:
 
     # mutation position 1 is missing:  skip this read
     if not found1:  
-      #print "does not contain mutations"
+      #print("does not contain mutations")
       continue
 
     # both mutation positions 1 and 2 are present:  same-end score
@@ -268,7 +268,7 @@ for mut1,mut2 in mutpairs:
       score_read(base1,base2,mut1,mut2,myresult_sameonly)
       score_read(base1,base2,mut1,mut2,myresult)
       already_scored.append(read1.query_name)
-     # print "scored"
+     # print("scored")
       continue
  
     # only mutation position 1 is present:  find the mate and try an
@@ -305,52 +305,52 @@ for mut1,mut2 in mutpairs:
    
   #myresult_sameonly.append(mut1)  #DEBUG
   #myresult_sameonly.append(mut2)  #DEBUG
-  # print chr1,pos1,pos2,myresult_sameonly
+  # print(chr1,pos1,pos2,myresult_sameonly)
   pairresults.append(myresult)
   pairresults_same.append(myresult_sameonly)
 
-print "Total pairs",len(mutpairs)
+print("Total pairs",len(mutpairs))
 print
 
 #DEBUG added aindex
 results,aindex = summarize(pairresults)
-print "All reads:"
-print "cis",results["cis"],
-print "trans",results["trans"]
-print "nested",results["nested"],
-print "toosmall",results["toosmall"],
-print "wt",results["wt"],
-print "missed",results["missed"],
-print "fourgamete",results["fourgamete"]
-print "noreads",results["noreads"],
-print "anomaly",results["anomaly"]
-print
+print("All reads:")
+print("cis",results["cis"],)
+print("trans",results["trans"])
+print("nested",results["nested"],)
+print("toosmall",results["toosmall"],)
+print("wt",results["wt"],)
+print("missed",results["missed"],)
+print("fourgamete",results["fourgamete"])
+print("noreads",results["noreads"],)
+print("anomaly",results["anomaly"])
+print()
 
 total = 0
 for categ in results.keys():
   total += results[categ]
 if total != len(mutpairs):
-  print "WARNING:  not all pairs accounted for in total pairs!"
+  print("WARNING:  not all pairs accounted for in total pairs!")
 
 #DEBUG added aindex
 results,aindex = summarize(pairresults_same)
-print "Same-end reads:"
-print "cis",results["cis"],
-print "trans",results["trans"],
-print "nested",results["nested"]
-print "toosmall",results["toosmall"],
-print "wt",results["wt"],
-print "missed",results["missed"],
-print "fourgamete",results["fourgamete"]
-print "noreads",results["noreads"],
-print "anomaly",results["anomaly"]
+print("Same-end reads:")
+print("cis",results["cis"],)
+print("trans",results["trans"],)
+print("nested",results["nested"])
+print("toosmall",results["toosmall"],)
+print("wt",results["wt"],)
+print("missed",results["missed"],)
+print("fourgamete",results["fourgamete"])
+print("noreads",results["noreads"],)
+print("anomaly",results["anomaly"])
 
 total = 0
 for categ in results.keys():
   total += results[categ]
 if total != len(mutpairs):
-  print "WARNING:  not all pairs accounted for in same-end pairs!"
+  print("WARNING:  not all pairs accounted for in same-end pairs!")
 
 #DEBUG
 #for ind in aindex:
-#  print pairresults_same[ind][5],pairresults_same[ind][6]
+#  print(pairresults_same[ind][5],pairresults_same[ind][6])

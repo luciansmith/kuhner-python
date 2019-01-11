@@ -92,7 +92,7 @@ for line in open(strelkafile,"r"):
     mut2 = None
     prevpos = pos 
     
-print len(mutpairs)
+print(len(mutpairs))
 
 # test mutation pairs in bam file
 pairresults = []
@@ -115,29 +115,29 @@ for mut1,mut2 in mutpairs:
   q_seq = []
   qa_seq = []
   namedict = {}
-  print "Reads for mutation 1"
+  print("Reads for mutation 1")
   for read in samfile.fetch(chr1,pos1,pos1+1):
-    print read.query_name, read.is_paired, read.is_read1, read.is_read2
+    print(read.query_name, read.is_paired, read.is_read1, read.is_read2)
     otherread = samfile.mate(read)
-    print otherread.query_name, otherread.is_paired, otherread.is_read1, otherread.is_read2
+    print(otherread.query_name, otherread.is_paired, otherread.is_read1, otherread.is_read2)
 
     exit()
     
-#    print read.query_name, read.is_paired, read.is_read1, read.is_read2
+#    print(read.query_name, read.is_paired, read.is_read1, read.is_read2)
 #    if read.query_name not in namedict:
 #      namedict[read.query_name] = 0
 #    namedict[read.query_name] += 1
 #
-#  print "Reads for mutation 2"
+#  print("Reads for mutation 2")
 #  for read in samfile.fetch(chr2,pos2,pos2+1):
-#    print read.query_name, read.is_paired, read.is_read1, read.is_read2
+#    print(read.query_name, read.is_paired, read.is_read1, read.is_read2)
 #    if read.query_name not in namedict:
 #      namedict[read.query_name] = 0
 #    namedict[read.query_name] += 1
 #
 #
 #  for key in namedict.keys():
-#    print key, namedict[key]
+#    print(key, namedict[key])
 #  exit()
 
 # fetch reads for mutation1 and store

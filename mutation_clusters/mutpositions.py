@@ -70,7 +70,7 @@ for arm in arm_boundaries:
 
 
 # read mutations from files
-print "Assessing mutations in",len(chosen_files),"input files"
+print("Assessing mutations in",len(chosen_files),"input files")
 for mutfile in chosen_files:   
    muts = {}
    prefix = mutfile.split("/")[-1]
@@ -113,7 +113,7 @@ for mutfile in chosen_files:
      elif pos >= rstart and pos <= rend:
        armname = chr+"q"
      if armname == None:
-       # print "stray mutation:",chr,lstart,lend,rstart,rend, "don't cover",pos
+       # print("stray mutation:",chr,lstart,lend,rstart,rend, "don't cover",pos)
        continue 
      else:
        count += 1
@@ -122,8 +122,8 @@ for mutfile in chosen_files:
 
      snpeffcall = line[snpeffindex]
      if snpeffcall not in snpeffcalls:
-       print "\nfound an abberant snpeffcall for chomosome",chr,
-       print "position",pos,":  ",snpeffcall
+       print("\nfound an abberant snpeffcall for chomosome",chr,)
+       print("position",pos,":  ",snpeffcall)
        exit()
      if snpeffcall == snpeffcalls[3]:     # was MODIFIER
        mutstore_mod[armname].append(pos)
@@ -137,7 +137,7 @@ for arm in mutstore_overall:
   total_overall += len(mutstore_overall[arm])
   total_mod += len(mutstore_mod[arm])
   total_nmod += len(mutstore_nmod[arm])
-print "Found",total_overall,"mutations:",total_mod,"MOD and",total_nmod,"not MOD"
+print("Found",total_overall,"mutations:",total_mod,"MOD and",total_nmod,"not MOD")
   
 import pickle
 pfile = "mutpositions.pkl"

@@ -111,8 +111,8 @@ def searchin(bamfile,chr,pos,searchback):
 ############################################################################
 
 if len(sys.argv) != 2:
-  print "USAGE:  findboundariesfrombam.py bamfileurl"
-  print "This version takes its BAM/BAI from the S3 cloud, and writes to ."
+  print("USAGE:  findboundariesfrombam.py bamfileurl")
+  print("This version takes its BAM/BAI from the S3 cloud, and writes to .")
   exit()
 
 bamurl = sys.argv[1]
@@ -131,13 +131,13 @@ for line in open("chrom_boundaries","r"):
 newpos = {}
 for chr in startpos:
   allpos = startpos[chr]
-  print "working on chromosome",chr
+  print("working on chromosome",chr)
   minstartp = searchin(bamfile,chr,allpos[0],True)
   maxendp = searchin(bamfile,chr,allpos[1],False)
   minstartq = searchin(bamfile,chr,allpos[2],True)
   maxendq = searchin(bamfile,chr,allpos[3],False)
   newpos[int(chr)] = [minstartp,maxendp,minstartq,maxendq]
-  print "finished chromesome",chr
+  print("finished chromesome",chr)
 
 delim = "_"
 outfilename = pid+delim+sid+delim+dna+delim+level+delim

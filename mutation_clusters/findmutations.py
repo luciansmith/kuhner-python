@@ -91,15 +91,15 @@ for strelkafile in strelkafiles:
    pid = prefix[0]
    sid = prefix[1]
    prefix = pid + "-" + sid + "-"
-   print "Analyzing",pid,sid
+   print("Analyzing",pid,sid)
  
    # note that if the cnfile analysis couldn't be done, it does NOT
    # fail to generate a file, it generates a header-only file.  Failure
    # to find a file here is therefore a fatal error.
    cnfile = findcnfilename(pid,sid,cnfiles)
    if cnfile == None:
-     print "FAILED to find a copy number file for patient",pid,"sample",sid
-     print "in directory",cnlocation
+     print("FAILED to find a copy number file for patient",pid,"sample",sid)
+     print("in directory",cnlocation)
      exit()
 
    #################################
@@ -133,7 +133,7 @@ for strelkafile in strelkafiles:
        continue
 
    if not found:
-     print "No peaks-and-valleys info for",pid,sid,"--skipping"
+     print("No peaks-and-valleys info for",pid,sid,"--skipping")
      continue
    
    # catch the last peak
@@ -152,7 +152,7 @@ for strelkafile in strelkafiles:
      assert mypid == pid and mysid == sid
      goodpositions.append([mychr,int(mypos)])
    if len(goodpositions) == 0:
-     print "Skipping",pid,sid,"as no copy-number information was available"
+     print("Skipping",pid,sid,"as no copy-number information was available")
      continue
    
    #################################

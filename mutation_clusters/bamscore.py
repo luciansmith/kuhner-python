@@ -75,9 +75,9 @@ def score_read(base1,base2,mut1,mut2,scorearray):
 
 import sys
 if len(sys.argv) != 2:
-  print "USAGE:  bamscore.py bamfileurl"
-  print "This version takes its mutation files from /mutationfiles,"
-  print "its BAM/BAI from the S3 cloud, and writes to ." 
+  print("USAGE:  bamscore.py bamfileurl")
+  print("This version takes its mutation files from /mutationfiles,")
+  print("its BAM/BAI from the S3 cloud, and writes to ." )
   exit()
 
 bamurl = sys.argv[1]
@@ -108,9 +108,9 @@ for line in open(mutationfile,"r"):
   mutpairs.append(mutpair)
 
 if len(mutpairs) == 0:
-  print "No mutation pairs found; bailing out now"
+  print("No mutation pairs found; bailing out now")
   exit()
-print "Assessing",len(mutpairs),"mutation pairs"
+print("Assessing",len(mutpairs),"mutation pairs")
 
 ##########################################################################3
 

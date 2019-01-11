@@ -29,7 +29,7 @@ def makedistancepairs(muts):
 def simulatemutations(actualstd,target,nmut):
   nreps = 100
    
-  #print "sprinkling",nmut,"mutations on",mbtarget,"megabases",nreps,"times"
+  #print("sprinkling",nmut,"mutations on",mbtarget,"megabases",nreps,"times")
 
   stds = []
   for rep in xrange(nreps):
@@ -89,7 +89,7 @@ for mutfile in mutfiles:
    pid = prefix[0]
    sid = prefix[1]
    prefix = pid + "-" + sid + "-"
-   print "Analyzing",pid,sid
+   print("Analyzing",pid,sid)
  
    #################################
    # parse the mutation file to find eligible mutation pairs
@@ -126,7 +126,7 @@ for mutfile in mutfiles:
      if pos >= rstart and pos <= rend:
        armname = chr+"q"
      if armname == None:
-       # print "stray mutation:",chr,lstart,lend,rstart,rend, "don't cover",pos
+       # print("stray mutation:",chr,lstart,lend,rstart,rend, "don't cover",pos)
        continue 
      else:
        count += 1
@@ -163,11 +163,11 @@ for mutfile in mutfiles:
        sigs[arm] = []
      sigs[arm].append(sig)
 
-print "Arm\tTotal\tSignificant"
+print("Arm\tTotal\tSignificant")
 for arm in sigs.keys():
   # count how many sigs are >= 0.95
   count = 0
   for sig in sigs[arm]:
     if sig >= 0.95:
       count += 1
-  print arm, len(sigs[arm]),count
+  print(arm, len(sigs[arm]),count)

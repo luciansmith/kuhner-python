@@ -109,7 +109,7 @@ def simscore(nreps,arms,muts,mutstore,limit,arm_scores,overall_scores):
      accumulate_overall_sim(sbins,sbins_overall)
 
    if sum(rbins_overall) == 0:
-     print "No mutations in this sample!?"
+     print("No mutations in this sample!?")
    else:
      overall_scores.append(indexscore(rbins_overall,sbins_overall))
 
@@ -153,7 +153,7 @@ for root, dirs, files in os.walk(mutlocation):
   for file in files:
     if file.endswith(".annotated.txt"):
       mutfiles.append(file)
-print "Assessing mutations in",len(mutfiles),"input files"
+print("Assessing mutations in",len(mutfiles),"input files")
 
 # initialize variables
 overall_scores = []
@@ -184,10 +184,10 @@ for mutfile in mutfiles:
    samplename = pid+"_"+sid
 
    if sid.endswith("N"):
-     print "Skipping",pid,sid
+     print("Skipping",pid,sid)
      continue
   
-   print "Analyzing",pid,sid
+   print("Analyzing",pid,sid)
  
    #################################
    # parse the mutation file to find eligible mutation pairs
@@ -224,7 +224,7 @@ for mutfile in mutfiles:
      elif pos >= rstart and pos <= rend:
        armname = chr+"q"
      if armname == None:
-       # print "stray mutation:",chr,lstart,lend,rstart,rend, "don't cover",pos
+       # print("stray mutation:",chr,lstart,lend,rstart,rend, "don't cover",pos)
        continue 
      else:
        count += 1
@@ -236,8 +236,8 @@ for mutfile in mutfiles:
      snpeffcall = line[snpeffindex]
      snpeffcalls = ["HIGH","MODERATE","LOW","MODIFIER"]
      if snpeffcall not in snpeffcalls:
-       print "\nfound an abberant snpeffcall for chomosome",chr,
-       print "position",pos,":  ",snpeffcall
+       print("\nfound an abberant snpeffcall for chomosome",chr,)
+       print("position",pos,":  ",snpeffcall)
        exit()
      if snpeffcall == snpeffcalls[3]:
        if armname not in muts_mod:
@@ -249,11 +249,11 @@ for mutfile in mutfiles:
        muts_nmod[armname].append(pos)
 
    simscore(nreps,arms,muts,mutstore_overall,limit,arm_scores,overall_scores)
-   print "overall",
+   print("overall",)
    simscore(nreps,arms,muts_mod,mutstore_mod,limit,arm_scores_mod,overall_scores_mod)
-   print "modifier",
+   print("modifier",)
    simscore(nreps,arms,muts_nmod,mutstore_nmod,limit,arm_scores_nmod,overall_scores_nmod)
-   print "non-modifier"
+   print("non-modifier")
 
 pfile = open("indexscores.pkl","w")
 pickle.dump(overall_scores,pfile)

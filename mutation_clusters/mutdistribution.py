@@ -89,7 +89,7 @@ boundfile = "/home/mkkuhner/seagate/data/wgs_dna/bam/chrom_boundaries"
 #  for file in files:
 #    if file.endswith("_boundaries.tsv"):
 #      boundfiles.append(file)
-#print "Reading boundaries from",len(boundfiles),"files"
+#print("Reading boundaries from",len(boundfiles),"files")
 
 #sample_boundaries = {}
 #for file in boundfiles:
@@ -117,7 +117,7 @@ for root, dirs, files in os.walk(mutlocation):
   for file in files:
     if file.endswith(".annotated.txt"):
       mutfiles.append(file)
-print "Assessing mutations in",len(mutfiles),"input files"
+print("Assessing mutations in",len(mutfiles),"input files")
 
 sigs = {}
 sim_distances = [0.0 for x in xrange(categories+1)]
@@ -141,10 +141,10 @@ for mutfile in mutfiles:
    samplename = pid+"_"+sid
 
    if sid.endswith("N"):
-     print "Skipping",pid,sid
+     print("Skipping",pid,sid)
      continue
   
-   print "Analyzing",pid,sid
+   print("Analyzing",pid,sid)
  
    #################################
    # parse the mutation file to find eligible mutation pairs
@@ -181,7 +181,7 @@ for mutfile in mutfiles:
      elif pos >= rstart and pos <= rend:
        armname = chr+"q"
      if armname == None:
-       # print "stray mutation:",chr,lstart,lend,rstart,rend, "don't cover",pos
+       # print("stray mutation:",chr,lstart,lend,rstart,rend, "don't cover",pos)
        continue 
      else:
        count += 1
@@ -193,8 +193,8 @@ for mutfile in mutfiles:
      snpeffcall = line[snpeffindex]
      snpeffcalls = ["HIGH","MODERATE","LOW","MODIFIER"]
      if snpeffcall not in snpeffcalls:
-       print "\nfound an abberant snpeffcall for chomosome",chr,
-       print "position",pos,":  ",snpeffcall
+       print("\nfound an abberant snpeffcall for chomosome",chr,)
+       print("position",pos,":  ",snpeffcall)
        exit()
      if snpeffcall == snpeffcalls[3]:
        if armname not in modifiercalls:
@@ -227,10 +227,10 @@ for mutfile in mutfiles:
    nmod_sim_distances = [sum(x) for x in zip(s_dist,nmod_sim_distances)]
 
 
-#print "Real distances"
-#print real_distances
-#print "Simulated distances"
-#print [x/float(nreps) for x in sim_distances]
+#print("Real distances")
+#print(real_distances)
+#print("Simulated distances")
+#print([x/float(nreps) for x in sim_distances])
 
 outfile = open("simresults","w")
 outline = "Distance\tRealdata\tSimdata\n"
@@ -264,11 +264,11 @@ outline = "Pid\tSid\tReal\tSimulated\n"
 outfile.write(outline)
 for realval,simval in zip(real_50count,sim_50count):
   if realval[0] != simval[0]:
-    print "disagreement on pid",realval[0],simval[0]
+    print("disagreement on pid",realval[0],simval[0])
     outfile.close()
     exit()
   if realval[1] != simval[1]:
-    print "disagreement on sid",realval[1],simval[1]
+    print("disagreement on sid",realval[1],simval[1])
     outfile.close()
     exit()
   outline = realval[0] + "\t" + realval[1] + "\t" + str(realval[2])
@@ -280,22 +280,22 @@ outfile.close()
 
 ####
 
-Multiple phase solution:
-
-phase 1:  real data only, store (pickle!):
-   overall distances per arm per sample
-   mod distances per arm per sample
-   nmod distances per arm per sample
-
-phase 2:
-   for each of overall, mod, and nmod:
-     unpickle the relevant phase 1
-     for each sample:
-       conduct nreps whole simulations
-         score overall P50 and per-chromosome P50 
-       compare real P50 and real per-chromosome P50 to simulations
-       accumulate real and simulated counts into grand tallies
-       report on this sample
-     report on grand tallies
-     del the phase 1 variable!
-     
+#Multiple phase solution:
+#
+#phase 1:  real data only, store (pickle!):
+#   overall distances per arm per sample
+#   mod distances per arm per sample
+#   nmod distances per arm per sample
+#
+#phase 2:
+#   for each of overall, mod, and nmod:
+#     unpickle the relevant phase 1
+#     for each sample:
+#       conduct nreps whole simulations
+#         score overall P50 and per-chromosome P50 
+#       compare real P50 and real per-chromosome P50 to simulations
+#       accumulate real and simulated counts into grand tallies
+#       report on this sample
+#     report on grand tallies
+#     del the phase 1 variable!
+#     

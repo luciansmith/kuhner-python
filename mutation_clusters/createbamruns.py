@@ -16,7 +16,7 @@ import os
 import sys
 
 if len(sys.argv) != 2:
-  print "USAGE:  python createbamruns.py pathfile"
+  print("USAGE:  python createbamruns.py pathfile")
   exit()
 
 pathfile = sys.argv[1]
@@ -32,10 +32,10 @@ os.mkdir(rundir)
 for path in paths:
   items = path.split("/")
   items = items[-1].split("-")
-  print "path = ",path
+  print("path = ",path)
   pid = items[0]
   sid = items[1]
-  print "pid", pid, "sid", sid
+  print("pid", pid, "sid", sid)
   myname = pid + "-" + sid
   dirname = rundir + "run" + myname
   os.mkdir(dirname)
@@ -52,5 +52,5 @@ for path in paths:
   outfile.close()
   os.system("chmod +x " + outname)
   os.system("cp bamscore.py " + dirname)
-  print "processed",pid,sid
-print "All setup completed"
+  print("processed",pid,sid)
+print("All setup completed")
