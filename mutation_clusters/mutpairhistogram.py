@@ -168,7 +168,7 @@ for resultfile in resultfiles:
     data.append(datum)
   
   # classify by peaks
-  peakdata = [[[] for x in xrange(numpeaks)] for x in xrange(numpeaks)]
+  peakdata = [[[] for x in range(numpeaks)] for x in xrange(numpeaks)]
   for datum in data:
     mypeak = [datum[5],datum[6]]
     mypeak.sort()
@@ -191,8 +191,8 @@ cis = allresults["cis"][:]
 trans_nest = allresults["trans"][:]
 trans_nest.extend(allresults["nested"])
 
-cis_by_size = [0.0 for x in xrange(500)]
-trans_by_size = [0.0 for x in xrange(500)]
+cis_by_size = [0.0 for x in range(500)]
+trans_by_size = [0.0 for x in range(500)]
 
 for item in cis:
   cis_by_size[item] += 1.0
@@ -203,7 +203,7 @@ for item in trans_nest:
 distances = []
 ratios = []
 
-for x in xrange(500):
+for x in range(500):
   if cis_by_size[x] + trans_by_size[x] > 100:
     ratio = cis_by_size[x]/(cis_by_size[x] + trans_by_size[x])
     distances.append(x)

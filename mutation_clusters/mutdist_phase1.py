@@ -17,7 +17,7 @@ nreps = 1000
 # functions
 
 def makerandommutations(nmut,posmax):
-  mutsat = random.sample(xrange(posmax),nmut)
+  mutsat = random.sample(range(posmax),nmut)
   mutsat.sort()
   return mutsat
 
@@ -40,7 +40,7 @@ def categorize_distances(accumulator,distances,categories):
 
 def simulate_distances(target,nmut,arm):
   distances = []
-  for rep in xrange(nreps):
+  for rep in range(nreps):
     # note:  these mutations are pre-sorted 
     mutsat = makerandommutations(nmut,target)
     distpairs = makedistancepairs(mutsat)
@@ -50,8 +50,8 @@ def simulate_distances(target,nmut,arm):
 
 def calc_distances(muts,arm_bounds):
   distances = {}
-  r_distances = [0.0 for x in xrange(categories+1)]
-  s_distances = [0.0 for x in xrange(categories+1)]
+  r_distances = [0.0 for x in range(categories+1)]
+  s_distances = [0.0 for x in range(categories+1)]
   for arm in muts.keys():
     sortmuts = muts[arm][:]
     sortmuts.sort()
@@ -123,12 +123,12 @@ for root, dirs, files in os.walk(mutlocation):
 print("Assessing mutations in",len(mutfiles),"input files")
 
 sigs = {}
-sim_distances = [0.0 for x in xrange(categories+1)]
-real_distances = [0.0 for x in xrange(categories+1)]
-mod_sim_distances = [0.0 for x in xrange(categories+1)]
-mod_real_distances = [0.0 for x in xrange(categories+1)]
-nmod_sim_distances = [0.0 for x in xrange(categories+1)]
-nmod_real_distances = [0.0 for x in xrange(categories+1)]
+sim_distances = [0.0 for x in range(categories+1)]
+real_distances = [0.0 for x in range(categories+1)]
+mod_sim_distances = [0.0 for x in range(categories+1)]
+mod_real_distances = [0.0 for x in range(categories+1)]
+nmod_sim_distances = [0.0 for x in range(categories+1)]
+nmod_real_distances = [0.0 for x in range(categories+1)]
 real_50count = []
 sim_50count = []
 

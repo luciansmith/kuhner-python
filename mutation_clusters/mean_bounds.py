@@ -19,15 +19,15 @@ for infile in infiles:
     pvals = line[3:7]
     pvals = [int(x) for x in pvals]
     if chrom not in chromdict:
-      chromdict[chrom] = [0.0 for x in xrange(4)]
-    for i in xrange(4):
+      chromdict[chrom] = [0.0 for x in range(4)]
+    for i in range(4):
       if pvals[i] != -1:
         chromdict[chrom][i] += pvals[i]
       else:
         chromdict[chrom][i] = -1
 
 for chrom in chromdict.keys():
-  for i in xrange(len(chromdict[chrom])):
+  for i in range(len(chromdict[chrom])):
     if chromdict[chrom][i] != -1:
       chromdict[chrom][i] /= numfiles
 
@@ -39,10 +39,10 @@ sortkeys = [str(x) for x in sortkeys]
 outfile = open("new_chrom_boundaries","w")
 outline = "Patient\tSample\tChromosome\tpstart\tpend\tqstart\tqend\n"
 outfile.write(outline)
-for i in xrange(len(sortkeys)):
+for i in range(len(sortkeys)):
   chrom = sortkeys[i]
   outline = chrom 
-  for j in xrange(4):
+  for j in range(4):
     outline += "\t" + str(int(chromdict[chrom][j])) 
   outline += "\n"
   outfile.write(outline) 

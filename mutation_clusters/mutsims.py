@@ -42,7 +42,7 @@ def simulate_data(mutstore,target,limit):
 # randomly choose "target" mutations from the real data for this arm
   assert len(mutstore) >= target    # not enough mutations, uh-oh!
   allbins = []
-  for rep in xrange(nreps):
+  for rep in range(nreps):
     mutset = set()
     while len(mutset) < target:            # we don't want duplicates
       mutset.add(random.choice(mutstore))
@@ -57,7 +57,7 @@ def indexscore(rbins,sbins):
   s_p50 = [float(x[0])/sum(x) for x in sbins]
   s_p50.sort()
   tie_indexes = []
-  for i in xrange(nreps):
+  for i in range(nreps):
     if r_p50 > s_p50[i]:
       continue
     if r_p50 == s_p50[i]:
@@ -79,17 +79,17 @@ def indexscore(rbins,sbins):
     return tie_indexes[target]
 
 def accumulate_overall(rbins,rbins_overall):
-  for i in xrange(len(rbins)):
+  for i in range(len(rbins)):
     rbins_overall[i] += rbins[i]
 
 def accumulate_overall_sim(sbins,sbins_overall):
-  for rep in xrange(nreps):
+  for rep in range(nreps):
     accumulate_overall(sbins[rep],sbins_overall[rep])
 
 def simscore(nreps,arms,muts,mutstore,limit,arm_scores,overall_scores):
    # determine distances
    rbins_overall = [0,0]
-   sbins_overall = [[0,0] for x in xrange(nreps)]
+   sbins_overall = [[0,0] for x in range(nreps)]
    for arm in arms:
      if arm not in muts:    # no mutations on this arm in this sample
        continue

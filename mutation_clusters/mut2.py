@@ -14,7 +14,7 @@ import random
 # functions
 
 def makerandommutations(nmut,posmax):
-  mutsat = random.sample(xrange(posmax),nmut)
+  mutsat = random.sample(range(posmax),nmut)
   mutsat.sort()
   return mutsat
 
@@ -32,7 +32,7 @@ def simulatemutations(actualstd,target,nmut):
   #print("sprinkling",nmut,"mutations on",mbtarget,"megabases",nreps,"times")
 
   stds = []
-  for rep in xrange(nreps):
+  for rep in range(nreps):
     mutsat = makerandommutations(nmut,target)
     distpairs = makedistancepairs(mutsat)
   
@@ -45,7 +45,7 @@ def simulatemutations(actualstd,target,nmut):
     stds.append(newstd)
 
   stds.sort()
-  for i in xrange(len(stds)):
+  for i in range(len(stds)):
     if actualstd < stds[i]:
       return float(i)/nreps
     

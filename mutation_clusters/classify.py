@@ -175,16 +175,16 @@ for line in open(resultfile,"r"):
   data.append(datum)
 
 # classify by peaks
-peakdata = [[[] for x in xrange(numpeaks)] for x in xrange(numpeaks)]
+peakdata = [[[] for x in range(numpeaks)] for x in xrange(numpeaks)]
 for datum in data:
   mypeak = [datum[5],datum[6]]
   mypeak.sort()
   peakdata[mypeak[0]][mypeak[1]].append(datum)
 
 # classify by distances
-bin5 = [[] for x in xrange(101)]
-bin20 = [[] for x in xrange(26)]
-bin50 = [[] for x in xrange(11)]
+bin5 = [[] for x in range(101)]
+bin20 = [[] for x in range(26)]
+bin50 = [[] for x in range(11)]
 for datum in data:
   pos1 = int(datum[8])
   pos2 = int(datum[9])

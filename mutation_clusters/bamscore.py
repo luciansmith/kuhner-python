@@ -122,7 +122,7 @@ bamfile = pysam.AlignmentFile(bamurl,"rb", index_filename=baiurl)
 
 pairresults = []
 pairresults_same = []
-peakresults = [[[] for x in xrange(numpeaks)] for x in xrange(numpeaks)]
+peakresults = [[[] for x in range(numpeaks)] for x in xrange(numpeaks)]
 
 for mut1,mut2,peakinfo in mutpairs:
   chr1,pos1,ref1,alt1,vaf1 = mut1

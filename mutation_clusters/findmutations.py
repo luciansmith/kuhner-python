@@ -49,7 +49,7 @@ def hasbin(result,bin):
   return False
 
 def whichpeak(vaf,peaks):
-  for i in xrange(numpeaks):
+  for i in range(numpeaks):
     if vaf >= peaks[i][1] and vaf < peaks[i][2]:  return i
   # fell off the end?
   assert vaf == 1.0
