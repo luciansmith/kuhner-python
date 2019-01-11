@@ -168,7 +168,7 @@ for resultfile in resultfiles:
     data.append(datum)
   
   # classify by peaks
-  peakdata = [[[] for x in range(numpeaks)] for x in xrange(numpeaks)]
+  peakdata = [[[] for x in range(numpeaks)] for x in range(numpeaks)]
   for datum in data:
     mypeak = [datum[5],datum[6]]
     mypeak.sort()
