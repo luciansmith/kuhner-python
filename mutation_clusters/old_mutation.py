@@ -189,10 +189,10 @@ for mut1,mut2 in mutpairs:
     # print("Found 5+ non-ref/alt bases:",myresult)
     # print("At mutation pair",mut1,mut2)
     anomalypairs += 1
-    print(chr1,pos1,pos2,myresult
+    print(chr1,pos1,pos2,myresult)
     continue
 
-  print(chr1,pos1,pos2,myresult
+  print(chr1,pos1,pos2,myresult)
   pairresults.append(myresult)
 
 # print("Number of reads",count
@@ -265,13 +265,13 @@ for result in pairresults:
     nested += 1
     continue
 
-  print("found unclassifiable mutpair:",result
+  print("found unclassifiable mutpair:",result)
 
-print("Total pairs",len(mutpairs)
-print("cis",cis,"trans",trans,"nested",nested
-print("toosmall",toosmall,"wt",wt,"missed",missed,"fourgamete",fourgamete
-print("noreads",noreadspairs,"anomaly",anomalypairs
+print("Total pairs",len(mutpairs))
+print("cis",cis,"trans",trans,"nested",nested)
+print("toosmall",toosmall,"wt",wt,"missed",missed,"fourgamete",fourgamete)
+print("noreads",noreadspairs,"anomaly",anomalypairs)
 total = cis + trans + nested + toosmall + wt + missed + fourgamete
 total += noreadspairs + anomalypairs
 if total != len(mutpairs):
-  print("WARNING:  not all pairs accounted for!"
+  print("WARNING:  not all pairs accounted for!")
