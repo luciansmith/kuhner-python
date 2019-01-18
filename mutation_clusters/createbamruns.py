@@ -15,18 +15,25 @@ rundir = "bamruns/"
 import os
 import sys
 
-if len(sys.argv) != 2:
+pathfile = "curated_bamlist"
+
+if len(sys.argv) == 2:
+    pathfile = sys.argv[1]
+
+elif len(sys.argv) > 2:
   print("USAGE:  python createbamruns.py pathfile")
   exit()
 
-pathfile = sys.argv[1]
 
 # read path list
 paths = []
 for line in open(pathfile,"r"):
   paths.append(line.rstrip())
 
-os.system("rm -rf " + rundir)
+if os.path.isdir(rundir):
+    print("Please move or remove the directory", rundir, "before running this program: it's designed to create it from scratch.")
+    exit()
+
 os.mkdir(rundir)
 
 for path in paths:
@@ -38,7 +45,8 @@ for path in paths:
   print("pid", pid, "sid", sid)
   myname = pid + "-" + sid
   dirname = rundir + "run" + myname
-  os.mkdir(dirname)
+  if not(os.path.isdir(dirname)):
+      os.mkdir(dirname)
   outname = rundir + "run" + myname + "/runbam.sh"
   outfile = open(outname,"w")
   outline = "#!/bin/sh\n"

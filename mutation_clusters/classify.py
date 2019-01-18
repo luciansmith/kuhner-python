@@ -5,20 +5,12 @@
 # that they might be in the same read, how often are they actually both
 # present on a read spanning both their positions?" 
 
-# Currently findmutations.py filters out any position that was not
-# called BOTH 1/1 in diploid and 2/2 in tetraploid, if both solutions
-# existed.  This means that there will not be mutation files for all
-# samples.
-
 # NOTE:  BAM is zero based.  VCF is one based.  Subtract 1 from your VCF
 # mutation position before looking it up in BAM!
 
 # WARNING:  We wrote this code against a BAM file where paired reads had the
 # same name, but this is not standardized:  it will NOT WORK RIGHT if paired
 # reads append /1, /2 or _1, _2 or _a, _b or anything like that!
-
-# This version reads peak numbers from tmscore results file and can
-# stratify by peaks.
 
 import pysam
 
@@ -33,20 +25,14 @@ min_quality = 25
 
 # functions
 
-def unpack(line):
-  mut1 = [line[0],int(line[1]),line[2],line[3],float(line[4])]
-  mut2 = [line[5],int(line[6]),line[7],line[8],float(line[9])]
-  peakinfo = [int(line[10]),int(line[11])]
-  return [mut1,mut2,peakinfo]
-
 def hasbin(result,bin):
   if result[bin] > read_cutoff:
     return True
   return False
 
 def score_read(base1,base2,mut1,mut2,scorearray):
-  chr1,pos1,ref1,alt1,vaf1 = mut1
-  chr2,pos2,ref2,alt2,vaf2 = mut2
+  chr1,pos1,ref1,alt1 = mut1
+  chr2,pos2,ref2,alt2 = mut2
 
   # score the mutation
   if base1 == ref1 and base2 == ref2:  
@@ -147,39 +133,18 @@ if len(sys.argv) != 2:
 resultfile = sys.argv[1]
 
 items = resultfile.split("/")
-items = items[-1].split("-")
-pid = items[0]
-sid = items[1]
+items = items[-1].split("_")
+(pid, sid, A, B) = items[0:4]
 
 data = []
-peaks = []
 for line in open(resultfile,"r"):
   line = line.rstrip().split()
 
-  # process peak header
-  if line[0] == "Peaks:":   # header giving peak data
-    for entry in line[1:]:
-      vaf,peakstart,peakend = entry.split(",")
-      vaf = float(vaf[1:])   # lose starting paren
-      peakstart = float(peakstart)
-      peakend = float(peakend[:-1])
-      peaks.append([vaf,peakstart,peakend])  # lose ending paren
-    numpeaks = len(peaks)
-    continue
-      
-  # otherwise, process mutation entry
   datum = []
   for entry in line:
     entry = int(entry)
     datum.append(entry)
   data.append(datum)
-
-# classify by peaks
-peakdata = [[[] for x in range(numpeaks)] for x in range(numpeaks)]
-for datum in data:
-  mypeak = [datum[5],datum[6]]
-  mypeak.sort()
-  peakdata[mypeak[0]][mypeak[1]].append(datum)
 
 # classify by distances
 bin5 = [[] for x in range(101)]
@@ -200,7 +165,7 @@ for datum in data:
 ############################################################
 # write reports
 
-outfilename = pid + "-" + sid + "-analysis.txt" 
+outfilename = pid + "_" + sid + "_" + A + "_" + B + "_analysis.txt" 
 outfile = open(outfilename,"w")
 
 results = summarize(data)
@@ -240,44 +205,6 @@ for categ in results.keys():
 if total != len(data):
   print("WARNING:  not all pairs accounted for in total pairs!")
 
-
-# report on peaks
-outline = "\nPer-peak results\n"
-outfile.write(outline)
-peakno = 1
-for vaf,peakstart,peakend in peaks:
-  outline = ""
-  outline += "Peak #" + str(peakno) + ": "
-  peakno += 1
-  outline += "Mean VAF " + str(vaf)
-  outline += ", lower bound " + str(peakstart)
-  outline += ", upper bound " + str(peakend) + "\n"
-  outfile.write(outline)
-outfile.write("\n")
-
-outline = "      "
-for col in range(0,numpeaks):
-  outline += "Peak" + str(col+1) + "      "
-outline += "\n"
-outfile.write(outline)
-outfile.write("\n")
-  
-for i in range(0,numpeaks):
-  outline = "Peak" + str(i+1) + " "
-  for j in range(0,numpeaks):
-    results = summarize(peakdata[i][j])
-    nresults = len(peakdata[i][j])
-    scorable = float(results["cis"] + results["nested"] + results["trans"])
-    if scorable > 0:
-      cistrans = 100.0 * (results["cis"] + results["nested"])/scorable
-      cistrans = "{0:2.1f}".format(cistrans)
-    else:
-      cistrans = "  NA"
-    outline += str(cistrans) + " "
-    counter = "{0:2d}".format(nresults)
-    outline += "[" + counter + "] "
-  outline += "\n"
-  outfile.write(outline)
 
 outline = "bin5 "
 for entry in bin5:

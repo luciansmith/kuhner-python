@@ -34,21 +34,21 @@
 # constants
 
 import pysam
+import os
 
 # lowest acceptable mapping quality for a read
 min_quality = 25
 
-mutdir = "/home/mkuhner/mutationfiles/"
+mutdir = "/home/lpsmith/mutationfiles/"
 
 ##########################################################################
 
 # functions
 
 def unpack(line):
-  mut1 = [line[0],int(line[1]),line[2],line[3],float(line[4])]
-  mut2 = [line[5],int(line[6]),line[7],line[8],float(line[9])]
-  peakinfo = [int(line[10]),int(line[11])]
-  return [mut1,mut2,peakinfo]
+  mut1 = [line[0], int(line[1]),line[2],line[3]]
+  mut2 = [line[4], int(line[5]),line[6],line[7]]
+  return [mut1,mut2]
 
 def hasbin(result,bin):
   if result[bin] > 1:
@@ -85,32 +85,30 @@ items = bamurl.split("/")
 pid,sid,dna,level = items[-1].split("-")
 
 # read in mutation pairs based on VCF and copy-number calls
-mutationfile = mutdir + pid + "-" + sid + "-mutations.txt"
+pairfiles = []
+for root, dirs, files in os.walk(mutdir):
+  for file in files:
+    if pid + "_" + sid in file and file.endswith("_mutations.txt"):
+      pairfiles.append(file)
 
-mutpairs = []
-peaks = []
-for line in open(mutationfile,"r"):
-  if line.startswith("Peaks"):   # header giving peak data
-    peakheader = line
-    line = line.rstrip().split()
-    assert line[0] == "Peaks:"
-    for entry in line[1:]:
-      vaf,peakstart,peakend = entry.split(",")
-      vaf = float(vaf[1:])   # lose starting paren
-      peakstart = float(peakstart)
-      peakend = float(peakend[:-1])
-      peaks.append([vaf,peakstart,peakend])  # lose ending paren
-    numpeaks = len(peaks)
-    continue
-      
-  line = line.rstrip().split()   # body lines giving mutation pairs
-  mutpair = unpack(line)
-  mutpairs.append(mutpair)
+mutpairs = {}
+for pairfile in pairfile:
+    (__, __, A, B, __) = pairfile.split('_')
+    ABpair = (A, B)
+    mutpairs[ABpair] = []
+    
 
-if len(mutpairs) == 0:
-  print("No mutation pairs found; bailing out now")
-  exit()
-print("Assessing",len(mutpairs),"mutation pairs")
+    for line in open(pairfile,"r"):
+        if "Chr" in line:
+            continue
+        line = line.rstrip().split()   # body lines giving mutation pairs
+        mutpair = unpack(line)
+        mutpairs[ABpair].append(mutpair)
+    
+        if len(mutpairs) == 0:
+            print("No mutation pairs found; bailing out now")
+            exit()
+        print("Assessing",len(mutpairs),"mutation pairs")
 
 ##########################################################################3
 
@@ -120,98 +118,98 @@ baiurl = bamurl[0:-1] + "i"
 
 bamfile = pysam.AlignmentFile(bamurl,"rb", index_filename=baiurl)
 
-pairresults = []
-pairresults_same = []
-peakresults = [[[] for x in range(numpeaks)] for x in range(numpeaks)]
+pairresults = {}
 
-for mut1,mut2,peakinfo in mutpairs:
-  chr1,pos1,ref1,alt1,vaf1 = mut1
-  chr2,pos2,ref2,alt2,vaf2 = mut2
-  peak1,peak2 = peakinfo
-
-  # correct for zero versus one based
-  pos1 -= 1
-  pos2 -= 1
-
-  assert chr1 == chr2
-  myresult = [0,0,0,0,0,peak1,peak2]
-
-  # pull reads for mutation position 1 into a list
-  reads1 = list(bamfile.fetch(chr1,pos1,pos1+1))
-  reads2 = list(bamfile.fetch(chr2,pos2,pos2+1))
-
-  already_scored = []
-  for read1 in reads1:
-    if read1.mapping_quality < min_quality:  
-      continue    # a bad read
-    if read1.query_name in already_scored:  # this read-pair has already been scored
-      continue
-    # find out which, if any, mutation positions are present
-    aligned_pairs = read1.get_aligned_pairs(matches_only=True)
-    found1 = False
-    found2 = False
-    for mypair in aligned_pairs:
-      if mypair[1] == pos1:
-        found1 = True
-        base1 = read1.query_sequence[mypair[0]]
-      if mypair[1] == pos2:
-        found2 = True
-        base2 = read1.query_sequence[mypair[0]]
-
-    # mutation position 1 is missing:  skip this read
-    if not found1:  
-      continue
-
-    # both mutation positions 1 and 2 are present:  same-end score
-    if found1 and found2:
-      score_read(base1,base2,mut1,mut2,myresult)
-      already_scored.append(read1.query_name)
-      continue
- 
-    # only mutation position 1 is present:  find the mate and try an
-    # opposite-end score
-    if found1 and not found2:
-      name1 = read1.query_name
-      for read2 in reads2:
-        if read2.mapping_quality < min_quality:
+for ABpair in mutpairs:
+    pairresults[ABpair] = []
+    for mut1,mut2 in mutpairs[ABpair]:
+      chr1,pos1,ref1,alt1 = mut1
+      chr2,pos2,ref2,alt2 = mut2
+    
+      # correct for zero versus one based
+      pos1 -= 1
+      pos2 -= 1
+    
+      assert chr1 == chr2
+      myresult = [0,0,0,0,0]
+    
+      # pull reads for mutation position 1 into a list
+      reads1 = list(bamfile.fetch(chr1,pos1,pos1+1))
+      reads2 = list(bamfile.fetch(chr2,pos2,pos2+1))
+    
+      already_scored = []
+      for read1 in reads1:
+        if read1.mapping_quality < min_quality:  
+          continue    # a bad read
+        if read1.query_name in already_scored:  # this read-pair has already been scored
           continue
+        # find out which, if any, mutation positions are present
+        aligned_pairs = read1.get_aligned_pairs(matches_only=True)
+        found1 = False
         found2 = False
-        name2 = read2.query_name
-        if name1 != name2:
+        for mypair in aligned_pairs:
+          if mypair[1] == pos1:
+            found1 = True
+            base1 = read1.query_sequence[mypair[0]]
+          if mypair[1] == pos2:
+            found2 = True
+            base2 = read1.query_sequence[mypair[0]]
+    
+        # mutation position 1 is missing:  skip this read
+        if not found1:  
           continue
-        if (read1.is_read1 == read2.is_read1):   # these are the same read!
+    
+        # both mutation positions 1 and 2 are present:  same-end score
+        if found1 and found2:
+          score_read(base1,base2,mut1,mut2,myresult)
+          already_scored.append(read1.query_name)
           continue
-        found2 = True
-        break
-
-      if not found2:
-        continue
-
-      aligned_pairs2 = read2.get_aligned_pairs(matches_only=True)
-      found2 = False
-      for mypair in aligned_pairs2:
-        if mypair[1] == pos2:
-          found2 = True
-          base2 = read2.query_sequence[mypair[0]]
-          break
-    if found1 and found2:    # the mate works, score it
-      score_read(base1,base2,mut1,mut2,myresult)
-      already_scored.append(read1.query_name)
-      continue
-   
-  pairresults.append(myresult)
+     
+        # only mutation position 1 is present:  find the mate and try an
+        # opposite-end score
+        if found1 and not found2:
+          name1 = read1.query_name
+          for read2 in reads2:
+            if read2.mapping_quality < min_quality:
+              continue
+            found2 = False
+            name2 = read2.query_name
+            if name1 != name2:
+              continue
+            if (read1.is_read1 == read2.is_read1):   # these are the same read!
+              continue
+            found2 = True
+            break
+    
+          if not found2:
+            continue
+    
+          aligned_pairs2 = read2.get_aligned_pairs(matches_only=True)
+          found2 = False
+          for mypair in aligned_pairs2:
+            if mypair[1] == pos2:
+              found2 = True
+              base2 = read2.query_sequence[mypair[0]]
+              break
+        if found1 and found2:    # the mate works, score it
+          score_read(base1,base2,mut1,mut2,myresult)
+          already_scored.append(read1.query_name)
+          continue
+       
+      pairresults[ABpair].append(myresult)
 
 ############################################################
 # write reports
 
 
-outfilename = pid + "-" + sid + "-results.txt"
-outfile = open(outfilename,"w")
-outfile.write(peakheader)
-for myresult in pairresults:
-  outline = ""
-  for item in myresult:
-    outline += str(item) + " "
-  outline += "\n"
-  outfile.write(outline)
-outfile.close()
+for ABpair in pairresults:
+    (A, B) = ABpair
+    outfilename = pid + "_" + sid + "_" + A + "_" + B + "_results.txt"
+    outfile = open(outfilename,"w")
+    for myresult in pairresults[ABpair]:
+      outline = ""
+      for item in myresult:
+        outline += str(item) + " "
+      outline += "\n"
+      outfile.write(outline)
+    outfile.close()
