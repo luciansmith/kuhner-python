@@ -56,8 +56,8 @@ def hasbin(result,bin):
   return False
 
 def score_read(base1,base2,mut1,mut2,scorearray):
-  chr1,pos1,ref1,alt1,vaf1 = mut1
-  chr2,pos2,ref2,alt2,vaf2 = mut2
+  chr1,pos1,ref1,alt1 = mut1
+  chr2,pos2,ref2,alt2 = mut2
 
   # score the mutation
   if base1 == ref1 and base2 == ref2:  
@@ -88,17 +88,20 @@ pid,sid,dna,level = items[-1].split("-")
 pairfiles = []
 for root, dirs, files in os.walk(mutdir):
   for file in files:
+    print(file)
     if pid + "_" + sid in file and file.endswith("_mutations.txt"):
       pairfiles.append(file)
 
+print("Pairfiles in", mutdir, "are", pairfiles)
+
 mutpairs = {}
-for pairfile in pairfile:
+for pairfile in pairfiles:
     (__, __, A, B, __) = pairfile.split('_')
     ABpair = (A, B)
     mutpairs[ABpair] = []
-    
+    print(ABpair) 
 
-    for line in open(pairfile,"r"):
+    for line in open(mutdir + pairfile,"r"):
         if "Chr" in line:
             continue
         line = line.rstrip().split()   # body lines giving mutation pairs
@@ -126,12 +129,12 @@ for ABpair in mutpairs:
       chr1,pos1,ref1,alt1 = mut1
       chr2,pos2,ref2,alt2 = mut2
     
+      myresult = [0,0,0,0,0, chr1, pos1, pos2]
       # correct for zero versus one based
       pos1 -= 1
       pos2 -= 1
     
       assert chr1 == chr2
-      myresult = [0,0,0,0,0]
     
       # pull reads for mutation position 1 into a list
       reads1 = list(bamfile.fetch(chr1,pos1,pos1+1))
