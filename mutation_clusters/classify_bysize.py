@@ -15,6 +15,7 @@
 import os
 from os import path
 from os import mkdir
+import lucianSNPLibrary as lsl
 
 read_cutoff = 5
 
@@ -54,7 +55,7 @@ def score_read(base1,base2,mut1,mut2,scorearray):
     scorearray[3] += 1
   scorearray[4] += 1
 
-def summarize(pairlist):
+def summarize(pairlist, cisdists, transdists, nesteddists):
 # taxonomy:
 #   less than 12 total reads:  toosmall
 #   just bin0:  wt
@@ -76,6 +77,9 @@ def summarize(pairlist):
 
   for tally in pairlist:
 
+    pos1 = int(tally[6])
+    pos2 = int(tally[7])
+    dist = pos2 - pos1
     # noreads
     if tally[4] == 0:
       results["noreads"] += 1
@@ -113,22 +117,26 @@ def summarize(pairlist):
     # trans
     if hasbin(tally,1) and hasbin(tally,2) and not hasbin(tally,3):
       results["trans"] += 1
+      transdists.append(dist)
       continue
 
     # cis
     if not hasbin(tally,1) and not hasbin(tally,2) and hasbin(tally,3):
       results["cis"] += 1
+      cisdists.append(dist)
       continue
 
     # nested
     if (hasbin(tally,1) or hasbin(tally,2)) and hasbin(tally,3):
       results["nested"] += 1
+      nesteddists.append(dist)
       continue
 
     print("found anomaly:",tally)
     assert False
 
   return results
+
 
 ########################################################################
 # main program
@@ -139,9 +147,15 @@ for root, dirs, files in os.walk(resultdir):
     if file.endswith("_results.txt"):
       rfiles.append(file)
 
+cisdists = {}
+transdists = {}
+nesteddists = {}
+progressorMap = readProgressorOrNot()
 for rfile in rfiles:
     data = []
     (pid, sid, A, B) = rfile.split("_")[0:4]
+    if not(A=='1' and B=='1'):
+        continue
     for line in open(resultdir + rfile,"r"):
       line = line.rstrip().split()
     
@@ -152,106 +166,17 @@ for rfile in rfiles:
       data.append(datum)
     
     # classify by distances
-    bin5 = [[] for x in range(101)]
-    bin20 = [[] for x in range(26)]
-    bin50 = [[] for x in range(11)]
-    for datum in data:
-      pos1 = int(datum[6])
-      pos2 = int(datum[7])
-      dist = pos2 - pos1
-      assert dist > 0
-      ind5 = int(dist/5.0)
-      bin5[ind5].append(datum)
-      ind20 = int(dist/20.0)
-      bin20[ind20].append(datum)
-      ind50 = int(dist/50.0)
-      bin50[ind50].append(datum)
     
     ############################################################
     # write reports
     
-    outfilename = pid + "_" + sid + "_" + A + "_" + B + "_analysis.txt" 
-    outfile = open(outdir + outfilename,"w")
-    
-    results = summarize(data)
-    scorable = results["cis"] + results["trans"] + results["nested"]
-    scorable = float(scorable)
-    cistrans = (results["cis"] + results["nested"])
-    if not scorable==0:
-        cistrans = cistrans * 100.0/scorable
-    
-    outline = "Overall results:\n"
-    outfile.write(outline)
-    outline = "total " + str(len(data)) + "\n"
-    outfile.write(outline)
-    outline = "cis/trans ratio " + str(cistrans) + "\n"
-    outfile.write(outline)
-    outline = "cis " + str(results["cis"]) + "\n"
-    outfile.write(outline)
-    outline = "nested " + str(results["nested"]) + "\n"
-    outfile.write(outline)
-    outline = "trans " + str(results["trans"]) + "\n"
-    outfile.write(outline)
-    outline = "missed " + str(results["missed"]) + "\n"
-    outfile.write(outline)
-    outline = "wt " + str(results["wt"]) + "\n"
-    outfile.write(outline)
-    outline = "fourgamete " + str(results["fourgamete"]) + "\n"
-    outfile.write(outline)
-    outline = "anomaly " + str(results["anomaly"]) + "\n"
-    outfile.write(outline)
-    outline = "noreads " + str(results["noreads"]) + "\n"
-    outfile.write(outline)
-    outline = "toosmall " + str(results["toosmall"]) + "\n"
-    outfile.write(outline)
-    
-    total = 0
-    for categ in results.keys():
-      total += results[categ]
-    if total != len(data):
-      print("WARNING:  not all pairs accounted for in total pairs!")
-    
-    
-    outline = "bin5 "
-    for entry in bin5:
-      results = summarize(entry)
-      scorable = float(results["cis"] + results["nested"] + results["trans"])
-      if scorable > 0:
-        cistrans = 100.0 * (results["cis"] + results["nested"])/scorable
-        cistrans = "{0:2.1f}".format(cistrans)
-      else:
-        cistrans = "  NA"
-      outline +=  str(cistrans) + " "
-    outline += "\n"
-    outfile.write(outline)
-    
-    outline = "bin20 "
-    for entry in bin20:
-      results = summarize(entry)
-      scorable = float(results["cis"] + results["nested"] + results["trans"])
-      if scorable > 0:
-        cistrans = 100.0 * (results["cis"] + results["nested"])/scorable
-        cistrans = "{0:2.1f}".format(cistrans)
-      else:
-        cistrans = "  NA"
-      outline +=  str(cistrans) + " "
-    outline += "\n"
-    outfile.write(outline)
-    
-    outline = "bin50 "
-    for entry in bin50:
-      results = summarize(entry)
-      scorable = float(results["cis"] + results["nested"] + results["trans"])
-      if scorable > 0:
-        cistrans = 100.0 * (results["cis"] + results["nested"])/scorable
-        cistrans = "{0:2.1f}".format(cistrans)
-      else:
-        cistrans = "  NA"
-      outline +=  str(cistrans) + " "
-    outline += "\n"
-    outfile.write(outline)
-    
-    
-    
-    
-    outfile.close()
+    results = summarize(data, cisdists, transdists, nesteddists)
+
+lsl.createPrintAndSaveHistogram(cisdists, "Cis Distances", 0.1, xdata="distance", axis=(-20, 500, 0))
+lsl.createPrintAndSaveHistogram(transdists, "Trans Distances", 0.1, xdata="distance", axis=(-20, 500, 0))
+lsl.createPrintAndSaveHistogram(nesteddists, "Nested Distances", 0.1, xdata="distance", axis=(-20, 500, 0))
+
+plt.ylim(0, 400)
+plt.hist(cisdists, 100)
+plt.hist(transdists, 100)
+plt.hist(nesteddists, 100)

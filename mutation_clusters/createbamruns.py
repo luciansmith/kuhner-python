@@ -36,6 +36,9 @@ if os.path.isdir(rundir):
 
 os.mkdir(rundir)
 
+runall = open("run_bams.sh", "w")
+
+
 for path in paths:
   items = path.split("/")
   items = items[-1].split("-")
@@ -49,7 +52,7 @@ for path in paths:
       os.mkdir(dirname)
   outname = rundir + "run" + myname + "/runbam.sh"
   outfile = open(outname,"w")
-  outline = "#!/bin/sh\n"
+  outline = "#!/bin/bash\n"
   outfile.write(outline)
   outline = "ml Python/2.7.14-foss-2016b-fh1\n"
   outfile.write(outline)
@@ -58,7 +61,10 @@ for path in paths:
   outline += path + "\n"
   outfile.write(outline)
   outfile.close()
-  os.system("chmod +x " + outname)
+  os.system("chmod a+x " + outname)
   os.system("cp bamscore.py " + dirname)
   print("processed",pid,sid)
+  runall.write("./" + dirname + "/runbam.sh\n")
 print("All setup completed")
+runall.close()
+
