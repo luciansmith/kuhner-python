@@ -15,6 +15,7 @@
 import os
 from os import path
 from os import mkdir
+import matplotlib.pyplot as plt
 import lucianSNPLibrary as lsl
 
 read_cutoff = 5
@@ -147,10 +148,9 @@ for root, dirs, files in os.walk(resultdir):
     if file.endswith("_results.txt"):
       rfiles.append(file)
 
-cisdists = {}
-transdists = {}
-nesteddists = {}
-progressorMap = readProgressorOrNot()
+cisdists = []
+transdists = []
+nesteddists = []
 for rfile in rfiles:
     data = []
     (pid, sid, A, B) = rfile.split("_")[0:4]
@@ -172,11 +172,13 @@ for rfile in rfiles:
     
     results = summarize(data, cisdists, transdists, nesteddists)
 
-lsl.createPrintAndSaveHistogram(cisdists, "Cis Distances", 0.1, xdata="distance", axis=(-20, 500, 0))
-lsl.createPrintAndSaveHistogram(transdists, "Trans Distances", 0.1, xdata="distance", axis=(-20, 500, 0))
-lsl.createPrintAndSaveHistogram(nesteddists, "Nested Distances", 0.1, xdata="distance", axis=(-20, 500, 0))
+lsl.createPrintAndSaveHistogram(cisdists, "Cis Distances", 0.5, xdata="distance", axis=(-20, 500, 0))
+lsl.createPrintAndSaveHistogram(transdists, "Trans Distances", 0.5, xdata="distance", axis=(-20, 500, 0))
+lsl.createPrintAndSaveHistogram(nesteddists, "Nested Distances", 0.5, xdata="distance", axis=(-20, 500, 0))
 
 plt.ylim(0, 400)
 plt.hist(cisdists, 100)
 plt.hist(transdists, 100)
 plt.hist(nesteddists, 100)
+plt.show()
+plt.close()

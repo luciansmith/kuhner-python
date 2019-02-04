@@ -106,7 +106,6 @@ for file in afiles:
 #            hist.append(summary[(A, B)][patient][sample]["ct_ratio"])
 #    lsl.createPrintAndSaveHistogram(hist, A + "_" + B + "_ct_ratio", 0.1, xdata="Cis/Trans Ratio")
 
-print("All cis vs. trans for CN ratios of 1,1")
 cises = {}
 transes = {}
 for p in ("all", "Prog", "NP", "Diploid", "Tetraploid", "2_2"):
@@ -119,20 +118,32 @@ for patient in summary['1', '1']:
         doubled = doubledMap[sample]
         cises["all"].append(summary['1', '1'][patient][sample]["cis"])
         transes["all"].append(summary['1', '1'][patient][sample]["trans"])
-        try:
-            cises["2_2"].append(summary['2', '2'][patient][sample]["cis"])
-            transes["2_2"].append(summary['2', '2'][patient][sample]["trans"])
-        except:
-            pass
+#        try:
+#            cises["2_2"].append(summary['2', '2'][patient][sample]["cis"])
+#            transes["2_2"].append(summary['2', '2'][patient][sample]["trans"])
+#        except:
+#            pass
         cises[prog].append(summary['1', '1'][patient][sample]["cis"])
         transes[prog].append(summary['1', '1'][patient][sample]["trans"])
         if doubled=="Diploid":
             cises[doubled].append(summary['1', '1'][patient][sample]["cis"])
             transes[doubled].append(summary['1', '1'][patient][sample]["trans"])
+#        if doubled=="Tetraploid":
+#            cises[doubled].append(summary['2', '2'][patient][sample]["cis"])
+#            transes[doubled].append(summary['2', '2'][patient][sample]["trans"])
+
+for patient in summary['2', '2']:
+    prog = progressorMap[patient]
+    for sample in summary['2', '2'][patient]:
+        doubled = doubledMap[sample]
+        cises["2_2"].append(summary['2', '2'][patient][sample]["cis"])
+        transes["2_2"].append(summary['2', '2'][patient][sample]["trans"])
         if doubled=="Tetraploid":
             cises[doubled].append(summary['2', '2'][patient][sample]["cis"])
             transes[doubled].append(summary['2', '2'][patient][sample]["trans"])
 
+
+print("Progressors (blue) vs. non-progressors (orange), for all cis vs. trans for CN ratios of 1,1")
 plt.xlabel('cis')
 plt.ylabel('trans')
 plt.scatter(cises["Prog"], transes["Prog"])
@@ -141,6 +152,7 @@ plt.plot((0,700),(0,700))
 plt.show()
 plt.close()
 
+print("cis vs. trans:  Blue: Diploid samples with CN ratios of 1,1.  Orange: Tetraploid samples with CN ratios of 2,2")
 plt.xlabel('cis')
 plt.ylabel('trans')
 plt.scatter(cises["Diploid"], transes["Diploid"])
@@ -149,6 +161,7 @@ plt.plot((0,700),(0,700))
 plt.show()
 plt.close()
 
+print("All cis vs. trans for CN ratios of 1,1 (blue) or 2,2 (orange)")
 plt.xlabel('cis')
 plt.ylabel('trans')
 plt.scatter(cises["all"], transes["all"])
