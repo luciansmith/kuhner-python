@@ -29,13 +29,14 @@ from os import path
 from os import mkdir
 
 somepatientsonly = False
-somepatients = ["1005"]
+somepatients = ["17"]
+somechrsonly = False
+somechrs = ['1']
 
 mutation_file = "../snv_plus_indels.twoPlus.20181030.csv"
 dipvtet_file = "../calling_evidence_odds.tsv"
 cndir = "../noninteger_processed_CNs/"
 mutdir = "mutationfiles_bybranch/"
-mutation_file = "snv_plus_indels.20180919.csv"
 
 if not(path.isdir(mutdir)):
     mkdir(mutdir)
@@ -46,6 +47,7 @@ if not(path.isdir(mutdir)):
 
 def findcnfilename(pid,sid,ploidy,filelist):
   #cnfile = "noninteger_processed_CNs/163_23740_g500_tetraploid_nonint_CNs.txt"
+  ploidy = ploidy.lower()
   for file in filelist:
     entry = file.split("_")
     if entry[0] == pid and entry[1] == sid and entry[3] == ploidy:
@@ -104,7 +106,7 @@ def readAllMuts(patientSampleMap):
                 continue
             pos = int(pos)
 
-            patient = patientSampleMap[sample]
+            (patient, __) = patientSampleMap[sample]
             if patient not in mutations:
                 mutations[patient] = {}
             if chr not in mutations[patient]:
@@ -123,7 +125,10 @@ def convertMapping(mutations):
         for chr in mutations[patient]:
             for pos in mutations[patient][chr]:
                 for (ref, alt) in mutations[patient][chr][pos]:
-                    samples = mutations[patient][chr][pos]
+                    samples = mutations[patient][chr][pos][(ref, alt)]
+                    sl = list(samples)
+                    sl.sort()
+                    samples = tuple(sl)
                     if samples not in altmuts[patient]:
                         altmuts[patient][samples] = {}
                     if chr not in altmuts[patient][samples]:
@@ -142,9 +147,9 @@ def getAllCNCalls(patientSampleMap):
     for sample in patientSampleMap:
         cncalls[sample] = {}
         (patient, ploidy) = patientSampleMap[sample] 
-        cnfile = findcnfilename(pid, sid, ploidy, cnfiles)
+        cnfile = findcnfilename(patient, sample, ploidy, cnfiles)
         if cnfile == None:
-            print("FAILED to find a copy number file for patient",pid,"sample",sid)
+            print("FAILED to find a copy number file for patient",patient,"sample",sample)
             print("in directory",cndir)
             exit()
 
@@ -185,91 +190,76 @@ allCNCalls = getAllCNCalls(patientSampleMap)
 for patient in altmuts:
     if somepatientsonly and patient not in somepatients:
         continue
+    print("Processing patient", str(patient))
+    mutpairs = {}
     for samples in altmuts[patient]:
         if len(samples)==0:
             continue
         mut1 = None
         mut2 = None
-        mutpairs = {}
-        for chr in altmuts[patient][samples]:
-            if chr == "X" or chr=="23" or chr=="24":
-                continue    # no sex chromosomes please
-            prevpos = -500
-            prevAB = (-1, -1)
-            for pos in altmuts[patient][samples][chr]:
-                (ref, alt) = altmuts[patient][samples][chr][pos]
-                ABpair = getCNCallFor(chr, pos, cncalls[sample])
-                if ABpair == (-1, -1):
-                    prevAB = ABpair
-                    mut1 = None
-                    mut2 = None
-                    prevpos = -500
-                    continue
-                
-                #This is where we'd save VAF information if we wanted it.
-        
-                # pair the mutations
-                if pos - prevpos > 500 or ABpair != prevAB:  # too far away or different CN values.
-                    prevpos = pos
-                    mut1 = [chr,pos,ref,alt]
-                    mut2 = None
-                    prevAB = ABpair
-                    continue
-                # if we have a previous mutation in hand, this is a pair!
-                if mut1 != None:
-                    mut2 = [chr,pos,ref,alt]
-                    if ABpair not in mutpairs:
-                        mutpairs[ABpair] = []
-                    mutpairs[ABpair].append([mut1,mut2])
-                    mut1 = mut2 = None
-                    prevpos = -500
-                    prevAB = ABpair
-                else:   
-                    # we already used up mut1 in a different pair, so we skip
-                    mut1 = [chr,pos,ref,alt]
-                    mut2 = None
-                    prevpos = pos 
-                    prevAB = ABpair
         for sample in samples:
-            ploidy = patientSampleMap[sample][1]
+#            print(sample)
+            for chr in altmuts[patient][samples]:
+                if chr == "X" or chr=="23" or chr=="24":
+                    continue    # no sex chromosomes please
+                if somechrsonly and chr not in somechrs:
+                    continue
+                prevpos = -500
+                prevAB = (-1, -1)
+                for pos in altmuts[patient][samples][chr]:
+                    (ref, alt) = altmuts[patient][samples][chr][pos]
+                    ABpair = getCNCallFor(chr, pos, allCNCalls[sample])
+                    if sample not in mutpairs:
+                        mutpairs[sample] = {}
+                    if ABpair == (-1, -1):
+                        prevAB = ABpair
+                        mut1 = None
+                        mut2 = None
+                        prevpos = -500
+                        continue
+                    
+                    #This is where we'd save VAF information if we wanted it.
             
-
-
-for line in open(dipvtet_file, "r"):
-    if "Patient" in line:
-        continue
-    lvec = line.rstrip().split();
-    ploidy = lvec[-1].lower()
-    (pid, sid) = lvec[0:2]
-    if ploidy=="unknown" and "N" in sid:
-        ploidy = "diploid"
-    if ploidy=="unknown":
-        print("Unknown ploidy for patient", pid, "sample", sid)
-        continue
-    if somepatientsonly and pid not in somepatients:
-        continue
-    print("Analyzing",pid,sid)
-
-
-    #################################
-    # parse the two-plus caller file to find eligible mutation pairs
-    
-           
+                    # pair the mutations
+                    if pos - prevpos > 500 or ABpair != prevAB:  # too far away or different CN values.
+                        prevpos = pos
+                        mut1 = [chr,pos,ref,alt]
+                        mut2 = None
+                        prevAB = ABpair
+                        continue
+                    # if we have a previous mutation in hand, this is a pair!
+                    if mut1 != None:
+                        mut2 = [chr,pos,ref,alt]
+                        if ABpair not in mutpairs[sample]:
+                            mutpairs[sample][ABpair] = []
+                        mutpairs[sample][ABpair].append([mut1,mut2])
+#                        print("Found", sample, str(mut1), str(mut2))
+                        mut1 = mut2 = None
+                        prevpos = -500
+                        prevAB = ABpair
+                    else:   
+                        # we already used up mut1 in a different pair, so we skip
+                        mut1 = [chr,pos,ref,alt]
+                        mut2 = None
+                        prevpos = pos 
+                        prevAB = ABpair
            
     ###########################################################################
     # write the output files
     
 
-    for ABpair in mutpairs:
-        outname = mutdir + pid + "_" + sid + "_" + str(ABpair[0]) + "_" + str(ABpair[1]) + "_mutations.txt"
-        outfile = open(outname,"w")
-        outfile.write("Chr\tpos1\tref1\talt1\tpos2\tref2\talt2\n")
-        for mut1,mut2 in mutpairs[ABpair]:
-          outline = mut1[0]
-          for item in mut1[1:]:
-             outline += "\t" + str(item) 
-          for item in mut2:
-             outline += "\t" + str(item)
-          outline += "\n"
-          outfile.write(outline)
-        outfile.close()
+    for sample in mutpairs:
+        for ABpair in mutpairs[sample]:
+            outname = mutdir + patient + "_" + sample + "_" + str(ABpair[0]) + "_" + str(ABpair[1]) + "_mutations.txt"
+            outfile = open(outname,"w")
+            outfile.write("Chr\tpos1\tref1\talt1\tpos2\tref2\talt2\n")
+            mutpairs[sample][ABpair].sort()
+            for mut1,mut2 in mutpairs[sample][ABpair]:
+              outline = mut1[0]
+              for item in mut1[1:]:
+                 outline += "\t" + str(item) 
+              for item in mut2:
+                 outline += "\t" + str(item)
+              outline += "\n"
+              outfile.write(outline)
+            outfile.close()
