@@ -39,7 +39,7 @@ import os
 # lowest acceptable mapping quality for a read
 min_quality = 25
 
-mutdir = "/home/lpsmith/mutationfiles/"
+mutdir = "/home/lpsmith/mutationfiles_bybranch/"
 
 ##########################################################################
 
@@ -76,7 +76,7 @@ def score_read(base1,base2,mut1,mut2,scorearray):
 import sys
 if len(sys.argv) != 2:
   print("USAGE:  bamscore.py bamfileurl")
-  print("This version takes its mutation files from /mutationfiles,")
+  print("This version takes its mutation files from", mutdir, ", ")
   print("its BAM/BAI from the S3 cloud, and writes to ." )
   exit()
 

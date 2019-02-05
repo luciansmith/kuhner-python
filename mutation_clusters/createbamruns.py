@@ -10,12 +10,12 @@
 # DESTROY a previous structure of that name; if you want to run it
 # again, create a sandbox each time!
 
-rundir = "bamruns/"
+rundir = "bamruns_bybranch/"
 
 import os
 import sys
 
-pathfile = "curated_bamlist"
+pathfile = "curated_bamlist_bybranch"
 
 if len(sys.argv) == 2:
     pathfile = sys.argv[1]
