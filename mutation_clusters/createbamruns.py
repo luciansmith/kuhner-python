@@ -10,12 +10,20 @@
 # DESTROY a previous structure of that name; if you want to run it
 # again, create a sandbox each time!
 
-rundir = "bamruns_bybranch/"
+bybranch = True
+
+rundir = "bamruns"
 
 import os
 import sys
 
 pathfile = "curated_bamlist"
+
+
+if bybranch:
+    rundir += "_bybranch/"
+else:
+    rundir += "/"
 
 if len(sys.argv) == 2:
     pathfile = sys.argv[1]
@@ -36,7 +44,10 @@ if os.path.isdir(rundir):
 
 os.mkdir(rundir)
 
-runall = open("run_bams.sh", "w")
+shname = "run_bams.sh"
+if bybranch:
+    shname = "run_bams_bybranch.sh"
+runall = open(shname, "w")
 
 
 for path in paths:
