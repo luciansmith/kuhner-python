@@ -15,7 +15,7 @@ rundir = "bamruns_bybranch/"
 import os
 import sys
 
-pathfile = "curated_bamlist_bybranch"
+pathfile = "curated_bamlist"
 
 if len(sys.argv) == 2:
     pathfile = sys.argv[1]
