@@ -29,7 +29,7 @@ from os import path
 from os import mkdir
 
 somepatientsonly = False
-somepatients = ["17"]
+somepatients = ["1005"]
 somechrsonly = False
 somechrs = ['1']
 
@@ -206,7 +206,9 @@ for patient in altmuts:
                     continue
                 prevpos = -500
                 prevAB = (-1, -1)
-                for pos in altmuts[patient][samples][chr]:
+                positions = list(altmuts[patient][samples][chr].keys())
+                positions.sort()
+                for pos in positions:
                     (ref, alt) = altmuts[patient][samples][chr][pos]
                     ABpair = getCNCallFor(chr, pos, allCNCalls[sample])
                     if sample not in mutpairs:
@@ -234,6 +236,7 @@ for patient in altmuts:
                             mutpairs[sample][ABpair] = []
                         mutpairs[sample][ABpair].append([mut1,mut2])
 #                        print("Found", sample, str(mut1), str(mut2))
+                        assert(mut1[1] < mut2[1])
                         mut1 = mut2 = None
                         prevpos = -500
                         prevAB = ABpair
