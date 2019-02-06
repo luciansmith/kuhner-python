@@ -85,7 +85,7 @@ bamurl = sys.argv[1]
 items = bamurl.split("/")
 pid,sid,dna,level = items[-1].split("-")
 
-print("Processing", bamurl)
+print("Processing", bamurl, "for patient", pid, "sample", sid)
 
 # read in mutation pairs based on VCF and copy-number calls
 pairfiles = []
@@ -113,7 +113,7 @@ for pairfile in pairfiles:
         if len(mutpairs) == 0:
             print("No mutation pairs found; bailing out now")
             exit()
-        print("Assessing",len(mutpairs),"mutation pairs")
+        #print("Assessing",len(mutpairs),"mutation pairs")
 
 ##########################################################################3
 
@@ -126,6 +126,7 @@ bamfile = pysam.AlignmentFile(bamurl,"rb", index_filename=baiurl)
 pairresults = {}
 
 for ABpair in mutpairs:
+    print("Processing", str(ABpair))
     pairresults[ABpair] = []
     for mut1,mut2 in mutpairs[ABpair]:
       chr1,pos1,ref1,alt1 = mut1
