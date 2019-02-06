@@ -164,18 +164,20 @@ labels += "\tB"
 labels += "\tpos1"
 labels += "\tpos2"
 labels += "\tall"
-labels += "\tpos2"
+labels += "\tbranch_only"
 labels += "\n"
 
 outfile = open("all_mutations.tsv", "w")
 outfile.write(labels)
 
+differences = {}
+differences_11 = {}
 for patient in allmuts:
     for sample in allmuts[patient]:
         for AB in allmuts[patient][sample]:
             (A, B) = AB
             for chr in allmuts[patient][sample][AB]:
-                for pos12 in allmuts[patient][sample][AB][pos12]:
+                for pos12 in allmuts[patient][sample][AB][chr]:
                     (pos1, pos2) = pos12
                     outline = patient
                     outline += "\t" + sample
@@ -183,14 +185,35 @@ for patient in allmuts:
                     outline += "\t" + B
                     outline += "\t" + str(pos1)
                     outline += "\t" + str(pos2)
-                    if "all" in allmuts[patient][sample][AB][pos12]:
-                        outline += "\t" + allmuts[patient][sample][AB][pos12]["all"]
-                    else:
-                        outline += "\tmissing"
-                    if "bybranch" in allmuts[patient][sample][AB][pos12]:
-                        outline += "\t" + allmuts[patient][sample][AB][pos12]["bybranch"]
-                    else:
-                        outline += "\tmissing"
-                    outline += "\n"
+                    allval = "not_all"
+                    if "all" in allmuts[patient][sample][AB][chr][pos12]:
+                        allval = allmuts[patient][sample][AB][chr][pos12]["all"]
+                    outline += "\t" + allval
+                    branchval = "not_branch"
+                    if "bybranch" in allmuts[patient][sample][AB][chr][pos12]:
+                        branchval = allmuts[patient][sample][AB][chr][pos12]["bybranch"]
+                    outline += "\t" + branchval + "\n"
                     outfile.write(outline)
+                    pair = (allval, branchval)
+                    if pair not in differences:
+                        differences[pair] = 0
+                    differences[pair] += 1
+                    if (A=='1' and B=='1'):
+                        if pair not in differences_11:
+                            differences_11[pair] = 0
+                        differences_11[pair] += 1
 outfile.close()
+
+bnb_sum = open("branch_vs_all.tsv", "w")
+for pair in differences:
+    print(str(pair), str(differences[pair]))
+    bnb_sum.write(pair[0] + "\t" + pair[1] + "\t" + str(differences[pair]) + "\n")
+
+bnb_sum.close()
+
+bnb_sum11 = open("branch_vs_all_11.tsv", "w")
+for pair in differences_11:
+    print(str(pair), str(differences_11[pair]))
+    bnb_sum11.write(pair[0] + "\t" + pair[1] + "\t" + str(differences_11[pair]) + "\n")
+
+bnb_sum11.close()

@@ -157,7 +157,9 @@ for line in open(dipvtet_file, "r"):
             continue    # no sex chromosomes please
         prevpos = -500
         prevAB = (-1, -1)
-        for pos in mutations[sid][chr]:
+        positions = list(mutations[sid][chr].keys())
+        positions.sort()
+        for pos in positions:
             (ref, alt) = mutations[sid][chr][pos]
             ABpair = getCNCallFor(chr, pos, cncalls)
             if ABpair == (-1, -1):
