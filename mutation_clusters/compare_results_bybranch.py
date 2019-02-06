@@ -161,6 +161,7 @@ labels = "Patient"
 labels += "\tSample"
 labels += "\tA"
 labels += "\tB"
+labels += "\tchr"
 labels += "\tpos1"
 labels += "\tpos2"
 labels += "\tall"
@@ -183,6 +184,7 @@ for patient in allmuts:
                     outline += "\t" + sample
                     outline += "\t" + A
                     outline += "\t" + B
+                    outline += "\t" + str(chr)
                     outline += "\t" + str(pos1)
                     outline += "\t" + str(pos2)
                     allval = "not_all"
