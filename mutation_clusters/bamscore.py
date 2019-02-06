@@ -96,6 +96,9 @@ for root, dirs, files in os.walk(mutdir):
 
 print("Pairfiles in", mutdir, "are", pairfiles)
 
+if len(pairfiles)==0:
+    print("No mutation pairfiles for patient", pid, "sample", sid)
+
 mutpairs = {}
 for pairfile in pairfiles:
     (__, __, A, B, __) = pairfile.split('_')
