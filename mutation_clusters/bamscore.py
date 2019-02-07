@@ -143,29 +143,30 @@ for ABpair in mutpairs:
       assert chr1 == chr2
     
       # pull reads for mutation position 1 into a list
-      repeats = 0
       reads1 = list(bamfile.fetch(chr1,pos1,pos1+1))
+      reads2 = list(bamfile.fetch(chr2,pos2,pos2+1))
+
+      repeats = 0
       while len(reads1)==0 and repeats<3:
           time.sleep(10)
           repeats += 1
           reads1 = list(bamfile.fetch(chr1,pos1,pos1+1))
       if repeats>0:
           if len(reads1)==0:
-              print("No reads at", chr, str(pos1), "despite trying three times.")
+              print("No reads for read1 at", chr, str(pos1), "despite trying three times.")
           else:
-              print("Had to repeat the call to fetch before obtaining reads at", chr, str(pos1))
+              print("Had to repeat the call to fetch for read1", str(repeats), "times before obtaining reads at", chr, str(pos1))
 
       repeats = 0
-      reads2 = list(bamfile.fetch(chr2,pos2,pos2+1))
       while len(reads2)==0 and repeats<3:
           time.sleep(10)
           repeats += 1
           reads2 = list(bamfile.fetch(chr2,pos2,pos2+1))
       if repeats>0:
           if len(reads2)==0:
-              print("No reads at", chr, str(pos1), "despite trying three times.")
+              print("No reads for read2 at", chr, str(pos1), "despite trying three times.")
           else:
-              print("Had to repeat the call to fetch", str(repeats), "times before obtaining reads at", chr, str(pos1))
+              print("Had to repeat the call to fetch for read2", str(repeats), "times before obtaining reads at", chr, str(pos1))
     
       already_scored = []
       for read1 in reads1:
