@@ -20,8 +20,8 @@ tag = "_g500_better_ploidy/"
 tree_input = "joint_segmentation_nodupes" + tag
 beast_output = "BEAST" + tag
 
-somepatientsonly = True
-somepatients = ["396"]
+somepatientsonly = False
+somepatients = ["286"]
 
 if not(path.isdir(beast_output + "/")):
     mkdir(beast_output + "/")
@@ -65,7 +65,7 @@ for f in segment_files:
                 label2 = tmp1
                 data2 = tmp2
             if label1 not in assignments:
-                assignments[label1] = random.choice([True, False])
+                assignments[label1] = True #random.choice([True, False])
             if (assignments[label1]):
                 A_out.write("\t" + data1)
                 B_out.write("\t" + data2)

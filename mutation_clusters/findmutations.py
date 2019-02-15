@@ -103,14 +103,11 @@ for line in open(dipvtet_file, "r"):
     lvec = line.rstrip().split();
     ploidy = lvec[-1].lower()
     (pid, sid) = lvec[0:2]
-    if ploidy=="unknown" and "N" in sid:
-        ploidy = "diploid"
     if ploidy=="unknown":
-        print("Unknown ploidy for patient", pid, "sample", sid)
-        continue
-#    if "N" in sid:
-#        print("Skipping gastric sample", pid, sid)
-#        continue
+        if float(lvec[-2]) > 0.5:
+            ploidy = "diploid"
+        else:
+            ploidy = "tetraploid"
     if somepatientsonly and pid not in somepatients:
         continue
     print("Analyzing",pid,sid)

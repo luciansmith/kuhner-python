@@ -24,7 +24,10 @@ validation_input = "segmentation_validation" + tag
 tree_output = "joint_processed_segmentation" + tag
 
 somepatientsonly = True
-somepatients = ["396"]
+somepatients = ["286"]
+
+somechromsonly = False
+somechroms = ["9"]
 
 if not(path.isdir(tree_output + "/")):
     mkdir(tree_output + "/")
@@ -150,6 +153,8 @@ for v in vallist:
             validated_labels[patient] = line.split("\t")[8:]
             continue
         (vpatient, chr, start, end, nBAFs, matches, antimatches, fails) = line.split()[0:8]
+        if somechromsonly and chr in somechroms:
+            continue
         assert(vpatient == patient)
         whichmatch = line.rstrip().split()[8:]
         if not(patient in validated_segments):
