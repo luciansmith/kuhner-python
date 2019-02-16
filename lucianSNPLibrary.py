@@ -1241,6 +1241,29 @@ def getGammaFor(patient):
     return "500"
 
 
+def getPatientSampleMap(dipvtet_file):
+    s2p = {}
+    p2s = {}
+    callfile = open(dipvtet_file, "r")
+    for line in callfile:
+        if "Patient" in line:
+            continue
+        lvec = line.rstrip().split()
+        (patient, sample) = lvec[0:2]
+        ploidy = lvec[-1]
+        if ploidy=="Unknown":
+            odds = float(lvec[-2])
+            if odds > 0.5:
+                ploidy = "Diploid"
+            else:
+                ploidy = "Tetraploid"
+        s2p[sample] = (patient, ploidy)
+        if patient not in p2s:
+            p2s[patient] = []
+        p2s[patient].append(sample)
+    return s2p, p2s
+
+
 
 
 
