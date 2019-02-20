@@ -24,7 +24,7 @@ tag = "_g500_better_ploidy/"
 BAF_input = ["BAF_filtered_data_25M_only_40_65/", "BAF_filtered_data_1M_only_40_65/", "BAF_filtered_data_Pilot_40_65/"]
 CN_input = "noninteger_processed_CNs/"
 dipvtet_file = "calling_evidence_challenge_inc_odds.tsv"
-BEAST_output = "BEAST_newinput_" + tag
+BEAST_output = "BEAST_newinput" + tag
 
 
 somepatientsonly = True
@@ -163,6 +163,10 @@ def findCNfilename(pid,sid,ploidy,filelist):
     entry = file.split("_")
     if entry[0] == pid and entry[1] == sid and entry[3] == ploidy:
       return file
+  for file in filelist:
+    entry = file.split("_")
+    if entry[0] == pid and entry[1] == sid:
+      return file
   return None
 
 def getSegmentCalls(patient, sampleList, s2p, CNlist):
@@ -208,7 +212,7 @@ def writeHeader(file, samplelist):
     file.write("\n")
 
 def writeLine(file, vector):
-    file.write(vector[0])
+    file.write(str(vector[0]))
     for n in range(1,len(vector)):
         file.write("\t")
         file.write(str(vector[n]))
@@ -227,10 +231,10 @@ def validateMatchgrid(matchgrid):
     set1 = set()
     set2 = set()
     for samp1 in matchgrid:
-        if matchgrid[samp1] == "balanced:
+        if matchgrid[samp1] == "balanced":
             continue
         for samp2 in matchgrid[samp1]:
-            if matchgrid[samp1][samp2] == "balanced:
+            if matchgrid[samp1][samp2] == "balanced":
                 continue
             if matchgrid[samp1][samp2] == "match":
                 if samp1 in set2:
@@ -280,34 +284,38 @@ def finalizeMatches(matchgrid, samples, segments, prevN, prevS):
     for s1 in range(len(samples)):
         if Nvec[s1] != -1:
             continue
+        samp1 = samples[s1]
         for s2 in range(len(samples)):
             if Nvec[s2] != Svec[s2]:
-                match = matchgrid[samples[s1]][samples[s2]]
+                samp2 = samples[s2]
+                match = matchgrid[samp1][samp2]
                 if (Nvec[s2] < Svec[s2] and match == "match") or (Nvec[s2] > Svec[s2] and match == "antimatch"):
-                    Nvec[s1] = segments[s1][0]
-                    Svec[s1] = segments[s1][1]
+                    Nvec[s1] = segments[samp1][0]
+                    Svec[s1] = segments[samp1][1]
                 else:
-                    Nvec[s1] = segments[s1][1]
-                    Svec[s1] = segments[s1][0]
+                    Nvec[s1] = segments[samp1][1]
+                    Svec[s1] = segments[samp1][0]
                 break
     
     #Third pass: make a new decision, and then match everything else to it:
     for s1 in range(len(samples)):
         if Nvec[s1] != -1:
             continue
-        Nvec[s1] = segments[s1][0]
-        Svec[s1] = segments[s1][1]
+        samp1 = samples[s1]
+        Nvec[s1] = segments[samp1][0]
+        Svec[s1] = segments[samp1][1]
         for s2 in range(s1+1, len(samples)):
             if Nvec[s2] != -1:
                 continue
+            samp2 = samples[s2]
             match = matchgrid[samples[s1]][samples[s2]]
             if match == "match":
-                Nvec[s2] = segments[s2][0]
-                Svec[s2] = segments[s2][1]
+                Nvec[s2] = segments[samp2][0]
+                Svec[s2] = segments[samp2][1]
             else:
                 assert(match=="antimatch")
-                Nvec[s2] = segments[s2][1]
-                Svec[s2] = segments[s2][0]
+                Nvec[s2] = segments[samp2][1]
+                Svec[s2] = segments[samp2][0]
             
         
 
@@ -323,19 +331,18 @@ def getSortedCalls(patient, samples, chr, segpair, segments, prevN, prevS):
             matchgrid[samp1] = "balanced"
         else:
             allBalanced = False
-            matchgrid[samp1] = {}
+            if samp1 not in matchgrid:
+                matchgrid[samp1] = {}
             for s2 in range(s1+1, len(samples)):
                 samp2 = samples[s2]
                 (s2A, s2B) = segments[samp2]
-                if s2A==s2B:
-                    matchgrid[samp1][samp2] = "balanced"
-                    matchgrid[samp2] = "balanced"
-                else:
-                    matchgrid[samp1][samp2] = getMatchVsAntimatch(samp1, samp2, chr, segpair)
+                if s2A!=s2B:
+                    matchornot = getMatchVsAntimatch(samp1, samp2, chr, segpair)
+                    matchgrid[samp1][samp2] = matchornot
                     if samp2 not in matchgrid:
                         matchgrid[samp2] = {}
-                    matchgrid[samp2][samp1] = matchgrid[samp1][samp2]
-    (Nvec, Svec) = finalizeMatches(matchgrid, samples, prevN, prevS)
+                    matchgrid[samp2][samp1] = matchornot
+    (Nvec, Svec) = finalizeMatches(matchgrid, samples, segments, prevN, prevS)
     if not(validateMatchgrid(matchgrid)):
         print("Invalid match grid for patient", patient, "samples", str(samples), "at chr", str(chr), str(segpair))
     return (Nvec, Svec, allBalanced)
@@ -345,17 +352,17 @@ for patient in p2s:
     samples = p2s[patient]
     samples.sort()
     segments = getSegmentCalls(patient, samples, s2p, CNlist)
-    allA = open(BEAST_output + patient + "_allA.txt")
-    allB = open(BEAST_output + patient + "_allB.txt")
+    allA = open(BEAST_output + patient + "_allA.txt", "w")
+    allB = open(BEAST_output + patient + "_allB.txt", "w")
     writeHeader(allA, samples)
     writeHeader(allB, samples)
-    chrs = segments.keys();
+    chrs = list(segments.keys());
     chrs.sort()
     for chr in chrs:
         shouldSwitch = True
         prevN = [-1]*len(samples)
         prevS = [-1]*len(samples)
-        segpairs = segments[chr].keys()
+        segpairs = list(segments[chr].keys())
         segpairs.sort()
         for segpair in segpairs:
             if (shouldSwitch):

@@ -19,7 +19,7 @@ from os import mkdir
 
 #import lucianSNPLibrary as lsl
 
-use_challenge = True
+use_challenge = False
 only_challenge_evidence = False
 
 if use_challenge:
@@ -218,10 +218,13 @@ for line in f:
         pbetter_acc_dip = 0.144
         pbetter_acc_tet = 0.171
     if better_accuracy == "Diploid only":
-#        if int(sample) < 23341:
-#            pbetter_acc_dip = 1
-#            pbetter_acc_tet = 0
-        assert(True)
+        pass
+    elif better_accuracy == "Diploid only at all gammas":
+        pbetter_acc_dip = 1
+        pbetter_acc_tet = 0
+    elif better_accuracy == "Tetraploid only at all gammas":
+        pbetter_acc_dip = 0
+        pbetter_acc_tet = 1
         #To few to assess
     elif better_accuracy == "Tetraploid only":
         pbetter_acc_dip = 0.003

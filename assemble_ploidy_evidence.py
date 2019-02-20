@@ -12,6 +12,7 @@ from os import path
 from os import readlink
 from os.path import isfile
 from os import mkdir
+import glob
 
 import lucianSNPLibrary as lsl
 
@@ -23,7 +24,7 @@ flow_summary = "flow_summary.txt"
 call_summary = "Xiaohong_pASCAT_compare/xiaocompare_summary.tsv"
 goodness_dir = "gamma_test_output/pASCAT_input_g"
 
-include_challenge = True
+include_challenge = False
 
 if include_challenge:
     outfile = "calling_evidence_challenge_inc.tsv"
@@ -191,6 +192,11 @@ def getXMatches(patient ,sample, calldata):
                 return "Diploid"
     return "Neither"
 
+def hasPloidyAtOtherGamma(patient, sample, ploidy):
+    if len(glob.glob("gamma_test_output/pASCAT*/" + ploidy + "/" + patient + "_" + sample + "*"))>0:
+        return True
+    return False
+
 def getBetterAccuracy(patient, sample, calldata):
     better_accuracy = "Unknown"
     if patient in calldata and sample in calldata[patient]:
@@ -203,9 +209,15 @@ def getBetterAccuracy(patient, sample, calldata):
         if (dacc==-1 and tacc==-1):
             better_accuracy = "Neither"
         elif (dacc==-1):
-            better_accuracy = "Tetraploid only"
+            if hasPloidyAtOtherGamma(patient, sample, "diploid"):
+                better_accuracy = "Tetraploid only"
+            else:
+                better_accuracy = "Tetraploid only at all gammas"
         elif (tacc == -1):
-            better_accuracy = "Diploid only"
+            if hasPloidyAtOtherGamma(patient, sample, "tetraploid"):
+                better_accuracy = "Diploid only"
+            else:
+                better_accuracy = "Diploid only at all gammas"
         elif abs(dacc-tacc) < .03:
             better_accuracy = "Neither"
         elif dacc > tacc:
