@@ -9,7 +9,7 @@ Created on Wed Jul  3 15:29:58 2019
 import os
 import ete3
 
-outdir = "patty_phylogenies/"
+outdir = "non17_phylogenies/"
 
 # Ingest the trees.  First, grab all the filenames/ paths of the tree files
 tree_files = {'path': [], 'PatientID': []}
@@ -24,7 +24,22 @@ for x, pid in enumerate(tree_files['PatientID']):
     tree_files['PatientID'][x] = int(pid)
     
 target_pids = [88, 130, 385, 541, 572, 729, 956, 42, 169, 279, 623, 728, 852, 951, 995]
-
+vertical_margins = {
+        88:  25,
+        130: 20, 
+        385: 20, 
+        541: 20, 
+        572: 50, 
+        729: 55, 
+        956: 20, 
+        42:  25, 
+        169: 28, 
+        279: 20, 
+        623: 30, 
+        728: 20, 
+        852: 25, 
+        951: 25, 
+        995: 25}
 
 for x, path in enumerate(tree_files['path']):
     pid = tree_files['PatientID'][x]
@@ -44,14 +59,17 @@ for x, path in enumerate(tree_files['path']):
     tstyle = ete3.TreeStyle()
     # Make it a rectangular tree
     tstyle.mode = 'r'
-    tstyle.branch_vertical_margin = 20
+    tstyle.branch_vertical_margin = vertical_margins[pid]
     tstyle.show_scale = False
     # Show the leaf names, and the branch lenghts
     tstyle.show_leaf_name = False
     tstyle.show_branch_length = False
     for branch in t:
+        if "N" in branch.name:
+            branch.delete()
+    for branch in t:
         if "_" in branch.name:
-            name_face = ete3.AttrFace("name", fsize=30)
+            name_face = ete3.AttrFace("name", fsize=vertical_margins[pid]+10)
             branch.add_face(name_face, column=0, position="branch-right")
 #        if "blood" in branch.name:
 #            branch.name = "blood " + str(pid)
