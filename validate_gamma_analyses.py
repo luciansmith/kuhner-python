@@ -67,8 +67,8 @@ ignore_cnvis = True
 use_restrictive_wt_calls = False
 use_only_common_snps = False
 use_median_from_wt = False
-use_orig_wt = False
-use_pos_medians = True
+use_orig_wt = True
+use_pos_medians = False
 
 medians = {}
 
@@ -805,8 +805,8 @@ for f in files:
     for sample in all_samples:
         scoreAnalysis(isegs, Xiaohong_segments[patient], sample, "Xiaohong")
 
-    writeSummary(isegs, patient, all_samples, all_analyses)
-    writeBalanceFiles(isegs, patient, all_samples)
+    #writeSummary(isegs, patient, all_samples, all_analyses)
+    #writeBalanceFiles(isegs, patient, all_samples)
 
 unique_ratios = []
 used_samples = []

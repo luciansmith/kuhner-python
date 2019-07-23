@@ -27,7 +27,7 @@ dipvtet_file = "calling_evidence_challenge_inc_odds.tsv"
 BEAST_output = "BEAST_newinput" + tag
 
 
-somepatientsonly = True
+somepatientsonly = False
 #somepatients = ["141", "163", "194", "512", "954"]
 somepatients = ["891"]
 
@@ -36,16 +36,6 @@ use_nonints = True
 
 if not(path.isdir(BEAST_output + "/")):
     mkdir(BEAST_output + "/")
-
-
-CNlist = []
-for (_, _, f) in walk(CN_input):
-    CNlist += f
-
-BAFlist = []
-for bafin in BAF_input:
-    for (_, _, f) in walk(bafin):
-        BAFlist += f
 
 
 def validateSegments(BAFs_by_sample, validation_output, id, failfile, summaryfile):
@@ -211,11 +201,14 @@ def writeHeader(file, samplelist):
         file.write("\t" + sample)
     file.write("\n")
 
-def writeLine(file, vector):
-    file.write(str(vector[0]))
-    for n in range(1,len(vector)):
+def writeLine(file, chr, segpair, vector):
+    file.write(str(chr))
+    for end in segpair:
         file.write("\t")
-        file.write(str(vector[n]))
+        file.write(str(end))
+    for entry in vector:
+        file.write("\t")
+        file.write(str(entry))
     file.write("\n")
 
 def randomizeFiles(allA, allB):
@@ -239,6 +232,8 @@ def validateMatchgrid(matchgrid):
             if matchgrid[samp1][samp2] == "match":
                 if samp1 in set2:
                     set2.add(samp2)
+                elif samp2 in set2:
+                    set2.add(samp1)
                 else:
                     set1.add(samp1)
                     set1.add(samp2)
@@ -263,7 +258,7 @@ def validateMatchgrid(matchgrid):
 def finalizeMatches(matchgrid, samples, segments, prevN, prevS):
     Nvec = [-1] * len(samples)
     Svec = [-1] * len(samples)
-
+    
     # First pass:  any balanced entries, and any entries that match the previous row
     for s in range(len(samples)):
         sample = samples[s]
@@ -279,7 +274,7 @@ def finalizeMatches(matchgrid, samples, segments, prevN, prevS):
             Nvec[s] = prevN[s]
             Svec[s] = prevS[s]
             continue
-
+    
     # Second pass:  anything that matched a pulled-down entry, put that in.
     for s1 in range(len(samples)):
         if Nvec[s1] != -1:
@@ -316,11 +311,9 @@ def finalizeMatches(matchgrid, samples, segments, prevN, prevS):
                 assert(match=="antimatch")
                 Nvec[s2] = segments[samp2][1]
                 Svec[s2] = segments[samp2][0]
-            
-        
-
     return (Nvec, Svec)
-    
+
+
 def getSortedCalls(patient, samples, chr, segpair, segments, prevN, prevS):
     matchgrid = {}
     allBalanced = True
@@ -346,9 +339,22 @@ def getSortedCalls(patient, samples, chr, segpair, segments, prevN, prevS):
     if not(validateMatchgrid(matchgrid)):
         print("Invalid match grid for patient", patient, "samples", str(samples), "at chr", str(chr), str(segpair))
     return (Nvec, Svec, allBalanced)
-        
+
+
+#Main routine:
+CNlist = []
+for (_, _, f) in walk(CN_input):
+    CNlist += f
+
+BAFlist = []
+for bafin in BAF_input:
+    for (_, _, f) in walk(bafin):
+        BAFlist += f
+
 (s2p, p2s) = lsl.getPatientSampleMap(dipvtet_file)
 for patient in p2s:
+    if somepatientsonly and patient not in somepatients:
+        continue
     samples = p2s[patient]
     samples.sort()
     segments = getSegmentCalls(patient, samples, s2p, CNlist)
@@ -368,90 +374,11 @@ for patient in p2s:
             if (shouldSwitch):
                 (Ns, Ss) = randomizeFiles(allA, allB)
             (Nvec, Svec, shouldSwitch) = getSortedCalls(patient, samples, chr, segpair, segments[chr][segpair], prevN, prevS)
-            writeLine(Ns, Nvec)
-            writeLine(Ss, Svec)
+            writeLine(Ns, chr, segpair, Nvec)
+            writeLine(Ss, chr, segpair, Svec)
             prevN = Nvec
             prevS = Svec
-    
-
-segments = {}
-for CNfile in CNlist:
-    if use_nonints:
-        (patient, sample, gamma, ploidy, __, __) = CNfile.split("_")
-        if ploidy != lsl.getBestPloidyFor(patient, sample):
-            continue
-    else:
-        (patient, sample, __) = CNfile.split("_")
-    if somepatientsonly and patient not in somepatients:
-        continue
-    BAFname = patient + "_" + sample + "_BAF.txt"
-    BAFname = BAFname.replace('b', '')
-    if not(BAFname in BAFlist):
-        print("Couldn't find expected BAF file", BAFname, "from CN file", CNfile)
-        continue
-    if not(patient in segments):
-        segments[patient] = {}
-    segments[patient][sample] = {}
-
-failfile = open(validation_output + "failures.txt", "w")
-summaryfile = open(validation_output + "summary.txt", "w")
-failfile.write("patient\tchr\tstart\tend\tsample\tBAFs-.5\n")
-summaryfile.write("patient\tsample\tmatches\tantimatches\tfails\n")
-
-for patient in segments:
-    if somepatientsonly and patient not in somepatients:
-        continue
-    BAFs_by_sample = {}
-    for sample in segments[patient]:
-        #if sample != "18992":
-        #    continue
-        if not(sample in BAFs_by_sample):
-            BAFs_by_sample[sample] = {}
-        for chr in segments[patient][sample]:
-            for seg in segments[patient][sample][chr]:
-                segname = (chr, seg[0], seg[1])
-                if not(segname in BAFs_by_sample[sample]):
-                    BAFs_by_sample[sample][segname] = {}
-        BAFname = patient + "_" + sample + "_BAF.txt"
-        BAFname = BAFname.replace('b', '')
-        baffilename = BAF_input[0] + BAFname
-        if not isfile(baffilename):
-            baffilename = BAF_input[1] + BAFname
-        if not isfile(baffilename):
-            baffilename = BAF_input[2] + BAFname
-        baffile = open(baffilename, "r")
-        for line in baffile:
-            if (line.find("BAF") != -1):
-                continue
-            (snpid, chr, pos, baf) = line.rstrip().split()
-            if (baf=="?"):
-                continue
-            if (chr == "23"):
-                continue
-            if (chr == "24"):
-                continue
-            baf = float(baf)
-            pos = int(pos)
-            if chr not in segments[patient][sample]:
-                continue
-            for seg in segments[patient][sample][chr]:
-                #These segments come from ASCAT, which is a both-end-inclusive caller (i.e. calls "5-10", "11-24", etc.)
-                if pos < seg[0]:
-                    continue
-                if pos > seg[1]:
-                    continue
-                segname = (chr, seg[0], seg[1])
-                pos = str(pos)
-                if pos in BAFs_by_sample[sample][segname]:
-                    pos = pos + "_b"
-                BAFs_by_sample[sample][segname][pos] = baf
-                break
-    print("Processing patient", patient)
-    validateSegments(BAFs_by_sample, validation_output, patient, failfile, summaryfile)
-
-
-failfile.close()
-summaryfile.close()
-
+    allA.close()
+    allB.close()
 
 
