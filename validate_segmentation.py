@@ -28,7 +28,7 @@ validation_output = "segmentation_validation" + tag
 
 somepatientsonly = True
 #somepatients = ["141", "163", "194", "512", "954"]
-somepatients = ["891"]
+somepatients = ["1005"]
 
 use_nonints = True
 

@@ -23,8 +23,8 @@ validation_input = "segmentation_validation" + tag
 
 tree_output = "joint_processed_segmentation" + tag
 
-somepatientsonly = True
-somepatients = ["286"]
+somepatientsonly = False
+somepatients = ["1001"]
 
 somechromsonly = False
 somechroms = ["9"]
@@ -111,7 +111,7 @@ def writeOneSet(chr, oneset, n, samples, output, labels):
         output.append({})
         output[current+r]["label"] = str(chr) + "\t" + str(segpair[0]) + "\t" + str(segpair[1])
         #First bring down exactly one unbalanced call from the previous row, if any exist that match exactly.
-        mixed_samples = samples
+        mixed_samples = samples.copy()
         shuffle(mixed_samples)
         chosen_sample = ""
         #First bring down exactly one unbalanced call from the previous row, if any exist that match exactly.

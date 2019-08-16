@@ -60,7 +60,7 @@ def createPrintAndSaveHistogram(data, filename, binwidth, xdata="log2r", axis=()
     for val in data:
         addKernelToHistogram(val, 1, hist, kw, len(data), binwidth)
     if (show or savefig):
-        plt.plot(hist.keys(), hist.values(), "ro")
+        plt.plot(list(hist.keys()), list(hist.values()), "ro")
         paxis = list(plt.axis())
         for a in range(0,len(axis)):
             paxis[a] = axis[a]
