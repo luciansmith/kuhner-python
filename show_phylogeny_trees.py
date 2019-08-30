@@ -90,14 +90,40 @@ for x, path in enumerate(tree_files['path']):
         if "N" in branch.name:
             branch.delete()
     for branch in t:
+        if "blood" in branch.name:
+            t.set_outgroup(branch)
+            root = t.get_tree_root()
+            root.dist = 2*branch.dist
+            branch.delete()
+            root.get_children()[0].delete()
+    for branch in t.traverse():
         if "_" in branch.name:
             #Print the leaf names in our own font
             name_face = ete3.AttrFace("name", fsize=vertical_margins[pid]+10)
             branch.add_face(name_face, column=0, position="branch-right")
-#        if "blood" in branch.name:
-#            branch.name = "blood " + str(pid)
-#        elif "_" in branch.name:
             branch.name = branch.name.split("_")[0]
+#        else:
+        text_face = ete3.TextFace("gene ids", fsize=vertical_margins[pid]-5)
+        branch.add_face(text_face, column=1, position="branch-top")
+#        else:
+#            branch.add_feature(stuff="I'm internal!")
+#            upper = ete3.AttrFace("stuff", fsize=vertical_margins[pid])
+#            lower = ete3.TextFace("below", fsize=vertical_margins[pid])
+#            
+##            # Set some attributes
+##            hola.margin_top = 10
+##            hola.margin_right = 10
+##            hola.margin_left = 10
+##            hola.margin_bottom = 10
+##            hola.opacity = 0.5 # from 0 to 1
+##            hola.inner_border.width = 1 # 1 pixel border
+##            hola.inner_border.type = 1  # dashed line
+##            hola.border.width = 1
+##            hola.background.color = "LightGreen"
+#            
+#            branch.add_face(upper, column=0, position = "branch-top")
+#            branch.add_face(lower, column=1, position = "branch-bottom")
+            
     # Stretch in x
     tstyle.scale = 1000
 

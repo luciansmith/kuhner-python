@@ -75,7 +75,7 @@ def callGroup(group, allsamples, tree):
 groupdata = {}
 allsamples= {}
 for gfile in groupfiles:
-    if "all" in gfile:
+    if "all" in gfile or "patient" in gfile:
         continue
     patient = gfile.split("_")[0]
     groupdata[patient] = {}
@@ -116,6 +116,8 @@ for line in open(CNVfile, "r"):
 
 #Count the CNVs by sample list
 nmulti = 0
+nmulti_singletons = 0
+nmulti_multis = 0
 nsingle = 0
 CNVcounts = {}
 for patient in CNVs:
@@ -124,6 +126,18 @@ for patient in CNVs:
         calls = list(CNVs[patient][segid].keys())
         if len(calls) > 1:
             nmulti += 1
+            nOne = 0
+            nTwoPlus = 0
+            for call in calls:
+                if len(CNVs[patient][segid][call])==1:
+                    nOne += 1
+                else:
+                    nTwoPlus += 1
+            if nTwoPlus == 0:
+                nmulti_singletons += 1
+            elif nOne == 0:
+                nmulti_multis += 1
+            
             continue
         samples = CNVs[patient][segid][calls[0]]
         samples.sort()
@@ -139,8 +153,10 @@ for patient in CNVs:
     for samples in groupdata[patient]:
         groupdata[patient][samples]["cnv_percentage"] = groupdata[patient][samples]["cnv_count"]/CNVtotal
 
-print("Number of segments with multiple calls:", str(nmulti))
 print("Number of segments with a single call:", str(nsingle))
+print("Number of segments with multiple calls:", str(nmulti))
+print("Number of segments with multiple calls, all singletons:", str(nmulti_singletons))
+print("Number of segments with multiple calls, all multiples:", str(nmulti_multis))
 
 #Now put the tree data in there, too:
 for patient in groupdata:
@@ -166,3 +182,65 @@ for patient in groupdata:
             outfile.write("\t" + sample)
         outfile.write("\n")
 outfile.close()
+
+#Now do some analysis
+has23GD = ["74", "279", "303", "391", "396", "450", "772", "997"]
+types = ["Singleton", "Root", "Grouped", "Ungrouped"]
+outfile = open(groupdir + "patient_analysis.tsv", "w")
+outfile.write("Patient\tnSNVmin\tnSNVmax\thas 2-3 GD")
+for type in types:
+    outfile.write("\t" + type + " counts")
+    outfile.write("\t" + type + " total")
+outfile.write("\tUngrouped potential subclone counts\tUngrouped potential scomubclone total\n")
+for patient in groupdata:
+    smallestSNVcount = 100000
+    maxSNVcount = 0
+    for samples in groupdata[patient]:
+        SNVcount = groupdata[patient][samples]["count"]
+        if groupdata[patient][samples]["matches_tree"] == "Grouped":
+            if SNVcount < smallestSNVcount:
+                smallestSNVcount = SNVcount
+        if SNVcount > maxSNVcount:
+            maxSNVcount = SNVcount
+    possibleSubcloneThreshold = smallestSNVcount*3/4
+    CNVcounts = {}
+    for match in types:
+        CNVcounts[match] = []
+    CNVcounts["subclones"] = []
+    for samples in groupdata[patient]:
+        theseSamples = groupdata[patient][samples]
+        CNVcount = theseSamples["cnv_count"]
+        if CNVcount ==0:
+            continue
+        if theseSamples["matches_tree"] == "Ungrouped" and theseSamples["count"] >= possibleSubcloneThreshold:
+            CNVcounts["subclones"].append(CNVcount)
+        else:
+            CNVcounts[theseSamples["matches_tree"]].append(CNVcount)
+    outfile.write(patient)
+    outfile.write("\t" + str(possibleSubcloneThreshold))
+    outfile.write("\t" + str(maxSNVcount))
+    outfile.write("\t" + str(patient in has23GD))
+    for type in types:
+        outfile.write("\t")
+        for num in CNVcounts[type]:
+            outfile.write("//" + str(num))
+        outfile.write("\t" + str(sum(CNVcounts[type])))
+    outfile.write("\t")
+    for num in CNVcounts["subclones"]:
+        outfile.write("//" + str(num))
+    outfile.write("\t" + str(sum(CNVcounts["subclones"])))
+    outfile.write("\n")
+outfile.close()
+    
+
+
+
+
+
+
+
+
+
+
+
+

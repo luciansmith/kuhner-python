@@ -1157,8 +1157,10 @@ def getCanonicalAscatCallsFor(patient):
     print("Unknown patient")
     return []
 
-def getBestPloidyFor(patient, sample):
-    oddsfile = "calling_evidence_challenge_inc_odds.tsv"
+def getBestPloidyFor(patient, sample, challenge=True):
+    oddsfile = "calling_evidence_odds.tsv"
+    if challenge:
+        oddsfile = "calling_evidence_challenge_inc_odds.tsv"
     for line in open(oddsfile, "r"):
         lvec = line.rstrip().split("\t")
         if lvec[0] != patient:
@@ -1180,9 +1182,12 @@ def getBestPloidyFor(patient, sample):
         if odds >= 0.5:
             return "diploid"
         return "tetraploid"
-    print("Unknown patient/sample", patient, sample)
-    assert(False)
-    return "diploid"
+    if challenge:
+        print("Unknown patient/sample", patient, sample)
+        assert(False)
+        return "diploid"
+    else:
+        return "unknown"
 
 def getSingleGammaCallsFor(patient, gamma):
     if gamma == "500":

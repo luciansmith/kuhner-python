@@ -210,8 +210,8 @@ with open(mutation_file, 'r') as csvfile:
             mutations[patient][chr][pos][alt] = []
         mutations[patient][chr][pos][alt].append((sample, VAF))
 
-#writeVAFs(mutations, samplePatientMap)
-writeAllSampleVAFs(mutations, samplePatientMap)
+writeVAFs(mutations, samplePatientMap)
+#writeAllSampleVAFs(mutations, samplePatientMap)
 
 for patient in mutations:
     groups = {}
