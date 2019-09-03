@@ -36,14 +36,13 @@ somepatients = ["74"]
 def findHighCopyGenesFor(genelist, cncalls):
     retlist = {}
     for gene in genelist:
-        retlist[gene] = []
+        retlist[gene] = set()
         (chr, start, end) = genelist[gene]
         for patient in cncalls:
             for sample in cncalls[patient]:
 #                if not sample=="24714":
 #                    continue
                 if chr in cncalls[patient][sample]:
-                    totaloverlap = 0
                     for seg in cncalls[patient][sample][chr]:
                         if start > seg[1]:
                             continue
@@ -51,11 +50,14 @@ def findHighCopyGenesFor(genelist, cncalls):
                             continue
                         overlapstart = max(start, seg[0])
                         overlapend = min(end, seg[1])
-                        totaloverlap += overlapend-overlapstart
-#                        print(gene)
-#                        print("Overlap:", str(overlapstart), str(overlapend), "from", str(seg), str(start), str(end))
-                        if totaloverlap > (end - start)/2:
-                            retlist[gene].append((patient, sample))
+                        overlap = overlapend-overlapstart
+                        if gene=="CCSER1" and patient=="74":
+                            print(gene, patient, sample)
+                            print("Overlap:", str(overlapstart), str(overlapend), "from", str(seg), str(start), str(end))
+                            print("Total overlap:", str(overlap))
+                            print("Target overlap:", str((end-start)/10))
+                        if overlap > 0: #(end - start)/2:
+                            retlist[gene].add((patient, sample, overlap/(end-start)))
                             continue
 #                            print("Yes")
 #                        else:
@@ -66,9 +68,20 @@ def writeFileFor(file, genelist):
     file.write("Gene\tHigh levels in:\n")
     for gene in genelist:
         file.write(gene)
-        for (patient, sample) in genelist[gene]:
+        pses = list(genelist[gene])
+        pses.sort()
+        for (patient, sample, __) in pses:
             file.write("\t" + patient + "_" + sample)
         file.write("\n")
+    file.close()
+
+def writeOtherFileFor(file, genelist):
+    file.write("Patient\tSample\tGene\tOverlap\n")
+    for gene in genelist:
+        pses = list(genelist[gene])
+        pses.sort()
+        for (patient, sample, overlap) in pses:
+            file.write(patient + "\t" + sample + "\t" + gene + "\t" + str(overlap) + "\n")
     file.close()
 
 
@@ -103,7 +116,7 @@ for file in CNfiles:
     bestploidy = lsl.getBestPloidyFor(patient, sample, challenge=False)
     if not bestploidy == ploidy:
         continue
-    print("Getting sample", sample, "ploidy", ploidy)
+    #print("Getting sample", sample, "ploidy", ploidy)
     if patient not in pascatCNs:
         pascatCNs[patient] = {}
     for line in open(CNdir + file, "r"):
@@ -147,6 +160,13 @@ writeFileFor(jfile, jlist)
 
 pfile = open("pascat_list.txt", "w")
 writeFileFor(pfile, plist)
+
+jfile2 = open("jabba_list_bysample.txt", "w")
+writeOtherFileFor(jfile2, jlist)
+
+pfile2 = open("pascat_list_bysample.txt", "w")
+writeOtherFileFor(pfile2, plist)
+
 
         
         
