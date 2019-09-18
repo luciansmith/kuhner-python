@@ -21,14 +21,18 @@ import csv
 import lucianSNPLibrary as lsl
 
 highVAF = False
-lowVAF = True
+lowVAF = False
+pilot = True
 
 tag = ""
 if highVAF:
     tag = "_highVAF"
 if lowVAF:
     tag = "_lowVAF"
+if not pilot:
+    tag = "_noPilot"
 
+CNdir = "noninteger_processed_CNs/"
 mutation_file = "snv_plus_indels.twoPlus.20181030.csv"
 ploidy_file = "calling_evidence_odds.tsv"
 outdir = "phylip_input" + tag + "/"
@@ -75,15 +79,36 @@ def sampleToCode():
         if dist - levels[patient][0] > levels[patient][-1] - dist:
             lcode = "T" #'teeth'
         if dist - levels[patient][0] == levels[patient][-1] - dist:
-            print("Equal distances:", dist, levels[patient])
+            #print("Equal distances:", dist, levels[patient])
             assert(len(levels[patient]) == 4)
             if dist==levels[patient][2]:
                 lcode = "T"
-        print(patient, ":", lcode, str(dist), str(levels[patient]))
+        #print(patient, ":", lcode, str(dist), str(levels[patient]))
         scode = sample + "_" + lcode + age
         
         sampleCodeMap[sample] = scode
     return sampleCodeMap
+
+def includeList(pilot = False, T3 = True):
+    useable_samples = {}
+    for line in open(samplefile, "r"):
+        if "Patient" in line:
+            continue
+        lvec = line.rstrip().split()
+        patient = lvec[0]
+        sample = lvec[1]
+        stype = lvec[6]
+        if pilot and stype=="Pilot":
+            useable_samples[sample] = patient
+        elif T3 and stype=="LongFollowUp":
+            useable_samples[sample] = patient
+        elif stype=="T1" or stype=="T2" or stype=="Index":
+            useable_samples[sample] = patient
+        elif stype=="GastricSample":
+            continue
+        else:
+            print("Unknown stype", stype)
+    return useable_samples
 
 def readProgressorOrNot():
     progressorMap = {}
@@ -95,6 +120,45 @@ def readProgressorOrNot():
         progressorMap[patient] = pstat
     return progressorMap
 
+def loadDeletions(useable_samples):
+    deletions = {}
+    for sample in useable_samples:
+        patient = useable_samples[sample]
+        ploidy = lsl.getBestPloidyFor(patient, sample)
+        filename = CNdir + patient + "_" + sample + "_g500_" + ploidy + "_nonint_CNs.txt"
+        if not isfile(filename):
+            filename = CNdir + patient + "_" + sample + "_g550_" + ploidy + "_nonint_CNs.txt"
+        for line in open(filename, "r"):
+            if "patient" in line:
+                continue
+            lvec = line.rstrip().split()
+            if lvec[7] == "0" or lvec[8] == "0":
+                (chrom, start, end) = lvec[2:5]
+                start = int(start)
+                end = int(end)
+                if patient not in deletions:
+                    deletions[patient] = {}
+                if sample not in deletions[patient]:
+                    deletions[patient][sample] = {}
+                if chrom not in deletions[patient][sample]:
+                    deletions[patient][sample][chrom] = []
+                deletions[patient][sample][chrom].append((start, end))
+    return deletions
+
+def isDeleted(patient, sample, chrom, pos, deletions):
+    if patient not in deletions:
+        return False
+    if sample not in deletions[patient]:
+        return False
+    if chrom not in deletions[patient][sample]:
+        return False
+    for (start, end) in deletions[patient][sample][chrom]:
+        if start <= pos and end >= pos:
+            return True
+    return False
+
+useable_samples = includeList(pilot = pilot)
+deletions = loadDeletions(useable_samples)
 
 mutations = {}
 with open(mutation_file, 'r') as csvfile:
@@ -102,6 +166,8 @@ with open(mutation_file, 'r') as csvfile:
         if "DNANum" in lvec[0]:
             continue
         (sample, __, __, chr, pos, ref, alt, is_snv, is_2p) = lvec[0:9]
+        if sample not in useable_samples:
+            continue
         refcnt = int(lvec[47])
         mutcnt = int(lvec[48])
         VAF = mutcnt/(refcnt+mutcnt)
@@ -149,18 +215,26 @@ for patient in patients:
             print("Unknown sample", sample)
     samples.sort()
     allsamples = {}
+    allref = {}
     poscount = 0
     for snum in range(0,len(samples)):
         sample = samples[snum]
         for chr in mutations[sample]:
             if chr not in allsamples:
                 allsamples[chr] = {}
+                allref[chr] = {}
             for pos in mutations[sample][chr]:
                 (ref, alt) = mutations[sample][chr][pos]
+                allref[chr][pos] = ref
                 if pos not in allsamples[chr]:
                     allsamples[chr][pos] = [ref]*(len(samples)+1)
                     poscount += 1
                 allsamples[chr][pos][snum] = alt
+    for chr in allsamples:
+        for pos in allsamples[chr]:
+            for snum in range(len(samples)):
+                if isDeleted(patient, sample, chr, pos, deletions) and allsamples[chr][pos][snum] == allref[chr][pos]:
+                    allsamples[chr][pos][snum] = "?"
     outfile = open(outdir + patient + "_phylip_in.txt", "w")
     outfile.write("  " + str(len(samples)+1) + "  " + str(poscount) + "\n")
     outstrings = {}

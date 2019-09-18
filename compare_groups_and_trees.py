@@ -32,7 +32,11 @@ if lowVAF:
 
 groupdir = "SNV_groups" + tag + "/"
 treedir = "phylip_TS_analysis/"
-CNVfile = "qc_events.txt"
+outfilename = "patient_analysis.tsv"
+allg_outfile = "all_groups.tsv"
+
+CNVfile = "qc_consolidated.txt"
+#CNVfile = "qc_xiaohong.txt"
 
 #outdir = "SNV_CNV_tree_compare" + tag + "/"
 #if not path.isdir(outdir):
@@ -92,6 +96,7 @@ for gfile in groupfiles:
         groupdata[patient][samples]["count"] = count
         groupdata[patient][samples]["percentage"] = perc
         groupdata[patient][samples]["cnv_count"] = 0
+        groupdata[patient][samples]["cnv_percentage"] = 0.0
         for sample in samples:
             allsamples[patient].add(sample)
 
@@ -115,48 +120,51 @@ for line in open(CNVfile, "r"):
     CNVs[patient][segid][call].append(sample)
 
 #Count the CNVs by sample list
-nmulti = 0
-nmulti_singletons = 0
-nmulti_multis = 0
-nsingle = 0
+#nmulti = 0
+#nmulti_singletons = 0
+#nmulti_multis = 0
+#nsingle = 0
 CNVcounts = {}
 for patient in CNVs:
     CNVtotal = 0
     for segid in CNVs[patient]:
-        calls = list(CNVs[patient][segid].keys())
-        if len(calls) > 1:
-            nmulti += 1
-            nOne = 0
-            nTwoPlus = 0
-            for call in calls:
-                if len(CNVs[patient][segid][call])==1:
-                    nOne += 1
-                else:
-                    nTwoPlus += 1
-            if nTwoPlus == 0:
-                nmulti_singletons += 1
-            elif nOne == 0:
-                nmulti_multis += 1
-            
-            continue
-        samples = CNVs[patient][segid][calls[0]]
-        samples.sort()
-        samples = tuple(samples)
-        if samples not in groupdata[patient]:
-            groupdata[patient][samples] = {}
-            groupdata[patient][samples]["count"] = 0
-            groupdata[patient][samples]["percentage"] = 0.0
-            groupdata[patient][samples]["cnv_count"] = 0
-        groupdata[patient][samples]["cnv_count"] += 1
-        CNVtotal += 1
-        nsingle += 1
+        for call in CNVs[patient][segid]:
+            samples = CNVs[patient][segid][call]
+#        calls = list(CNVs[patient][segid].keys())
+#        if len(calls) > 1:
+#            nmulti += 1
+#            nOne = 0
+#            nTwoPlus = 0
+#            for call in calls:
+#                if len(CNVs[patient][segid][call])==1:
+#                    nOne += 1
+#                else:
+#                    nTwoPlus += 1
+#            if nTwoPlus == 0:
+#                nmulti_singletons += 1
+#            elif nOne == 0:
+#                nmulti_multis += 1
+#            
+#            continue
+#        samples = CNVs[patient][segid][calls[0]]
+            samples.sort()
+            samples = tuple(samples)
+            if samples not in groupdata[patient]:
+                groupdata[patient][samples] = {}
+                groupdata[patient][samples]["count"] = 0
+                groupdata[patient][samples]["percentage"] = 0.0
+                groupdata[patient][samples]["cnv_count"] = 0
+                groupdata[patient][samples]["cnv_percentage"] = 0.0
+            groupdata[patient][samples]["cnv_count"] += 1
+            CNVtotal += 1
+#            nsingle += 1
     for samples in groupdata[patient]:
         groupdata[patient][samples]["cnv_percentage"] = groupdata[patient][samples]["cnv_count"]/CNVtotal
 
-print("Number of segments with a single call:", str(nsingle))
-print("Number of segments with multiple calls:", str(nmulti))
-print("Number of segments with multiple calls, all singletons:", str(nmulti_singletons))
-print("Number of segments with multiple calls, all multiples:", str(nmulti_multis))
+#print("Number of segments with a single call:", str(nsingle))
+#print("Number of segments with multiple calls:", str(nmulti))
+#print("Number of segments with multiple calls, all singletons:", str(nmulti_singletons))
+#print("Number of segments with multiple calls, all multiples:", str(nmulti_multis))
 
 #Now put the tree data in there, too:
 for patient in groupdata:
@@ -168,7 +176,7 @@ for patient in groupdata:
         groupdata[patient][samples]["matches_tree"] = callGroup(samples, allsamples[patient], tree)
 
 #And finally, write out all of our information.
-outfile = open(groupdir + "all_groups.tsv", "w")
+outfile = open(groupdir + allg_outfile, "w")
 outfile.write("Patient\tMatches_tree\tCount\tPercentage\tCNV count\tCNV percentage\tSample1\tSample2\tSample3\tSample4\tSample5\tSample6\n")
 for patient in groupdata:
     for samples in groupdata[patient]:
@@ -186,7 +194,7 @@ outfile.close()
 #Now do some analysis
 has23GD = ["74", "279", "303", "391", "396", "450", "772", "997"]
 types = ["Singleton", "Root", "Grouped", "Ungrouped"]
-outfile = open(groupdir + "patient_analysis.tsv", "w")
+outfile = open(groupdir + outfilename, "w")
 outfile.write("Patient\tnSNVmin\tnSNVmax\thas 2-3 GD")
 for type in types:
     outfile.write("\t" + type + " counts")
