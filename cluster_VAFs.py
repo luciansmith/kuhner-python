@@ -38,13 +38,13 @@ def getPatientSampleMap():
         if "Patient" in line:
             continue
         (patient, sample) = line.rstrip().split()[0:2]
-        patientSampleMap[sample] = patient
-        if patient not in samplePatientMap:
-            samplePatientMap[patient] = []
-        samplePatientMap[patient].append(sample)
+        samplePatientMap[sample] = patient
+        if patient not in patientSampleMap:
+            patientSampleMap[patient] = []
+        patientSampleMap[patient].append(sample)
     return patientSampleMap, samplePatientMap
 
-def writeAllSampleVAFs(mutations, samplePatientMap):
+def writeAllSampleVAFs(mutations, patientSampleMap, deletions):
     for patient in mutations:
         #Collect a set of clusters
         clustercount = {}
@@ -53,6 +53,12 @@ def writeAllSampleVAFs(mutations, samplePatientMap):
                 for alt in mutations[patient][chr][pos]:
                     cluster = list(mutations[patient][chr][pos][alt].keys())
                     cluster.sort()
+                    for sample in patientSampleMap[patient]:
+                        if sample in cluster:
+                            continue
+                        if isDeleted(patient, sample, chr, pos, deletions):
+                            cluster.append("-" + sample)
+                            mutations[patient][chr][pos][alt]["-" + sample] = ""
                     cluster = tuple(cluster)
                     if cluster not in clustercount:
                         clustercount[cluster] = 0
@@ -61,7 +67,7 @@ def writeAllSampleVAFs(mutations, samplePatientMap):
         for cluster in clustercount:
             if clustercount[cluster] > 40:
                 clusterlist.append(cluster)
-        for sample in samplePatientMap[patient]:
+        for sample in patientSampleMap[patient]:
             patientVAFs = open(outdir + patient + "_" + sample + "_VAFs.tsv", "w")
             patientVAFs.write("Patient")
             patientVAFs.write("\tSample")
@@ -95,9 +101,22 @@ def writeAllSampleVAFs(mutations, samplePatientMap):
                             patientVAFs.write(outstr + "\n")
         patientVAFs.close()
 
+def isDeleted(patient, sample, chrom, pos, deletions):
+    if patient not in deletions:
+        return False
+    if sample not in deletions[patient]:
+        return False
+    if chrom not in deletions[patient][sample]:
+        return False
+    for (start, end) in deletions[patient][sample][chrom]:
+        if start <= pos and end >= pos:
+            return True
+    return False
+
 
 mutations = {}
 (patientSampleMap, samplePatientMap) = getPatientSampleMap()
+
 with open(mutation_file, 'r') as csvfile:
     for lvec in csv.reader(csvfile):
         if "DNANum" in lvec[0]:
@@ -112,11 +131,12 @@ with open(mutation_file, 'r') as csvfile:
         refcnt = int(lvec[-2])
         bafcnt = int(lvec[-1])
         VAF = bafcnt/(refcnt+bafcnt)
-        patient = patientSampleMap[sample]
+        patient = samplePatientMap[sample]
         if onlysomepatients and patient not in somepatients:
             continue
         if patient not in mutations:
             mutations[patient] = {}
+            print("Reached patient", patient)
         if chr not in mutations[patient]:
             mutations[patient][chr] = {}
         pos = int(pos)
@@ -126,6 +146,6 @@ with open(mutation_file, 'r') as csvfile:
             mutations[patient][chr][pos][alt] = {}
         mutations[patient][chr][pos][alt][sample] = VAF
 
-#writeVAFs(mutations, samplePatientMap)
-writeAllSampleVAFs(mutations, samplePatientMap)
+deletions = lsl.loadDeletions(samplePatientMap)
+writeAllSampleVAFs(mutations, patientSampleMap, deletions)
 

@@ -120,31 +120,6 @@ def readProgressorOrNot():
         progressorMap[patient] = pstat
     return progressorMap
 
-def loadDeletions(useable_samples):
-    deletions = {}
-    for sample in useable_samples:
-        patient = useable_samples[sample]
-        ploidy = lsl.getBestPloidyFor(patient, sample)
-        filename = CNdir + patient + "_" + sample + "_g500_" + ploidy + "_nonint_CNs.txt"
-        if not isfile(filename):
-            filename = CNdir + patient + "_" + sample + "_g550_" + ploidy + "_nonint_CNs.txt"
-        for line in open(filename, "r"):
-            if "patient" in line:
-                continue
-            lvec = line.rstrip().split()
-            if lvec[7] == "0" or lvec[8] == "0":
-                (chrom, start, end) = lvec[2:5]
-                start = int(start)
-                end = int(end)
-                if patient not in deletions:
-                    deletions[patient] = {}
-                if sample not in deletions[patient]:
-                    deletions[patient][sample] = {}
-                if chrom not in deletions[patient][sample]:
-                    deletions[patient][sample][chrom] = []
-                deletions[patient][sample][chrom].append((start, end))
-    return deletions
-
 def isDeleted(patient, sample, chrom, pos, deletions):
     if patient not in deletions:
         return False
@@ -158,7 +133,7 @@ def isDeleted(patient, sample, chrom, pos, deletions):
     return False
 
 useable_samples = includeList(pilot = pilot)
-deletions = loadDeletions(useable_samples)
+deletions = lsl.loadDeletions(useable_samples, CNdir=CNdir)
 
 mutations = {}
 with open(mutation_file, 'r') as csvfile:
