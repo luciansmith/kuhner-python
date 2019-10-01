@@ -24,29 +24,16 @@ import lucianSNPLibrary as lsl
 onlysomepatients = False
 somepatients = ["160"]
 
-mutation_file = "snv_plus_indels.20180919.csv"
+mutation_file = "snv_plus_indels.twoPlus.20181030.csv"
 outdir = "VAFclusters/"
 
 if not path.isdir(outdir):
     mkdir(outdir)
 
-def getPatientSampleMap():
-    patientSampleMap = {}
-    samplePatientMap = {}
-    callfile = open("calling_evidence.tsv", "r")
-    for line in callfile:
-        if "Patient" in line:
-            continue
-        (patient, sample) = line.rstrip().split()[0:2]
-        samplePatientMap[sample] = patient
-        if patient not in patientSampleMap:
-            patientSampleMap[patient] = []
-        patientSampleMap[patient].append(sample)
-    return patientSampleMap, samplePatientMap
-
 def writeAllSampleVAFs(mutations, patientSampleMap, deletions):
     for patient in mutations:
         #Collect a set of clusters
+        print("Writing data for patient", patient)
         clustercount = {}
         for chr in mutations[patient]:
             for pos in mutations[patient][chr]:
@@ -65,7 +52,7 @@ def writeAllSampleVAFs(mutations, patientSampleMap, deletions):
                     clustercount[cluster] += 1
         clusterlist = []
         for cluster in clustercount:
-            if clustercount[cluster] > 40:
+#            if clustercount[cluster] > 40:
                 clusterlist.append(cluster)
         for sample in patientSampleMap[patient]:
             patientVAFs = open(outdir + patient + "_" + sample + "_VAFs.tsv", "w")
@@ -116,6 +103,7 @@ def isDeleted(patient, sample, chrom, pos, deletions):
 
 mutations = {}
 (patientSampleMap, samplePatientMap) = getPatientSampleMap()
+patientSampleMap = {}
 
 with open(mutation_file, 'r') as csvfile:
     for lvec in csv.reader(csvfile):
@@ -132,6 +120,9 @@ with open(mutation_file, 'r') as csvfile:
         bafcnt = int(lvec[-1])
         VAF = bafcnt/(refcnt+bafcnt)
         patient = samplePatientMap[sample]
+        if patient not in patientSampleMap:
+            patientSampleMap[patient] = set()
+        patientSampleMap[patient].add(sample)
         if onlysomepatients and patient not in somepatients:
             continue
         if patient not in mutations:

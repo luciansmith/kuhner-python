@@ -1245,10 +1245,14 @@ def getGammaFor(patient):
 #        return "650"
     return "500"
 
-
-def getPatientSampleMap(dipvtet_file):
+def getPatientSampleMap(challenge=False, dipvtet_file=""):
     s2p = {}
     p2s = {}
+    if dipvtet_file=="":
+        dipvtet_file = "calling_evidence_challenge_inc_odds.tsv"
+        if not challenge:
+            dipvtet_file = "calling_evidence_odds.tsv"
+        
     callfile = open(dipvtet_file, "r")
     for line in callfile:
         if "Patient" in line:
@@ -1266,7 +1270,7 @@ def getPatientSampleMap(dipvtet_file):
         if patient not in p2s:
             p2s[patient] = []
         p2s[patient].append(sample)
-    return s2p, p2s
+    return p2s, s2p
 
 def loadDeletions(samplePatientMap, CNdir="noninteger_processed_CNs/"):
     deletions = {}

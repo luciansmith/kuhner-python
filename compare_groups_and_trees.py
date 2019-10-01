@@ -30,8 +30,11 @@ if highVAF:
 if lowVAF:
     tag = "_lowVAF"
 
+#Input
 groupdir = "SNV_groups" + tag + "/"
 treedir = "phylip_TS_analysis/"
+
+#Output
 outfilename = "patient_analysis.tsv"
 allg_outfile = "all_groups.tsv"
 
@@ -47,24 +50,31 @@ for __, _, files in walk(groupdir):
     groupfiles += files
 
 def callGroup(group, allsamples, tree):
-    if len(group) == 1:
+    nondeleted = []
+    deleted = []
+    for sample in group:
+        if "-" not in sample:
+            nondeleted.append(sample)
+        else:
+            deleted.append(sample[1:])
+    if len(nondeleted) == 1:
         return "Singleton"
     if len(group) == len(allsamples):
         return "Root"
     trueset = set()
     falseset = set()
-    for branch in tree:
-        if branch.name != "":
+    for tip in tree:
+        if tip.name != "":
             for sample in group:
-                if sample in branch.name:
-                    trueset.add(branch)
+                if sample in tip.name:
+                    trueset.add(tip)
             for sample in allsamples:
                 if sample in group:
                     continue
-                if sample in branch.name:
-                    falseset.add(branch)
-            if "blood" in branch.name:
-                tree.set_outgroup(branch)
+                if sample in tip.name and sample not in deleted:
+                    falseset.add(tip)
+            if "blood" in tip.name:
+                tree.set_outgroup(tip)
     trueroot = tree.get_common_ancestor(trueset)
     for fbranch in falseset:
         testset = trueset.copy()
@@ -98,7 +108,8 @@ for gfile in groupfiles:
         groupdata[patient][samples]["cnv_count"] = 0
         groupdata[patient][samples]["cnv_percentage"] = 0.0
         for sample in samples:
-            allsamples[patient].add(sample)
+            if "-" not in sample:
+                allsamples[patient].add(sample)
 
 #Read in the CNV numbes
 CNVs = {}
@@ -129,7 +140,7 @@ for patient in CNVs:
     CNVtotal = 0
     for segid in CNVs[patient]:
         for call in CNVs[patient][segid]:
-            samples = CNVs[patient][segid][call]
+            samples = CNVs[patient][segid][call].copy()
 #        calls = list(CNVs[patient][segid].keys())
 #        if len(calls) > 1:
 #            nmulti += 1
@@ -148,6 +159,16 @@ for patient in CNVs:
 #            continue
 #        samples = CNVs[patient][segid][calls[0]]
             samples.sort()
+            othersamples = []
+            for call2 in CNVs[patient][segid]:
+                if call2==call:
+                    continue
+                othersamples.extend(CNVs[patient][segid][call2])
+            othersamples.sort()
+#            if len(othersamples)>0:
+#                print("Adding", "-" + str(othersamples), "to", str(samples))
+            for sample in othersamples:
+                samples.append("-" + sample)
             samples = tuple(samples)
             if samples not in groupdata[patient]:
                 groupdata[patient][samples] = {}
@@ -177,7 +198,7 @@ for patient in groupdata:
 
 #And finally, write out all of our information.
 outfile = open(groupdir + allg_outfile, "w")
-outfile.write("Patient\tMatches_tree\tCount\tPercentage\tCNV count\tCNV percentage\tSample1\tSample2\tSample3\tSample4\tSample5\tSample6\n")
+outfile.write("Patient\tMatches_tree\tCount\tPercentage\tCNV count\tCNV percentage\tSample1\tSample2\tSample3\tSample4\tSample5\tSample6\tSample7\tSample8\tSample9\tSample10\n")
 for patient in groupdata:
     for samples in groupdata[patient]:
         outfile.write(patient)
@@ -191,21 +212,30 @@ for patient in groupdata:
         outfile.write("\n")
 outfile.close()
 
+
+patientSampleMap, __ = lsl.getPatientSampleMap()
 #Now do some analysis
-has23GD = ["74", "279", "303", "391", "396", "450", "772", "997"]
 types = ["Singleton", "Root", "Grouped", "Ungrouped"]
 outfile = open(groupdir + outfilename, "w")
-outfile.write("Patient\tnSNVmin\tnSNVmax\thas 2-3 GD")
+outfile.write("Patient\tSubclone SNV Threshhold\tnSNVmax\tGD Samples")
 for type in types:
     outfile.write("\t" + type + " counts")
     outfile.write("\t" + type + " total")
-outfile.write("\tUngrouped potential subclone counts\tUngrouped potential scomubclone total\n")
+outfile.write("\tUngrouped potential subclone counts\tUngrouped potential subclone total\n")
 for patient in groupdata:
     smallestSNVcount = 100000
     maxSNVcount = 0
+    GDsamples = set()
+    for sample in patientSampleMap[patient]:
+        if lsl.getBestPloidyFor(patient, sample) == "tetraploid":
+            GDsamples.add(sample)
     for samples in groupdata[patient]:
         SNVcount = groupdata[patient][samples]["count"]
-        if groupdata[patient][samples]["matches_tree"] == "Grouped":
+        noDels = True
+        for sample in samples:
+            if "-" in sample:
+                noDels = False
+        if noDels and groupdata[patient][samples]["matches_tree"] == "Grouped":
             if SNVcount < smallestSNVcount:
                 smallestSNVcount = SNVcount
         if SNVcount > maxSNVcount:
@@ -227,7 +257,10 @@ for patient in groupdata:
     outfile.write(patient)
     outfile.write("\t" + str(possibleSubcloneThreshold))
     outfile.write("\t" + str(maxSNVcount))
-    outfile.write("\t" + str(patient in has23GD))
+    GDstr = ""
+    if len(GDsamples)>0:
+        GDstr = str(tuple(GDsamples))
+    outfile.write("\t" + GDstr)
     for type in types:
         outfile.write("\t")
         for num in CNVcounts[type]:
