@@ -1266,6 +1266,10 @@ def getPatientSampleMap(challenge=False, dipvtet_file=""):
                 ploidy = "Diploid"
             else:
                 ploidy = "Tetraploid"
+        if ploidy=="Diploid":
+            ploidy = "diploid"
+        if ploidy=="Tetraploid":
+            ploidy="tetraploid"
         s2p[sample] = (patient, ploidy)
         if patient not in p2s:
             p2s[patient] = []
@@ -1275,8 +1279,8 @@ def getPatientSampleMap(challenge=False, dipvtet_file=""):
 def loadDeletions(samplePatientMap, CNdir="noninteger_processed_CNs/"):
     deletions = {}
     for sample in samplePatientMap:
-        patient = samplePatientMap[sample]
-        ploidy = getBestPloidyFor(patient, sample)
+        patient, ploidy = samplePatientMap[sample]
+        #ploidy = getBestPloidyFor(patient, sample)
         filename = CNdir + patient + "_" + sample + "_g500_" + ploidy + "_nonint_CNs.txt"
         if not isfile(filename):
             filename = CNdir + patient + "_" + sample + "_g550_" + ploidy + "_nonint_CNs.txt"
@@ -1298,12 +1302,52 @@ def loadDeletions(samplePatientMap, CNdir="noninteger_processed_CNs/"):
     return deletions
 
 
-
-
-
-
-
-
+def loadDeletionsAndCNVs(samplePatientMap, CNdir="noninteger_processed_CNs/"):
+    deletions = {}
+    CNVs = {}
+    for sample in samplePatientMap:
+        (patient, ploidy) = samplePatientMap[sample]
+        ploidy = getBestPloidyFor(patient, sample)
+        filename = CNdir + patient + "_" + sample + "_g500_" + ploidy + "_nonint_CNs.txt"
+        if not isfile(filename):
+            filename = CNdir + patient + "_" + sample + "_g550_" + ploidy + "_nonint_CNs.txt"
+        for line in open(filename, "r"):
+            if "patient" in line:
+                continue
+            lvec = line.rstrip().split()
+            if lvec[7] == "0" or lvec[8] == "0":
+                (chrom, start, end) = lvec[2:5]
+                start = int(start)
+                end = int(end)
+                if patient not in deletions:
+                    deletions[patient] = {}
+                if sample not in deletions[patient]:
+                    deletions[patient][sample] = {}
+                if chrom not in deletions[patient][sample]:
+                    deletions[patient][sample][chrom] = []
+                deletions[patient][sample][chrom].append((start, end))
+            intA = lvec[7]
+            intB = lvec[8]
+            if intA=="NA" or intB=="NA":
+                continue
+            intA = int(intA)
+            intB = int(intB)
+            if intB<intA:
+                temp = intA
+                intA = intB
+                intB = temp
+            call = (intA, intB)
+            (chrom, start, end) = lvec[2:5]
+            start = int(start)
+            end = int(end)
+            if patient not in CNVs:
+                CNVs[patient] = {}
+            if sample not in CNVs[patient]:
+                CNVs[patient][sample] = {}
+            if chrom not in CNVs[patient][sample]:
+                CNVs[patient][sample][chrom] = []
+            CNVs[patient][sample][chrom].append((start, end, call))
+    return deletions, CNVs
 
 
 

@@ -94,8 +94,8 @@ def optimizeFile(filename, pvecs):
     plt.show()
     plt.close()
     for res in optpvecs:
-        print res
-    print conv
+        print(res)
+    print(conv)
 
 def optimizeFileTDist(filename, pvecs):
     xs, ys = getDataFrom(filename)
@@ -109,8 +109,8 @@ def optimizeFileTDist(filename, pvecs):
     plt.show()
     plt.close()
     for res in optpvecs:
-        print res
-    print conv
+        print(res)
+    print(conv)
 
 
 optimizeFile("CN_rejoined_histograms/balanced_gain_hist_21-100000000.txt", [0.165, 0.0310917156, 4.18347237, 0.256, 0.10709327, 2.58297282, 0.354, 0.09286382, 0.42222656, 0.074, 0.09286382, 0.42222656])

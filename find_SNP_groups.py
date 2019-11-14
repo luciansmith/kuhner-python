@@ -23,8 +23,8 @@ if lowVAF:
     tag = "_lowVAF"
 
 
-VAFdir = "VAFclusters/"
-outdir = "SNV_groups" + tag + "/"
+VAFdir = "VAFclusters_kanika/"
+outdir = "SNV_groups_kanika" + tag + "/"
 
 if not path.isdir(outdir):
     mkdir(outdir)

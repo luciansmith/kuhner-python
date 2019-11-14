@@ -24,8 +24,9 @@ import lucianSNPLibrary as lsl
 onlysomepatients = False
 somepatients = ["160"]
 
-mutation_file = "snv_plus_indels.twoPlus.20181030.csv"
-outdir = "VAFclusters/"
+#mutation_file = "snv_plus_indels.twoPlus.20181030.csv"
+mutation_file = "lucian_from_kanika.csv"
+outdir = "VAFclusters_kanika/"
 
 if not path.isdir(outdir):
     mkdir(outdir)
@@ -102,7 +103,7 @@ def isDeleted(patient, sample, chrom, pos, deletions):
 
 
 mutations = {}
-(patientSampleMap, samplePatientMap) = getPatientSampleMap()
+(patientSampleMap, samplePatientMap) = lsl.getPatientSampleMap()
 patientSampleMap = {}
 
 with open(mutation_file, 'r') as csvfile:
@@ -119,7 +120,7 @@ with open(mutation_file, 'r') as csvfile:
         refcnt = int(lvec[-2])
         bafcnt = int(lvec[-1])
         VAF = bafcnt/(refcnt+bafcnt)
-        patient = samplePatientMap[sample]
+        patient, ploidy = samplePatientMap[sample]
         if patient not in patientSampleMap:
             patientSampleMap[patient] = set()
         patientSampleMap[patient].add(sample)
