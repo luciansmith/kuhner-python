@@ -1270,7 +1270,7 @@ def getPatientSampleMap(challenge=False, dipvtet_file=""):
             ploidy = "diploid"
         if ploidy=="Tetraploid":
             ploidy="tetraploid"
-        s2p[sample] = (patient, ploidy)
+        s2p[sample] = [patient, ploidy]
         if patient not in p2s:
             p2s[patient] = []
         p2s[patient].append(sample)

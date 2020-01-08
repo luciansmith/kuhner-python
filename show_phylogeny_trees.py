@@ -8,6 +8,8 @@ Created on Wed Jul  3 15:29:58 2019
 
 import os
 import ete3
+import csv
+from os import walk
 from os import path
 from os import mkdir
 
@@ -23,7 +25,7 @@ usepilot = True
 #outdir = "all_phylogenies_noPilot/"
 
 treedir = "phylip_TS_analysis/"
-outdir = "all_phylogenies_new/"
+outdir = "all_phylogenies/"
 
 driverfile = "EA_drivers_by_sample.txt"
 #driverfile = "EA_drivers_pilot.txt"
@@ -39,15 +41,34 @@ displayDeletions = True
 if displayDeletions:
     outdir = "all_phylogenies_withdels/"
 
-svfile = "svmerge.tsv"
+svdir = "union.event.by.sample/"
 displaySVs = True
 if displaySVs:
     outdir = "all_phylogenies_SVs/"
+    outfilename = "SV_matches.txt"
 
-target_pids = [55, 59, 478, 635, 865, 126, 909, 381, 609, 184]
+
+displayCombo = False
+if displayCombo:
+    outdir = "all_phylogenies_SVs_and_drivers/"
+
+if displaySVs and not displayCombo:
+    SV_out = open(outdir + outfilename, "w")
+    SV_out.write("Patient\tSV_id\tMatch/Miss\n");
+
 
 if not path.isdir(outdir):
     mkdir(outdir)
+
+target_pids = [55, 59, 478, 635, 865, 126, 909, 381, 609, 184]
+
+
+
+SVfiles = []
+for __, _, files in walk(svdir):
+    SVfiles += files
+
+
 
 g_check_loss = set()
 
@@ -73,24 +94,36 @@ def readInEADrivers():
 
 def readInSVs():
     SVs = {}
-    for line in open(svfile, "r"):
-        if "Patient" in line:
+    for file in SVfiles:
+        if ".txt" not in file:
             continue
-        lvec = line.rstrip().split("\t")
-        patient = int(lvec[1])
-        svpos = tuple(lvec[2:9])
-        samples = lvec[9].strip('][\'').split('\', \'')
-        gastrics = set()
-        for sample in samples:
-            if "N" in sample:
-                gastrics.add(sample)
-        for gastric in gastrics:
-            samples.remove(gastric)
-        if len(samples)==0:
-            continue
-        if patient not in SVs:
-            SVs[patient] = {}
-        SVs[patient][svpos] = samples
+        patient = file.split(".")[0]
+        patient = int(patient)
+        labels = []
+        with open(svdir + file, 'r') as csvfile:
+            for lvec in csv.reader(csvfile):
+                if int(lvec[0]) > 100:
+                    try:
+                        for n in range(len(lvec)):
+                            x = int(lvec[n])
+                            labels.append(lvec[n])
+                    except:
+                        continue
+                svid = lvec[-1] + "_" + lvec[-3] + "_" + lvec[-2]
+                if displayCombo:
+                    if "dup" in svid:
+                        continue
+                    if "del" in svid:
+                        continue
+                samples = []
+                for n in range(len(labels)):
+                    if lvec[n] == "1":
+                        samples.append(labels[n])
+                if len(samples) == 0:
+                    continue
+                if patient not in SVs:
+                    SVs[patient] = {}
+                SVs[patient][svid] = samples
     return SVs
 
 def readInDeletions():
@@ -205,13 +238,26 @@ def displayDriversOnPhylogenies(pid, t, drivers, deletions):
 def displaySVsOnPhylogenies(pid, t, SVs):
     if pid in SVs:
         for SV in SVs[pid]:
-            SVname = SV[0] + "_" + SV[1] + "_" + SV[4]
+            SVname = SV
             text_face = ete3.TextFace(SVname, fsize=vertical_margins[pid]-5)
             branches = getBranchOrBranchesFor(SVs[pid][SV], t, set(), set(), set())
             if len(branches) > 1:
                 text_face = ete3.TextFace(SVname, fsize=vertical_margins[pid]-5, fgcolor="orangered")
             for branch in branches:
                 branch.add_face(text_face, column=1, position="branch-top")
+            #Collect data for statistics
+            samples = SVs[pid][SV]
+            ntips = 0;
+            for tip in t:
+                ntips += 1
+            if not displayCombo and len(samples) > 1 and len(samples) < ntips:
+                SV_out.write(str(pid))
+                SV_out.write("\t" + SV)
+                if len(branches)>1:
+                    SV_out.write("\tMiss")
+                else:
+                    SV_out.write("\tMatch")
+                SV_out.write("\n")
     else:
         print("No", pid, "in SVs")
 
@@ -318,6 +364,10 @@ for x, path in enumerate(tree_files['path']):
         displaySVsOnPhylogenies(pid, t, SVs)
     else:
         displayDriversOnPhylogenies(pid, t, drivers, deletions)
+
+    if displayCombo and displaySVs:
+        displayDriversOnPhylogenies(pid, t, drivers, deletions)
+        
     #        else:
     #            branch.add_feature(stuff="I'm internal!")
     #            upper = ete3.AttrFace("stuff", fsize=vertical_margins[pid])
@@ -341,6 +391,7 @@ for x, path in enumerate(tree_files['path']):
     tstyle.scale = 1000
 
     t.render(outdir + str(pid) + "_sampleIDs_tree.png", tree_style=tstyle)
+    t.write(outdir + str(pid) + "_tree.txt", format=1)
     for tip in t:
         tip.name = sampleNameMap[tip.name]
 
@@ -349,3 +400,6 @@ for x, path in enumerate(tree_files['path']):
 if checkDelete:
     del_look_file.close()
 print("done!")
+
+if displaySVs and not displayCombo:
+    SV_out.close()
