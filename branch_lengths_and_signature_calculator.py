@@ -12,7 +12,7 @@ from os import readlink
 from os import mkdir
 from os.path import isfile
 from copy import deepcopy
-from ete3 import Tree, TreeStyle, TextFace
+from ete3 import Tree, TreeStyle, TextFace, AttrFace
 
 import numpy
 import math
@@ -26,14 +26,14 @@ import lucianSNPLibrary as lps
 showTrees = True
 needDoubleSplitInfo = False
 
-onlysomepatients = True
-somepatients = ["126"]
+onlysomepatients = False
+somepatients = ["483"]
 #somepatients = ["387", "483", "609", "611", "626", "631", "635", "652", "852"] #double split patients
 
 #input
 mutation_file = "lucian_from_kanika.csv"
-treedir = "deconvtrees/"
-optimdir = "optim_inputs/"
+treedir = "final_trees/"
+optimdir = "final_optim/"
 
 #output
 lengthdir = "branch_lengths/"
@@ -209,7 +209,8 @@ def readOptimInputs(codeToSampleMap):
             tips = lvec[3]
             call = "1,1"
             if len(lvec)>4:
-                call = lvec[4]
+                call = lvec[-1]
+            assert call != ''
             tipvec = tips.split("_")
             tipset = set()
             for entry in tipvec:
@@ -222,6 +223,7 @@ def readOptimInputs(codeToSampleMap):
             tipset = tuple(tipset)
             if tipset not in inputs[sample]:
                 inputs[sample][tipset] = {}
+                
             if call not in inputs[sample][tipset]:
                 inputs[sample][tipset][call] = {}
                 inputs[sample][tipset][call]["vaf"] = vaf
@@ -272,15 +274,21 @@ def readSampleTrees(label):
         if "#" in line:
             continue
         newicks.append(line.rstrip())
-    halfindexes = range(round(len(newicks)/2))
-    newicks = numpy.delete(newicks, halfindexes)
+#    halfindexes = range(round(len(newicks)/2))
+#    newicks = numpy.delete(newicks, halfindexes)
     trees = []
+    samples = set()
     for newick in newicks:
         tree = Tree(newick)
         for branch in tree.traverse():
             branch.dist = 0
+        for branch in tree:
+            samples.add(branch.name.split('-')[0].split('_')[0])
         trees.append(tree)
-    return trees
+        if onlysomepatients:
+            print("Tree(s) for", label)
+            print(tree)
+    return trees, samples
 
 def isSplit(group, inputSplits, label):
     if (label, group) in inputSplits:
@@ -298,11 +306,45 @@ def getBranch(trees, tipnames):
                     if tip.name.split("_")[0] + "-1" == tipname:
                         tipbranches.append(tip)
         if len(tipbranches) == len(tipnames):
-            return tree.get_common_ancestor(tipbranches)
+            if len(tipnames) == 1:
+                return tipbranches[0]
+            else:
+                return tree.get_common_ancestor(tipbranches)
+        if (len(tipbranches) != 0):
+            print("Unable to find the cluster:", str(tipnames))
+            print("In the trees:")
+            for treeB in trees:
+                print(treeB)
         assert(len(tipbranches) == 0)
         tipbranches.clear()
+    print("Unable to find the cluster:", str(tipnames))
+    print("In the trees:")
+    for tree in trees:
+        print(tree)
     assert(False)
     return None
+
+def getBranchFrom(trees, xtipnames, samplename):
+    tipnames = []
+    for xtip in xtipnames:
+        tipnames.append(combineSampleAndTipLabel(samplename, xtip))
+    return getBranch(trees, tipnames)
+
+def getClosestBranch(trees, tipset, basebranch, samplename):
+    branch = getBranchFrom(trees, tipset, samplename)
+    isAncestor = False
+    for testbranch in basebranch.traverse():
+        if testbranch == branch:
+            isAncestor = True
+            break
+    assert(isAncestor)
+    while(True):
+        ancestor = branch.up
+        if ancestor==basebranch:
+            return branch
+        else:
+            branch = ancestor
+
 
 def getSigFile(branch, label, files):
     tipnames = []
@@ -323,9 +365,20 @@ def closeFiles(files):
     for filename in files:
         files[filename].close()
 
-def saveNonSplit(label, trees, group, allsets, files, chrom, pos, alt):
+def isDeletedInNonGroupSample(group, treesamples, label, chrom, pos):
+    patient = label.split('_')[0]
+    for sample in treesamples:
+        if sample not in group:
+            #Check to see if it was deleted in that sample:
+            if isDeleted(patient, sample, chrom, pos, deletions):
+                return True
+    return False
+
+def saveNonSplit(label, trees, treesamples, group, allsets, files, chrom, pos, alt):
     if group not in allsets[label]:
         #At some point, we might save these somewhere, but for now they're just considered errors.
+        return False
+    if isDeletedInNonGroupSample(group, treesamples, label, chrom, pos):
         return False
     tipnames = set()
     for sample in allsets[label][group]:
@@ -347,19 +400,10 @@ def combineSampleAndTipLabel(sample, tiplabel):
     nox = tiplabel.replace("x", "-")
     return sample + nox
 
-def saveSingleSplit(allsets, label, group, keySample, keySampleTips, chrom, pos, alt, trees, files):
-    tipnames = set()
-    for sample in allsets[label][group]:
-        if sample==keySample:
-            for tip in keySampleTips:
-                tipnames.add(combineSampleAndTipLabel(sample, tip))
-        else:
-            for tips in allsets[label][group][sample]:
-                for tip in tips:
-                    tipnames.add(combineSampleAndTipLabel(sample, tip))
+def saveSingleSplit(label, group, branch, chrom, pos, alt, treesamples, files):
+    if isDeletedInNonGroupSample(group, treesamples, label, chrom, pos):
+        return False
     #print(label)
-    assert(len(tipnames)>0)
-    branch = getBranch(trees, tipnames)
     branch.dist += 1
     sigfile = getSigFile(branch, label, files)
     sigfile.write(chrom)
@@ -389,24 +433,60 @@ def saveForSplits(splits, doublesplits, group, sampleVAFs, chrom, pos, alt, CNVs
                 splits[group][strcall] = []
             splits[group][strcall].append((sampleVAFs[keySample], chrom, pos, alt))
 
-def divideLengthFromSplit(lengthOnly, tipsets, trees, keySample):
-    totlen = 0
+def getSplitBranchesFrom(trees, tipsets, keySample):
+    assert(len(tipsets) > 1)
+    sortedtips = sorted(tipsets)
+    shortesttipset = sortedtips[0]
+    for tipset in sortedtips:
+        if len(tipset) < len(shortesttipset):
+            shortesttipset = tipset
+
+    #We need the *next-shortest* tipset, not the longest.  We have three sets, at one point.
+    longertipset = shortesttipset
+    for tipset in sortedtips:
+        if len(tipset) > len(shortesttipset):
+            if len(longertipset) == len(shortesttipset):
+                longertipset = tipset
+            elif len(tipset) < len(longertipset):
+                longertipset = tipset
+
     branches = {}
-    for tipset in tipsets:
-        alltips = set()
-        for tip in tipset:
-            alltips.add(combineSampleAndTipLabel(keySample, tip))
-        branch = getBranch(trees, alltips)
-        totlen += branch.dist
-        branches[tipset] = branch
+    for tipset in sortedtips:
+        if tipset == shortesttipset:
+            continue
+        branches[tipset] = getBranchFrom(trees, tipset, keySample)
+    branches[shortesttipset] = getClosestBranch(trees, shortesttipset, branches[longertipset], keySample)
+#    for tipset in branches:
+#        print(keySample, str(tipset), ":")
+#        print(branches[tipset])
+        
+    return branches
+
+def divideLengthFromSplit(lengthOnly, branches):
+    totlen = 0
+    for tipset in branches:
+        totlen += branches[tipset].dist
+
     for tipset in branches:
         branch = branches[tipset]
         branch.dist += lengthOnly * (branch.dist/totlen)
 
-def saveSplits(splits, trees, files, inputSplits, label):
+def saveSplits(splits, trees, treesamples, files, inputSplits, label):
     for group in splits:
         lengthOnly = 0
+        
+        #First, find the key branches
         tipsets = set()
+        for call in splits[group]:
+            splitinfo = inputSplits[(label, group)]
+            keySample = list(splitinfo.keys())[0]
+            if call not in splitinfo[keySample]:
+                continue
+            splitinfo = splitinfo[keySample][call]
+            for tips in splitinfo:
+                tipsets.add(tips)
+        assert(len(tipsets) > 1)
+        branches = getSplitBranchesFrom(trees, tipsets, keySample)
         for call in splits[group]:
             vafvec = splits[group][call]
             splitinfo = inputSplits[(label, group)]
@@ -414,14 +494,13 @@ def saveSplits(splits, trees, files, inputSplits, label):
             if call not in splitinfo[keySample]:
                 #We didn't say how to split this call, so the only thing we can do is 
                 # add it to the length, but not the signature file
-                lengthOnly += 1
+                
+                #However, we still need to check if the site has been deleted in a different sample
+                for (vaf, chrom, pos, alt) in vafvec:
+                    if not isDeletedInNonGroupSample(group, treesamples, label, chrom, pos):
+                        lengthOnly += 1
                 continue
             splitinfo = splitinfo[keySample][call]
-#            if len(splitinfo)==1:
-#                #Just save everything to the appropriate branch
-#                for (vaf, chrom, pos, alt) in vafvec:
-#                    saveSingleSplit(allsets, label, group, keySample, list(splitinfo.keys())[0], chrom, pos, alt, trees, files)
-#                continue
             vnts = []
             muttot = 0
             for tips in splitinfo:
@@ -443,14 +522,16 @@ def saveSplits(splits, trees, files, inputSplits, label):
                 currend += round((nmut/muttot)*len(vafvec))
                 while currindex < currend and currindex < len(vafvec):
                     (__, chrom, pos, alt) = vafvec[currindex]
-                    saveSingleSplit(allsets, label, group, keySample, tips, chrom, pos, alt, trees, files)
+                    saveSingleSplit(label, group, branches[tips], chrom, pos, alt, treesamples, files)
                     currindex += 1
             if currend < len(vafvec):
                 assert len(vafvec)-currend == 1
                 #just in case we don't sum to 100%
                 (__, chrom, pos, alt) = vafvec[-1]
-                saveSingleSplit(allsets, label, group, keySample, tips, chrom, pos, alt, trees, files)
-        divideLengthFromSplit(lengthOnly, tipsets, trees, keySample)
+                saveSingleSplit(label, group, branches[tips], chrom, pos, alt, treesamples, files)
+        divideLengthFromSplit(lengthOnly, branches)
+#        if len(group)==4:
+#            assert(False)
 
 def divideLengthAmongBranches(divlen, branches, families):
     totlen = 0
@@ -459,12 +540,31 @@ def divideLengthAmongBranches(divlen, branches, families):
     for tiplists in families:
         branch = branches[tiplists]
         branch.dist += len(families[tiplists])
-        branch.dist += round(divlen * len(families[tiplists])/totlen)
+        branch.dist += (divlen * len(families[tiplists])/totlen)
     
 
-def saveDoubleSplitFamilies(families, trees, files, label, lengthOnlyPositions):
+def ensureEntireGroupIsChildOfBranch(listbasebranch, group, basebranch):
+    if basebranch == listbasebranch:
+        return basebranch
+    foundset = set()
+    for tip in listbasebranch:
+        for sample in group:
+            if sample in tip.name:
+                foundset.add(sample)
+    for sample in group:
+        if sample not in foundset:
+            print("Branch found that doesn't include entire group")
+            print(str(foundset))
+            print(str(group))
+            print(listbasebranch)
+            return ensureEntireGroupIsChildOfBranch(listbasebranch.up, group, basebranch)
+            
+    return listbasebranch
+
+def saveDoubleSplitFamilies(families, trees, treesamples, files, label, lengthOnlyPositions, group):
     alltips = set()
     tipsets = {}
+    divlen = len(lengthOnlyPositions)
     for tiplists in families:
         onetipset = set()
         for sample, tips in tiplists:
@@ -478,9 +578,10 @@ def saveDoubleSplitFamilies(families, trees, files, label, lengthOnlyPositions):
     for tiplists in tipsets:
         listbasebranch = getBranch(trees, tipsets[tiplists])
         if listbasebranch == basebranch and alltips != tipsets[tiplists]:
-            lengthOnlyPositions += len(families[tiplists])
+            divlen += len(families[tiplists])
             badtiplists.append(tiplists)
         else:
+            listbasebranch = ensureEntireGroupIsChildOfBranch(listbasebranch, group, basebranch)
             branches[tiplists] = listbasebranch
     for tiplists in badtiplists:
         del tipsets[tiplists]
@@ -493,10 +594,23 @@ def saveDoubleSplitFamilies(families, trees, files, label, lengthOnlyPositions):
             sigfile.write("\t" + str(pos))
             sigfile.write("\t" + alt)
             sigfile.write("\n")
-    divideLengthAmongBranches(lengthOnlyPositions, branches, families)
+    divideLengthAmongBranches(divlen, branches, families)
 
 
-def sortDoubleSplits(doublesplits, trees, files, inputSplits, label):
+def removeDeletedPositions(group, treesamples, label, positions):
+    badpos = []
+    for (chrom, pos, alt) in positions:
+        if isDeletedInNonGroupSample(group, treesamples, label, chrom, pos):
+            badpos.append((chrom, pos, alt))
+            
+    for location in badpos:
+        if isinstance(positions, set):
+            positions.remove(location)
+        else:
+            del positions[location]
+
+
+def sortDoubleSplits(doublesplits, trees, treesamples, files, inputSplits, label):
     #For the double splits, they're not stored as vectors, so we have to store them.
     for group in doublesplits:
         positions = {}
@@ -504,6 +618,7 @@ def sortDoubleSplits(doublesplits, trees, files, inputSplits, label):
         for keySample in doublesplits[group]:
             for call in doublesplits[group][keySample]:
                 vafvec = doublesplits[group][keySample][call]
+                #print(keySample, str(call), str(len(vafvec)))
                 splitinfo = inputSplits[(label, group)][keySample]
                 if call not in splitinfo:
                     #We didn't say how to split this call, so the only thing we can do is 
@@ -550,13 +665,17 @@ def sortDoubleSplits(doublesplits, trees, files, inputSplits, label):
                         positions[location] = []
                     positions[location].append((keySample, tips))
         families = {}
+        
+        removeDeletedPositions(group, treesamples, label, positions)
+        removeDeletedPositions(group, treesamples, label, lengthOnlyPositions)
+            
         for location in positions:
             positions[location].sort()
             alltips = tuple(positions[location])
             if alltips not in families:
                 families[alltips] = []
             families[alltips].append(location)
-        saveDoubleSplitFamilies(families, trees, files, label, len(lengthOnlyPositions))
+        saveDoubleSplitFamilies(families, trees, treesamples, files, label, lengthOnlyPositions, group)
         if needDoubleSplitInfo:
             print("Double splits for", label, "group", str(group))
             tiplists = list(families.keys())
@@ -564,31 +683,49 @@ def sortDoubleSplits(doublesplits, trees, files, inputSplits, label):
             for alltips in tiplists:
                 print(str(alltips), "\t", str(len(families[alltips])))
             print("Unusable:\t", len(lengthOnlyPositions))
+#    foo()
 
 def writeTrees(trees, label):
     ts = TreeStyle()
-    ts.show_leaf_name = True
+    ts.show_leaf_name = False
     ts.show_branch_length = False
-    print("Tree(s) for", label)
+    ts.branch_vertical_margin = 20
+    ts.scale = 0.05
     outtrees = open(lengthdir + label + ".newick", "w")
-    for tree in trees:
+    #round the branch lengths
+    for index, tree in enumerate(trees):
+        #print(tree)
+        for branch in tree.traverse():
+            branch.dist = round(branch.dist)
         line = tree.write(format=1)
         outtrees.write(line + "\n")
         if (showTrees):
             for branch in tree.traverse():
                 if branch.dist != 0:
-                    text_face = TextFace(str(int(branch.dist)))
+                    text_face = TextFace(str(round(branch.dist, 2)), fsize=30)
                     branch.add_face(text_face, column=1, position="branch-top")
-            tree.show(tree_style = ts)
+                elif branch.name != "":
+                    name_face = AttrFace("name", fsize=30)
+                    branch.add_face(name_face, column=0, position="branch-right")
+                else:
+                    print("Branch found of length zero but not a tip in tree", label)
+                    print(branch)
+            filename = label
+            if len(trees)>1:
+                filename += "_" + str(index)
+            filename += ".png"
+            tree.render(lengthdir + filename, tree_style = ts)
+            #foo()
     outtrees.close()
+    #foo()
     
 
 def sortMutations(mutations, allsets, inputSplits, deletions, CNVs, labelSamples):
     savesort = open(sigdir + "saved_or_skipped.tsv", "w")
     savesort.write("Tree\tsaved\tskipped\tsplit\n")
     for label in allsets:
-        #print("Working on", label)
-        trees = readSampleTrees(label)
+        print("Working on", label)
+        trees, treesamples = readSampleTrees(label)
         patient = label.split("_")[0]
         samples = labelSamples[label]
         muts = mutations[patient]
@@ -617,14 +754,14 @@ def sortMutations(mutations, allsets, inputSplits, deletions, CNVs, labelSamples
                         saveForSplits(splits, doublesplits, group, sampleVAFs, chrom, pos, alt, CNVs, patient, inputSplits[(label, group)])
                         split += 1
                     else:
-                        if saveNonSplit(label, trees, group, allsets, files, chrom, pos, alt):
+                        if saveNonSplit(label, trees, treesamples, group, allsets, files, chrom, pos, alt):
                             used += 1
                         else:
                             skipped += 1
-        sortDoubleSplits(doublesplits, trees, files, inputSplits, label)
-        saveSplits(splits, trees, files, inputSplits, label)
+        sortDoubleSplits(doublesplits, trees, treesamples, files, inputSplits, label)
+        saveSplits(splits, trees, treesamples, files, inputSplits, label)
         closeFiles(files)
-        #print("For", label, ",", str(used), "used mutations, and", str(skipped), "skipped mutations.")
+#        print("For", label, ",", str(used), "non-split mutations, and", str(skipped), "skipped mutations.")
         savesort.write(label)
         savesort.write("\t" + str(used))
         savesort.write("\t" + str(skipped))
@@ -651,3 +788,25 @@ sortMutations(mutations, allsets, inputSplits, deletions, CNVs, labelSamples)
 
 #writeAllSampleVAFs(mutations, patientSampleMap, deletions)
 
+count = 0
+countByCall = {}
+for patient in mutations:
+    for chrom in mutations[patient]:
+        for pos in mutations[patient][chrom]:
+            if len(list(mutations[patient][chrom][pos])) > 1:
+                print ("Double hit at", chrom, str(pos))
+            for alt in mutations[patient][chrom][pos]:
+                twosplit = False
+                slist = list(mutations[patient][chrom][pos][alt].keys())
+                if '23659' in slist and '23665' in slist and '23656' not in slist and '23662' not in slist:
+                    if not (isDeleted(patient, '23656', chrom, pos, deletions) or isDeleted(patient, '23662', chrom, pos, deletions)):
+                        twosplit = True
+                if twosplit:
+                    count += 1
+                    call = getCNVCall(patient, '23659', chrom, pos, CNVs)
+                    if call not in countByCall:
+                        countByCall[call] = 0
+                    countByCall[call] += 1
+
+print(count)
+print(str(countByCall))
