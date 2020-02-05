@@ -22,12 +22,12 @@ import csv
 # replace with call to imp.source_load, renamed "lsl" as "lps"
 #import lucianSNPLibrary as lsl
 
-onlysomepatients = True
-somepatients = ["74"]
+onlysomepatients = False
+somepatients = ["160"]
 
 #mutation_file = "snv_plus_indels.twoPlus.20181030.csv"
 mutation_file = "lucian_from_kanika.csv"
-outdir = "VAFclusters_74test/"
+outdir = "VAFclusters/"
 
 if not path.isdir(outdir):
     mkdir(outdir)
@@ -102,11 +102,43 @@ def isDeleted(patient, sample, chrom, pos, deletions):
             return True
     return False
 
+def getSampleStatuses():
+    statuses = {}
+    with open("P01CA91955-WGS80-Full-Pilot-Samples.csv", "r") as csvfile:
+        for lvec in csv.reader(csvfile):
+            if "RandomID" in lvec:
+                continue
+            sample = lvec[6]
+            statuses[sample] = {}
+            statuses[sample]["patient"] = lvec[0]
+            statuses[sample]["prog"] = lvec[1]
+            statuses[sample]["gender"] = lvec[2]
+            time = lvec[8]
+            if time=="LongFollowUp":
+                time = "T3"
+            if time=="Index":
+                time = "T2"
+            if sample == "23521":
+                time = "T2"
+            statuses[sample]["time"] = time
+    return statuses
+
 
 import imp
-lps = imp.load_source("lps","lucianSNPLibrary.py")
+#import lucianSNPLibrary as lps
+lps = imp.load_source("lps","/home/mkkuhner/Papers/phylo/lucianSNPLibrary.py")
 mutations = {}
-(patientSampleMap, samplePatientMap) = lps.getPatientSampleMap()
+(__, samplePatientMap) = lps.getPatientSampleMap()
+
+#Delete all samples except T1 and T2.
+statuses = getSampleStatuses()
+for sample in statuses:
+    if statuses[sample]["time"] not in ["T1", "T2"]:
+        if sample in samplePatientMap:
+            del samplePatientMap[sample]
+        
+        
+
 patientSampleMap = {}
 
 with open(mutation_file, 'r') as csvfile:
@@ -120,6 +152,8 @@ with open(mutation_file, 'r') as csvfile:
             continue
     #    if ("N" in sample):
     #        continue
+        if sample not in samplePatientMap:
+            continue
         refcnt = int(lvec[-2])
         bafcnt = int(lvec[-1])
         VAF = bafcnt/(refcnt+bafcnt)
